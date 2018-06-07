@@ -8,6 +8,7 @@ using Stratis.Sidechains.Features.BlockchainGeneration;
 using Stratis.Sidechains.Features.BlockchainGeneration.Tests.Common;
 using Stratis.Sidechains.Features.BlockchainGeneration.Tests.Common.EnvironmentMockUp;
 using System.Diagnostics;
+using Stratis.Sidechains.Features.BlockchainGeneration.Network;
 
 namespace Stratis.Sidechains.Commands.Tests
 {

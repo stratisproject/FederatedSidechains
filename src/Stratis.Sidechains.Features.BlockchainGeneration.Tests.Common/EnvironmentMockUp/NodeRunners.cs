@@ -10,30 +10,24 @@ using Stratis.Bitcoin.Builder;
 using Stratis.Bitcoin.Builder.Feature;
 using Stratis.Bitcoin.Configuration;
 using Stratis.Bitcoin.Interfaces;
-using Stratis.Sidechains.Features.BlockchainGeneration;
 
 namespace Stratis.Sidechains.Features.BlockchainGeneration.Tests.Common.EnvironmentMockUp
 {
+    [Obsolete]
     public interface INodeRunner
     {
         bool IsDisposed { get; }
 
         void Kill();
 
-        void Start(Network network, string dataDir);
+        void Start(NBitcoin.Network network, string dataDir);
     }
-
+    [Obsolete]
     public class StratisBitcoinPosRunner : INodeRunner
     {
         private Action<IFullNodeBuilder> callback;
 
         private string agent = null;
-
-        public StratisBitcoinPosRunner(string agent, Action<IFullNodeBuilder> callback = null)
-        {
-            this.callback = callback;
-            this.agent = agent;
-        }
 
         public bool IsDisposed {
             get { return this.FullNode.State == FullNodeState.Disposed; }
@@ -44,10 +38,10 @@ namespace Stratis.Sidechains.Features.BlockchainGeneration.Tests.Common.Environm
             this.FullNode?.Dispose();
         }
 
-        public void Start(Network network, string dataDir)
+        public void Start(NBitcoin.Network network, string dataDir)
         {
             string confArg;
-            if (network == Network.StratisMain || network == Network.StratisTest || network == Network.StratisRegTest)
+            if (network == NBitcoin.Network.StratisMain || network == NBitcoin.Network.StratisTest || network == NBitcoin.Network.StratisRegTest)
                 confArg = "-conf=stratis.conf";
             else
                 confArg = $"-conf={SidechainIdentifier.Instance.Name}.conf";

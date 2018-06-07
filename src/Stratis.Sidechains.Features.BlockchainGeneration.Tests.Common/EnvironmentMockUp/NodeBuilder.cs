@@ -14,9 +14,11 @@ using Stratis.Bitcoin.Features.Consensus.Interfaces;
 using Stratis.Bitcoin.Features.MemoryPool;
 using Stratis.Bitcoin.Features.Wallet;
 using Stratis.Bitcoin.Features.Wallet.Interfaces;
+using Stratis.Sidechains.Features.BlockchainGeneration.Network;
 
 namespace Stratis.Sidechains.Features.BlockchainGeneration.Tests.Common.EnvironmentMockUp
 {
+    [Obsolete]
     public static class FullNodeExt
     {
         public static WalletManager WalletManager(this FullNode fullNode)
@@ -54,7 +56,7 @@ namespace Stratis.Sidechains.Features.BlockchainGeneration.Tests.Common.Environm
             return fullNode.NodeService<IChainState>().BlockStoreTip;
         }
     }
-
+    [Obsolete]
     public class NodeConfigParameters : Dictionary<string, string>
     {
         public void Import(NodeConfigParameters configParameters)
@@ -74,7 +76,7 @@ namespace Stratis.Sidechains.Features.BlockchainGeneration.Tests.Common.Environm
             return builder.ToString();
         }
     }
-
+    [Obsolete]
     public class NodeBuilder : IDisposable
     {
         public List<CoreNode> Nodes { get; }
@@ -107,7 +109,7 @@ namespace Stratis.Sidechains.Features.BlockchainGeneration.Tests.Common.Environm
         public CoreNode CreateStratisPosNode(bool start = false, Action<IFullNodeBuilder> callback = null, string agent = null)
         {
             string child = this.CreateNewEmptyFolder();
-            var node = new CoreNode(child, new StratisBitcoinPosRunner(agent, callback), this, Network.StratisRegTest, configfile: "stratis.conf");
+            var node = new CoreNode(child, new StratisBitcoinPosRunner(agent, callback), this, NBitcoin.Network.StratisRegTest, configfile: "stratis.conf");
             this.Nodes.Add(node);
             if (start)
                 node.Start();
@@ -125,7 +127,7 @@ namespace Stratis.Sidechains.Features.BlockchainGeneration.Tests.Common.Environm
             setupSidechain(sidechainName, dataFolder);
 
             //we can't clean folders here because our sidechains.json is already in its folder
-            var node = new CoreNode(child, new StratisBitcoinPosRunner(agent, callback), this, SidechainNetwork.SidechainRegTest, configfile:$"{SidechainIdentifier.Instance.Name}.conf", cleanfolders:false);
+            var node = new CoreNode(child, new StratisBitcoinPosRunner(agent, callback), this, SidechainNetwork.SidechainMain, configfile:$"{SidechainIdentifier.Instance.Name}.conf", cleanfolders:false);
             this.Nodes.Add(node);
             if (start)
                 node.Start();

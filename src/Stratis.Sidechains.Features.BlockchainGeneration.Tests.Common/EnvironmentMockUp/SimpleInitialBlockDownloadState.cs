@@ -5,6 +5,7 @@ using Stratis.Bitcoin.Interfaces;
 
 namespace Stratis.Sidechains.Features.BlockchainGeneration.Tests.Common.EnvironmentMockUp
 {
+    [Obsolete]
     internal class SimpleInitialBlockDownloadState : IInitialBlockDownloadState
     {
         public bool IsInitialBlockDownload()

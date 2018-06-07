@@ -15,6 +15,7 @@ using Stratis.Bitcoin.Features.Wallet;
 using Stratis.Bitcoin.Utilities;
 using Stratis.FederatedPeg.Features.SidechainGeneratorServices;
 using Stratis.Sidechains.Features.BlockchainGeneration;
+using Stratis.Sidechains.Features.BlockchainGeneration.Network;
 using Stratis.Sidechains.Features.BlockGenerator;
 
 namespace Stratis.SidechainD

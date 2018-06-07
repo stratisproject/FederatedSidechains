@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Management.Automation;
 using Stratis.Sidechains.Features.BlockchainGeneration;
+using Stratis.Sidechains.Features.BlockchainGeneration.Network;
 
 namespace Stratis.Sidechains.Commands
 {

@@ -2,6 +2,7 @@
 using FluentAssertions;
 
 using Stratis.Sidechains.Features.BlockchainGeneration;
+using Stratis.Sidechains.Features.BlockchainGeneration.Network;
 
 namespace Stratis.Sidechains.Features.BlockchainGeneration.Tests.Common
 {

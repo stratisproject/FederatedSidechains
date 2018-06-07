@@ -3,6 +3,7 @@ using Xunit;
 using FluentAssertions;
 using System.Linq;
 using Stratis.Sidechains.Features.BlockchainGeneration;
+using Stratis.Sidechains.Features.BlockchainGeneration.Network;
 using Stratis.Sidechains.Features.BlockchainGeneration.Tests.Common;
 
 namespace Stratis.Sidechains.Commands.Tests

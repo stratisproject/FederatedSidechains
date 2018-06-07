@@ -22,6 +22,7 @@ using Stratis.Sidechains.Features.BlockchainGeneration;
 
 namespace Stratis.Sidechains.Features.BlockchainGeneration.Tests.Common.EnvironmentMockUp
 {
+    [Obsolete]
     public enum CoreNodeState
     {
         Stopped,
@@ -30,6 +31,7 @@ namespace Stratis.Sidechains.Features.BlockchainGeneration.Tests.Common.Environm
         Killed
     }
 
+    [Obsolete]
     public class CoreNode
     {
         /// <summary>Factory for creating P2P network peers.</summary>

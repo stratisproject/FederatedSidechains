@@ -5,8 +5,8 @@ using NBitcoin;
 using NBitcoin.DataEncoders;
 using Stratis.Bitcoin.Features.GeneralPurposeWallet;
 using Stratis.Bitcoin.Features.GeneralPurposeWallet.Interfaces;
-using Stratis.Sidechains.Features.BlockchainGeneration.Tests.Common;
-using Stratis.Sidechains.Features.BlockchainGeneration.Tests.Common.EnvironmentMockUp;
+using Stratis.Bitcoin.IntegrationTests.Common.EnvironmentMockUpHelpers;
+using Stratis.FederatedSidechains.IntegrationTests.Common;
 
 namespace Stratis.FederatedPeg.IntegrationTests.Helpers
 {
@@ -14,12 +14,13 @@ namespace Stratis.FederatedPeg.IntegrationTests.Helpers
     {
         //eg: Federations\deposit_funds_to_sidechain
         public string Folder { get; }
+        private readonly SharedSteps sharedSteps = new SharedSteps();
 
         public TestFederationFolder([CallerMemberName] string caller = null)
         {
             this.Folder = Path.Combine(Path.Combine(Directory.GetCurrentDirectory(), $"Federations\\{caller}"));
             Directory.CreateDirectory(this.Folder);
-            TestUtils.ShellCleanupFolder(this.Folder);
+            sharedSteps.ShellCleanupFolder(this.Folder);
         }
 
         public MemberFolderManager CreateMemberFolderManager()
@@ -53,10 +54,10 @@ namespace Stratis.FederatedPeg.IntegrationTests.Helpers
             foreach (string folder in folderNames)
             {
                 string dest = Path.Combine(this.Folder, folder);
-                File.Copy( Path.Combine(this.Folder, "Mainchain_Address.txt"), Path.Combine(dest, "Mainchain_Address.txt"));
-                File.Copy( Path.Combine(this.Folder, "Sidechain_Address.txt"), Path.Combine(dest, "Sidechain_Address.txt"));
-                File.Copy( Path.Combine(this.Folder, "Mainchain_ScriptPubKey.txt"), Path.Combine(dest, "Mainchain_ScriptPubKey.txt"));
-                File.Copy( Path.Combine(this.Folder, "Sidechain_ScriptPubKey.txt"), Path.Combine(dest, "Sidechain_ScriptPubKey.txt"));
+                File.Copy(Path.Combine(this.Folder, "Mainchain_Address.txt"), Path.Combine(dest, "Mainchain_Address.txt"));
+                File.Copy(Path.Combine(this.Folder, "Sidechain_Address.txt"), Path.Combine(dest, "Sidechain_Address.txt"));
+                File.Copy(Path.Combine(this.Folder, "Mainchain_ScriptPubKey.txt"), Path.Combine(dest, "Mainchain_ScriptPubKey.txt"));
+                File.Copy(Path.Combine(this.Folder, "Sidechain_ScriptPubKey.txt"), Path.Combine(dest, "Sidechain_ScriptPubKey.txt"));
             }
         }
 
@@ -79,7 +80,7 @@ namespace Stratis.FederatedPeg.IntegrationTests.Helpers
 
             var memberFolderManager = new MemberFolderManager(this.Folder);
             var federation = memberFolderManager.LoadFederation(m, n);
-           
+
             var publicKeys = chain == Chain.Mainchain ?
                   (from f in federation.Members orderby f.PublicKeyMainChain.ToHex() select f.PublicKeyMainChain).ToArray()
                 : (from f in federation.Members orderby f.PublicKeySideChain.ToHex() select f.PublicKeySideChain).ToArray();

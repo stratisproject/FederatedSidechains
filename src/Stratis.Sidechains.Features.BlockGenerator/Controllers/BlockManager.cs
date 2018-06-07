@@ -8,6 +8,7 @@ using Stratis.Bitcoin.Features.Wallet.Interfaces;
 using System.Linq;
 using Stratis.Bitcoin.Features.Miner.Interfaces;
 using Stratis.Sidechains.Features.BlockchainGeneration;
+using Stratis.Sidechains.Features.BlockchainGeneration.Network;
 
 namespace Stratis.Sidechains.Features.BlockGenerator.Controllers
 {
