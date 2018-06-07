@@ -1,7 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
+using System.Net;
+using System.Net.Sockets;
 using System.Text;
 using NBitcoin;
+using Stratis.Bitcoin.Configuration;
 using Stratis.Bitcoin.Features.Api;
 using Stratis.Bitcoin.Features.BlockStore;
 using Stratis.Bitcoin.Features.Consensus;
@@ -47,6 +51,7 @@ namespace Stratis.FederatedSidechains.IntegrationTests.Common
         public static CoreNode CreatePowPosSidechainApiMiningNode(this NodeBuilder noderBuilder,
             Network network, bool start = false, string agent = "PowPosMining")
         {
+            
             var node = noderBuilder.CreateCustomNode(start, fullNodeBuilder =>
             {
                 fullNodeBuilder
@@ -62,6 +67,33 @@ namespace Stratis.FederatedSidechains.IntegrationTests.Common
             }, network, agent: agent);
 
             return node;
+        }
+
+        /// <summary>
+        /// TODO: Use that method to attribute free ApiPorts automatically
+        /// </summary>
+        /// <param name="ports"></param>
+        private static void FindPorts(int[] ports)
+        {
+            int i = 0;
+            while (i < ports.Length)
+            {
+                var port = RandomUtils.GetUInt32() % 4000;
+                port = port + 10000;
+                if (ports.Any(p => p == port))
+                    continue;
+                try
+                {
+                    TcpListener l = new TcpListener(IPAddress.Loopback, (int)port);
+                    l.Start();
+                    l.Stop();
+                    ports[i] = (int)port;
+                    i++;
+                }
+                catch (SocketException)
+                {
+                }
+            }
         }
     }
 }
