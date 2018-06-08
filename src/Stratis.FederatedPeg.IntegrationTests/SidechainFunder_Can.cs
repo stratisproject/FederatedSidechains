@@ -16,6 +16,7 @@ using Stratis.Bitcoin.Features.RPC;
 using Stratis.Bitcoin.Features.Wallet;
 using Stratis.Bitcoin.Features.Wallet.Controllers;
 using Stratis.Bitcoin.Features.Wallet.Models;
+using Stratis.Bitcoin.IntegrationTests.Common;
 using Stratis.Bitcoin.IntegrationTests.Common.EnvironmentMockUpHelpers;
 using Stratis.FederatedPeg.Features.FederationGateway;
 using Stratis.FederatedPeg.Features.MainchainGeneratorServices;
@@ -153,7 +154,7 @@ namespace Stratis.FederatedPeg.IntegrationTests
                 // added Mainchain/Sidechain Generation Services.
 
                 // Create mainchain with MainchainGeneratorServices.
-                var mainchainNode_GeneratorRole = nodeBuilder.CreateCustomNode(false, fullNodeBuilder =>
+                var mainchainNode_GeneratorRole = nodeBuilder.CreateCustomNodeWithFreeApiPort(false, fullNodeBuilder =>
                 {
                     // We will run 10+ nodes in this integration test.
                     // All these nodes will output to one console.
@@ -174,7 +175,7 @@ namespace Stratis.FederatedPeg.IntegrationTests
                 await Task.Delay(3000);
 
                 //Create sidechain with SidechainGeneratorServices.
-                var sidechainNode_GeneratorRole = nodeBuilder.CreateCustomNode(false, fullNodeBuilder =>
+                var sidechainNode_GeneratorRole = nodeBuilder.CreateCustomNodeWithFreeApiPort(false, fullNodeBuilder =>
                     {
                         fullNodeBuilder
                             .UseBlockStore()
@@ -192,7 +193,7 @@ namespace Stratis.FederatedPeg.IntegrationTests
 
                 //At the same time we create another sidechain node and connect it to the newly initialized Sidechain
                 //to create a new sidechain network.
-                var sidechainNode_Member1_Wallet = nodeBuilder.CreateCustomNode(false, fullNodeBuilder =>
+                var sidechainNode_Member1_Wallet = nodeBuilder.CreateCustomNodeWithFreeApiPort(false, fullNodeBuilder =>
                     {
                         fullNodeBuilder
                             .UseBlockStore()
@@ -214,7 +215,7 @@ namespace Stratis.FederatedPeg.IntegrationTests
                     agent: "SidechainMember1Wallet "
                 );
 
-                var sidechainNode_FunderRole = nodeBuilder.CreateCustomNode(false, fullNodeBuilder =>
+                var sidechainNode_FunderRole = nodeBuilder.CreateCustomNodeWithFreeApiPort(false, fullNodeBuilder =>
                     {
                         fullNodeBuilder
                             .UseBlockStore()
@@ -342,7 +343,7 @@ namespace Stratis.FederatedPeg.IntegrationTests
 
                 //start mainchain
                 //we are now acting as a Sidechain Funder.
-                var mainchain_SidechainFunder1 = nodeBuilder.CreateCustomNode(false, fullNodeBuilder =>
+                var mainchain_SidechainFunder1 = nodeBuilder.CreateCustomNodeWithFreeApiPort(false, fullNodeBuilder =>
                 {
                     fullNodeBuilder
                         .UseBlockStore()
@@ -355,7 +356,7 @@ namespace Stratis.FederatedPeg.IntegrationTests
                 }, this.mainchainNetwork, agent: "MainchainSidechainFunder1 ");
 
                 //start a second mainchain
-                var mainchain_SidechainFunder2 = nodeBuilder.CreateCustomNode(false, fullNodeBuilder =>
+                var mainchain_SidechainFunder2 = nodeBuilder.CreateCustomNodeWithFreeApiPort(false, fullNodeBuilder =>
                 {
                     fullNodeBuilder
                         .UseBlockStore()
@@ -432,7 +433,7 @@ namespace Stratis.FederatedPeg.IntegrationTests
                 //
                 // Act as a Federation Gateway (mainchain)
                 // 
-                var mainchain_FederationGateway1 = nodeBuilder.CreateCustomNode(false, fullNodeBuilder =>
+                var mainchain_FederationGateway1 = nodeBuilder.CreateCustomNodeWithFreeApiPort(false, fullNodeBuilder =>
                 {
                     fullNodeBuilder
                         .UseBlockStore()
@@ -457,7 +458,7 @@ namespace Stratis.FederatedPeg.IntegrationTests
 
                 await Task.Delay(5000);
 
-                var mainchain_FederationGateway2 = nodeBuilder.CreateCustomNode(false, fullNodeBuilder =>
+                var mainchain_FederationGateway2 = nodeBuilder.CreateCustomNodeWithFreeApiPort(false, fullNodeBuilder =>
                 {
                     fullNodeBuilder
                         .UseBlockStore()
@@ -482,7 +483,7 @@ namespace Stratis.FederatedPeg.IntegrationTests
 
                 await Task.Delay(5000);
 
-                var mainchain_FederationGateway3 = nodeBuilder.CreateCustomNode(false, fullNodeBuilder =>
+                var mainchain_FederationGateway3 = nodeBuilder.CreateCustomNodeWithFreeApiPort(false, fullNodeBuilder =>
                 {
                     fullNodeBuilder
                         .UseBlockStore()
@@ -510,7 +511,7 @@ namespace Stratis.FederatedPeg.IntegrationTests
                 //
                 // Act as a Federation Gateway (sidechain)
                 // 
-                var sidechain_FederationGateway1 = nodeBuilder.CreateCustomNode(false, fullNodeBuilder =>
+                var sidechain_FederationGateway1 = nodeBuilder.CreateCustomNodeWithFreeApiPort(false, fullNodeBuilder =>
                 {
                     fullNodeBuilder
                         .UseBlockStore()
@@ -538,7 +539,7 @@ namespace Stratis.FederatedPeg.IntegrationTests
 
                 await Task.Delay(5000);
 
-                var sidechain_FederationGateway2 = nodeBuilder.CreateCustomNode(false, fullNodeBuilder =>
+                var sidechain_FederationGateway2 = nodeBuilder.CreateCustomNodeWithFreeApiPort(false, fullNodeBuilder =>
                 {
                     fullNodeBuilder
                         .UseBlockStore()
@@ -565,7 +566,7 @@ namespace Stratis.FederatedPeg.IntegrationTests
 
                 await Task.Delay(5000);
 
-                var sidechain_FederationGateway3 = nodeBuilder.CreateCustomNode(false, fullNodeBuilder =>
+                var sidechain_FederationGateway3 = nodeBuilder.CreateCustomNodeWithFreeApiPort(false, fullNodeBuilder =>
                 {
                     fullNodeBuilder
                         .UseBlockStore()
@@ -893,7 +894,7 @@ namespace Stratis.FederatedPeg.IntegrationTests
                 await Task.Delay(5000);
 
                 //create a new node three
-                var mainchain_FederationGateway3v2 = nodeBuilder.CreateCustomNode(false, fullNodeBuilder =>
+                var mainchain_FederationGateway3v2 = nodeBuilder.CreateCustomNodeWithFreeApiPort(false, fullNodeBuilder =>
                 {
                     fullNodeBuilder
                         .UseBlockStore()

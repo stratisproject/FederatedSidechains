@@ -5,9 +5,9 @@ using Stratis.Bitcoin.IntegrationTests.Common;
 
 namespace Stratis.FederatedSidechains.IntegrationTests.Common
 {
-    public class SharedSteps : Bitcoin.IntegrationTests.Common.SharedSteps
+    public static class SharedStepsExtensions
     {
-        public void ShellCleanupFolder(string testFolderPath, int timeout = 30000)
+        public static void ShellCleanupFolder(this SharedSteps sharedSteps, string testFolderPath, int timeout = 30000)
         {
             if (!Directory.Exists(testFolderPath)) return;
 

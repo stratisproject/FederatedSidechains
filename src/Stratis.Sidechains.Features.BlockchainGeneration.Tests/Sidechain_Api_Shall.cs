@@ -1,20 +1,14 @@
+using FluentAssertions;
+using Newtonsoft.Json;
+using Stratis.Bitcoin.IntegrationTests.Common.EnvironmentMockUpHelpers;
+using Stratis.FederatedSidechains.IntegrationTests.Common;
+using Stratis.Sidechains.Features.BlockchainGeneration.Network;
 using System;
-using System.Collections.Generic;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Text;
 using System.Threading.Tasks;
-using FluentAssertions;
-using NBitcoin;
-using Newtonsoft.Json;
 using Xunit;
-using Stratis.Bitcoin.Builder;
-using Stratis.Bitcoin.Features.Api;
-using Stratis.Bitcoin.IntegrationTests.Common;
-using Stratis.Bitcoin.IntegrationTests.Common.EnvironmentMockUpHelpers;
-using Stratis.FederatedSidechains.IntegrationTests.Common;
-using Stratis.Sidechains.Features.BlockchainGeneration;
-using Stratis.Sidechains.Features.BlockchainGeneration.Network;
 
 namespace Stratis.Sidechains.Features.BlockchainGeneration.Tests
 {
@@ -44,12 +38,12 @@ namespace Stratis.Sidechains.Features.BlockchainGeneration.Tests
         {
             using (var nodeBuilder = NodeBuilder.Create(this))
             {
-                var node = nodeBuilder.CreatePowPosMiningNode(SidechainNetwork.SidechainRegTest, start: true);
+                var node = nodeBuilder.CreatePowPosSidechainApiMiningNode(SidechainNetwork.SidechainRegTest, start: true);
 
                 var coinDetails = await this.GetCoinDetailsAsync(node.ApiPort());
-                coinDetails.Name.Should().Be("enigmaCoin");
-                coinDetails.Symbol.Should().Be("EGA2");
-                coinDetails.Type.Should().Be(12345);
+                coinDetails.Name.Should().Be("SidechainCoin");
+                coinDetails.Symbol.Should().Be("rSID");
+                coinDetails.Type.Should().Be(3001);
             }
         }
 

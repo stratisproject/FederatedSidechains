@@ -18,18 +18,18 @@ namespace Stratis.Sidechains.Features.BlockchainGeneration
             NullValueHandling = NullValueHandling.Include,
             ConstructorHandling = ConstructorHandling.AllowNonPublicDefaultConstructor
         };
-        private CoinDetails _coinDetails;
-        private readonly string _folder;
-        private readonly string _networkName;
-        private readonly string _sidechainName;
+        private CoinDetails coinDetails;
+        private readonly string folder;
+        private readonly NBitcoin.Network network;
+        private readonly string sidechainName;
 
         public SidechainsManager(NodeSettings nodeSettings)
         {
             //TODO: probably add the infornations about the sidechains in the nodeSettings 
             var directoryInfo = new DirectoryInfo(nodeSettings.DataDir);
-            _folder = directoryInfo.Parent.Parent.FullName;
-            _networkName = nodeSettings.Network.Name;
-            _sidechainName = directoryInfo.Parent.Name;
+            folder = directoryInfo.Parent.Parent.FullName;
+            network = nodeSettings.Network;
+            sidechainName = directoryInfo.Parent.Name;
         }
 
         public async Task<Dictionary<string, SidechainInfo>> ListSidechains()
@@ -39,14 +39,35 @@ namespace Stratis.Sidechains.Features.BlockchainGeneration
 
         public async Task<CoinDetails> GetCoinDetails()
         {
-            if (_coinDetails != null) return _coinDetails;
-            var infoProvider = new DefaultSidechainInfoProvider(_folder);
-            var sidechainInfo = await infoProvider.GetSidechainInfoAsync(_sidechainName);
-            //if(sidechainInfo.NetworkInfoByName[])
-            var networkInfo = sidechainInfo.NetworkInfoByName[_networkName];
-            _coinDetails = new CoinDetails(networkInfo.CoinSymbol, sidechainInfo.CoinName, sidechainInfo.CoinType);
-            return _coinDetails;
+            if (coinDetails != null) return coinDetails;
+            coinDetails = BuildCoinDetailsFromNetwork();
+            return coinDetails;
 
+        }
+
+        private CoinDetails BuildCoinDetailsFromNetwork()
+        {
+            var networkUpperName = network.Name.ToUpper();
+            var shortNetworkName = networkUpperName.Substring(0, 3);
+            string coinSymbol, coinName;
+            if (networkUpperName.EndsWith("MAIN"))
+            {
+                coinSymbol = shortNetworkName;
+                coinName = network.Name.Replace("Main", "Coin");
+            }
+            else if (networkUpperName.EndsWith("REGTEST"))
+            {
+                coinSymbol = "r" + shortNetworkName;
+                coinName = network.Name.Replace("RegTest", "Coin");
+            }
+            else
+            {
+                coinSymbol = "t" + shortNetworkName;
+                coinName = network.Name.Replace("Test", "Coin");
+            }
+
+            coinDetails = new CoinDetails(coinSymbol, coinName, network.Consensus.CoinType);
+            return coinDetails;
         }
 
         public async Task NewSidechain(SidechainInfoRequest sidechainInfoRequest)
@@ -67,7 +88,7 @@ namespace Stratis.Sidechains.Features.BlockchainGeneration
 
         private async Task SaveSidechains(Dictionary<string, SidechainInfo> dictionary)
         {
-            string filename = Path.Combine(_folder, "sidechains.json");
+            string filename = Path.Combine(folder, "sidechains.json");
 
             string json = JsonConvert.SerializeObject(dictionary, Formatting.Indented, this.jsonSerializerSettings);
             using (var fileStream = File.OpenWrite(filename))
@@ -79,7 +100,7 @@ namespace Stratis.Sidechains.Features.BlockchainGeneration
 
         private async Task<Dictionary<string, SidechainInfo>> GetSidechains()
         {
-            string filename = Path.Combine(_folder, "sidechains.json");
+            string filename = Path.Combine(folder, "sidechains.json");
             if (System.IO.File.Exists(filename) == false)
                 return new Dictionary<string, SidechainInfo>();
             else
