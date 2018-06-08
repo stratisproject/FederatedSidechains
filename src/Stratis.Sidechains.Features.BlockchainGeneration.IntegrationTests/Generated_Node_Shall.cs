@@ -24,7 +24,9 @@ namespace EnigmaChain.IntegrationTests
     [Collection("SidechainIdentifierTests")]
     public class Generated_Node_Shall
     {
-        [Fact]
+        [Fact(Skip = "waiting for mining changes on the full node")]
+        //TODO this needs to be fixed, waiting for changes on the full node to get
+        //premine reward on POW
         public async Task Mine_Premine()
         {
             using (var nodeBuilder = NodeBuilder.Create(this))

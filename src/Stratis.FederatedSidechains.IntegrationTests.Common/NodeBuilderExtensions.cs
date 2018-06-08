@@ -50,10 +50,10 @@ namespace Stratis.FederatedSidechains.IntegrationTests.Common
             return node;
         }
 
-        public static CoreNode CreatePowPosSidechainApiMiningNode(this NodeBuilder noderBuilder,
+        public static CoreNode CreatePowPosSidechainApiMiningNode(this NodeBuilder nodeBuilder,
             Network network, bool start = false, string agent = "PowPosMining")
         {
-            var node = noderBuilder.CreateCustomNodeWithFreeApiPort(start, fullNodeBuilder =>
+            var node = nodeBuilder.CreateCustomNodeWithFreeApiPort(start, fullNodeBuilder =>
             {
                 fullNodeBuilder
                     .UseBlockStore()

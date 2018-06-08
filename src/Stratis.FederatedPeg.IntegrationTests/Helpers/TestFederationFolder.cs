@@ -7,6 +7,7 @@ using Stratis.Bitcoin.Features.GeneralPurposeWallet;
 using Stratis.Bitcoin.Features.GeneralPurposeWallet.Interfaces;
 using Stratis.Bitcoin.IntegrationTests.Common;
 using Stratis.Bitcoin.IntegrationTests.Common.EnvironmentMockUpHelpers;
+using Stratis.Bitcoin.Tests.Common;
 using Stratis.FederatedSidechains.IntegrationTests.Common;
 
 namespace Stratis.FederatedPeg.IntegrationTests.Helpers
@@ -21,7 +22,7 @@ namespace Stratis.FederatedPeg.IntegrationTests.Helpers
         {
             this.Folder = Path.Combine(Path.Combine(Directory.GetCurrentDirectory(), $"Federations\\{caller}"));
             Directory.CreateDirectory(this.Folder);
-            sharedSteps.ShellCleanupFolder(this.Folder);
+            TestBase.AssureEmptyDir(this.Folder);
         }
 
         public MemberFolderManager CreateMemberFolderManager()

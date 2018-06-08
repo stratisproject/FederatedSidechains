@@ -18,6 +18,7 @@ using Stratis.Bitcoin.Features.Wallet.Controllers;
 using Stratis.Bitcoin.Features.Wallet.Models;
 using Stratis.Bitcoin.IntegrationTests.Common;
 using Stratis.Bitcoin.IntegrationTests.Common.EnvironmentMockUpHelpers;
+using Stratis.Bitcoin.Tests.Common;
 using Stratis.FederatedPeg.Features.FederationGateway;
 using Stratis.FederatedPeg.Features.MainchainGeneratorServices;
 using Stratis.FederatedPeg.Features.SidechainGeneratorServices;
@@ -47,14 +48,13 @@ namespace Stratis.FederatedPeg.IntegrationTests
         private readonly Network sidechainNetwork = SidechainNetwork.SidechainTest;
         private readonly Network mainchainNetwork = Network.StratisRegTest;
 
-        [Fact]
+        [Fact(Skip = "Waiting for mining changes on the full node")]
         public async Task deposit_funds_to_sidechain()
         {
             int addNodeDelay = 4000;
-            var sharedSteps = new SharedSteps();
 
-            sharedSteps.ShellCleanupFolder("TestData\\deposit_funds_to_sidechain");
-            sharedSteps.ShellCleanupFolder("Federations\\deposit_funds_to_sidechain");
+            TestBase.AssureEmptyDir("TestData\\deposit_funds_to_sidechain");
+            TestBase.AssureEmptyDir("Federations\\deposit_funds_to_sidechain");
 
             //check empty
             Directory.Exists("TestData\\deposit_funds_to_sidechain").Should().BeFalse();
@@ -821,7 +821,7 @@ namespace Stratis.FederatedPeg.IntegrationTests
                 sidechainNode_Member1_Wallet.FullNode.NodeService<WalletController>().SendTransaction(new SendTransactionRequest(transaction.ToHex()));
 
                 //sync our node to distrubute the mempool
-                sharedSteps.WaitForNodeToSync(sidechainNode_FunderRole, sidechainNode_Member1_Wallet);
+                await IntegrationTestUtils.WaitLoop(() => IntegrationTestUtils.AreNodesSynced(sidechainNode_FunderRole, sidechainNode_Member1_Wallet));
 
                 //generate a block to include our transaction
                 bitcoinAddress = new BitcoinPubKeyAddress(addressSidechain, SidechainNetwork.SidechainRegTest);
