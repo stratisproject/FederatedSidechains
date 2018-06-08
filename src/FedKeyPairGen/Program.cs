@@ -1,6 +1,8 @@
 ﻿using System;
+using System.Linq;
 using System.IO;
-using Stratis.FederatedPeg;
+using NBitcoin;
+using NBitcoin.DataEncoders;
 
 namespace FedKeyPairGen
 {
@@ -9,14 +11,9 @@ namespace FedKeyPairGen
         Copyright(c) 2018 Stratis Group Limited
 
         usage:  fedkeypairgen [-name=<name>] [-folder=<output_folder>] [-pass=<password>] [-h]
-         -name     Your full name as recognised by your Federation Administrator.
-         -folder   The output folder where files will be written (default is current folder).
-         -pass     The password used to encrypt your private key file.
          -h        This help message.
 
-        Example:  fedkeypairgen -name="John Smith" -folder="C:\KeyPairs" -pass="secret"
-                  fedkeypairgen -name="John Smith" -pass="secret"                           (uses current directory)
-                  fedkeypairgen                                                             (interactive)
+        Example:  fedkeypairgen 
     */
 
     // The Stratis Federation KeyPair Generator is a console app that can be sent to Federation Members
@@ -24,10 +21,6 @@ namespace FedKeyPairGen
     // See the "Use Case - Generate Federation Member Key Pairs" located in the Requirements folder in the
     // project repo.
 
-    // Todo: The password has no format constraints such as length special characters.
-    // Todo: Native .Net AES256 Rijndael encryption is used.  Consider known full node alternative.
-    // Todo: Consider leveraging the FullNode Wallet mnemonic instead of the way it is handled here.
-    // Todo: We might consider outputting a config snippet for the full node also. 
     class Program
     {
         static void Main(string[] args)
@@ -37,30 +30,30 @@ namespace FedKeyPairGen
                 // Start with the banner.
                 FedKeyPairGenManager.OutputHeader();
 
-                // Validate arguments.  After this step we must have valid input.
-                bool @continue = ArgumentValidator.ProcessArgs(args, out bool _, out string name, out string folder, out string password);
-                if (!@continue) return;
+                bool help = args.Contains("-h");
 
-                // Create the private version of the Federation Member. 
-                var federationMemberPrivate = FederationMemberPrivate.CreateNew(name, password);
+                // Help command output the usage and examples text.
+                if (help)
+                {
+                    FedKeyPairGenManager.OutputUsage();
+                   
+                }
 
-                // File integrity check.  Do not continue if any clashing files exist in the destination folder.
-                var memberFolderManager = new MemberFolderManager(folder);
-                if (memberFolderManager.CountKeyFilesForMember(name) > 0)
-                    throw new InvalidOperationException(
-                        $"FedKeyPairGen cannot continue. The specified folder already contains keys for {name}.");
+                Mnemonic mnemonic = new Mnemonic(Wordlist.English, WordCount.Twelve);
+                var pubKey = mnemonic.DeriveExtKey().PrivateKey.PubKey;
 
-                // Output a public and a private key for each chain (mainchain and sidechain).
-                memberFolderManager.OutputKeys(federationMemberPrivate);
+                Console.WriteLine($"-- Mnemonic --");
+                Console.WriteLine($"Please keep the following 12 words for yourself and note them down in a secure place:");
+                Console.WriteLine($"{string.Join(" ", mnemonic.Words)}");
+                Console.WriteLine();
+                Console.WriteLine($"-- To share with the sidechain generator --");
+                Console.WriteLine($"1. Your pubkey: {Encoders.Hex.EncodeData((pubKey).ToBytes(false))}");
+                Console.WriteLine($"2. Your ip address: if you're willing to. This is required to help the nodes connect when bootstrapping the network.");
+                Console.WriteLine();
 
                 // Write success message including warnings to keep secret private keys safe.
                 FedKeyPairGenManager.OutputSuccess();
-            }
-            catch (DirectoryNotFoundException)
-            {
-                FedKeyPairGenManager.OutputErrorLine("The folder must exist.");
-                Console.WriteLine();
-                FedKeyPairGenManager.OutputUsage();
+                Console.ReadLine();
             }
             catch (Exception ex)
             {
@@ -68,6 +61,45 @@ namespace FedKeyPairGen
                 Console.WriteLine();
                 FedKeyPairGenManager.OutputUsage();
             }
+        }
+
+        public void MineGenesisBlocks()
+        {
+            string coinbaseText = "https://www.coindesk.com/apple-co-founder-backs-dorsey-bitcoin-become-webs-currency/";
+
+            Console.WriteLine("Looking for genesis blocks  for the 3 networks, this might take a while.");
+
+            Block genesisMain = Network.MineGenesisBlock(new PosConsensusFactory(), coinbaseText, new Target(new uint256("00000fffffffffffffffffffffffffffffffffffffffffffffffffffffffffff")), Money.Coins(50m));
+            BlockHeader headerMain = genesisMain.Header;
+
+            Console.WriteLine("-- MainNet network --");
+            Console.WriteLine("bits: " + headerMain.Bits);
+            Console.WriteLine("nonce: " + headerMain.Nonce);
+            Console.WriteLine("time: " + headerMain.Time);
+            Console.WriteLine("version: " + headerMain.Version);
+            Console.WriteLine("hash: " + headerMain.GetHash());
+            Console.WriteLine("merkleroot: " + headerMain.HashMerkleRoot);
+
+            Block genesisTest = Network.MineGenesisBlock(new PosConsensusFactory(), coinbaseText, new Target(new uint256("0000ffff00000000000000000000000000000000000000000000000000000000")), Money.Coins(50m));
+            BlockHeader headerTest = genesisTest.Header;
+            Console.WriteLine("-- TestNet network --");
+            Console.WriteLine("bits: " + headerTest.Bits);
+            Console.WriteLine("nonce: " + headerTest.Nonce);
+            Console.WriteLine("time: " + headerTest.Time);
+            Console.WriteLine("version: " + headerTest.Version);
+            Console.WriteLine("hash: " + headerTest.GetHash());
+            Console.WriteLine("merkleroot: " + headerTest.HashMerkleRoot);
+
+            Block genesisReg = Network.MineGenesisBlock(new PosConsensusFactory(), coinbaseText, new Target(new uint256("7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff")), Money.Coins(50m));
+            BlockHeader headerReg = genesisReg.Header;
+            Console.WriteLine("-- RegTest network --");
+            Console.WriteLine("bits: " + headerReg.Bits);
+            Console.WriteLine("nonce: " + headerReg.Nonce);
+            Console.WriteLine("time: " + headerReg.Time);
+            Console.WriteLine("version: " + headerReg.Version);
+            Console.WriteLine("hash: " + headerReg.GetHash());
+            Console.WriteLine("merkleroot: " + headerReg.HashMerkleRoot);
+
         }
     }
 }

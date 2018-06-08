@@ -2,13 +2,12 @@
 using System.Linq;
 using System.Runtime.CompilerServices;
 using NBitcoin;
-using NBitcoin.DataEncoders;
-using Stratis.Bitcoin.Features.GeneralPurposeWallet;
+using NBitcoin.DataEncoders;using Stratis.Bitcoin.Features.GeneralPurposeWallet;
 using Stratis.Bitcoin.Features.GeneralPurposeWallet.Interfaces;
-using Stratis.Bitcoin.IntegrationTests.Common;
+
+using Stratis.Bitcoin.Features.Wallet;
+using Stratis.Bitcoin.Tests.Common;using Stratis.Bitcoin.IntegrationTests.Common;
 using Stratis.Bitcoin.IntegrationTests.Common.EnvironmentMockUpHelpers;
-using Stratis.Bitcoin.Tests.Common;
-using Stratis.FederatedSidechains.IntegrationTests.Common;
 
 namespace Stratis.FederatedPeg.IntegrationTests.Helpers
 {
@@ -16,7 +15,6 @@ namespace Stratis.FederatedPeg.IntegrationTests.Helpers
     {
         //eg: Federations\deposit_funds_to_sidechain
         public string Folder { get; }
-        private readonly SharedSteps sharedSteps = new SharedSteps();
 
         public TestFederationFolder([CallerMemberName] string caller = null)
         {
@@ -56,10 +54,10 @@ namespace Stratis.FederatedPeg.IntegrationTests.Helpers
             foreach (string folder in folderNames)
             {
                 string dest = Path.Combine(this.Folder, folder);
-                File.Copy(Path.Combine(this.Folder, "Mainchain_Address.txt"), Path.Combine(dest, "Mainchain_Address.txt"));
-                File.Copy(Path.Combine(this.Folder, "Sidechain_Address.txt"), Path.Combine(dest, "Sidechain_Address.txt"));
-                File.Copy(Path.Combine(this.Folder, "Mainchain_ScriptPubKey.txt"), Path.Combine(dest, "Mainchain_ScriptPubKey.txt"));
-                File.Copy(Path.Combine(this.Folder, "Sidechain_ScriptPubKey.txt"), Path.Combine(dest, "Sidechain_ScriptPubKey.txt"));
+                File.Copy( Path.Combine(this.Folder, "Mainchain_Address.txt"), Path.Combine(dest, "Mainchain_Address.txt"));
+                File.Copy( Path.Combine(this.Folder, "Sidechain_Address.txt"), Path.Combine(dest, "Sidechain_Address.txt"));
+                File.Copy( Path.Combine(this.Folder, "Mainchain_ScriptPubKey.txt"), Path.Combine(dest, "Mainchain_ScriptPubKey.txt"));
+                File.Copy( Path.Combine(this.Folder, "Sidechain_ScriptPubKey.txt"), Path.Combine(dest, "Sidechain_ScriptPubKey.txt"));
             }
         }
 
@@ -76,7 +74,8 @@ namespace Stratis.FederatedPeg.IntegrationTests.Helpers
             //Decrypt the private key
             var chain = network.ToChain();
             string privateKeyEncrypted = File.ReadAllText(Path.Combine(this.Folder, $"{memberName}\\PRIVATE_DO_NOT_SHARE_{chain}_{memberName}.txt"));
-            var privateKeyDecryptString = EncryptionProvider.DecryptString(privateKeyEncrypted, memberPassword);
+            
+            var privateKeyDecryptString = HdOperations.DecryptSeed(privateKeyEncrypted, memberPassword, network);
 
             var multiSigAddress = new MultiSigAddress();
 
@@ -86,7 +85,7 @@ namespace Stratis.FederatedPeg.IntegrationTests.Helpers
             var publicKeys = chain == Chain.Mainchain ?
                   (from f in federation.Members orderby f.PublicKeyMainChain.ToHex() select f.PublicKeyMainChain).ToArray()
                 : (from f in federation.Members orderby f.PublicKeySideChain.ToHex() select f.PublicKeySideChain).ToArray();
-            multiSigAddress.Create(new Key(Encoders.Hex.DecodeData(privateKeyDecryptString)), publicKeys, m, network);
+            multiSigAddress.Create(privateKeyDecryptString, publicKeys, m, network);
 
             account.ImportMultiSigAddress(multiSigAddress);
 
