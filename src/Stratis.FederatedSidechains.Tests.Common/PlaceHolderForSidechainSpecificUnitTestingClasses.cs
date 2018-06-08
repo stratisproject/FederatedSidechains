@@ -2,7 +2,7 @@
 
 namespace Stratis.FederatedSidechains.Tests.Common
 {
-    public class Class1
+    public class PlaceHolderForSidechainSpecificUnitTestingClasses
     {
     }
 }
