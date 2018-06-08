@@ -21,7 +21,6 @@ namespace Stratis.Sidechains.Features.BlockchainGeneration
         private CoinDetails coinDetails;
         private readonly string folder;
         private readonly NBitcoin.Network network;
-        private readonly string sidechainName;
 
         public SidechainsManager(NodeSettings nodeSettings)
         {
@@ -29,7 +28,6 @@ namespace Stratis.Sidechains.Features.BlockchainGeneration
             var directoryInfo = new DirectoryInfo(nodeSettings.DataDir);
             folder = directoryInfo.Parent.Parent.FullName;
             network = nodeSettings.Network;
-            sidechainName = directoryInfo.Parent.Name;
         }
 
         public async Task<Dictionary<string, SidechainInfo>> ListSidechains()
@@ -40,33 +38,7 @@ namespace Stratis.Sidechains.Features.BlockchainGeneration
         public async Task<CoinDetails> GetCoinDetails()
         {
             if (coinDetails != null) return coinDetails;
-            coinDetails = BuildCoinDetailsFromNetwork();
-            return coinDetails;
-
-        }
-
-        private CoinDetails BuildCoinDetailsFromNetwork()
-        {
-            var networkUpperName = network.Name.ToUpper();
-            var shortNetworkName = networkUpperName.Substring(0, 3);
-            string coinSymbol, coinName;
-            if (networkUpperName.EndsWith("MAIN"))
-            {
-                coinSymbol = shortNetworkName;
-                coinName = network.Name.Replace("Main", "Coin");
-            }
-            else if (networkUpperName.EndsWith("REGTEST"))
-            {
-                coinSymbol = "r" + shortNetworkName;
-                coinName = network.Name.Replace("RegTest", "Coin");
-            }
-            else
-            {
-                coinSymbol = "t" + shortNetworkName;
-                coinName = network.Name.Replace("Test", "Coin");
-            }
-
-            coinDetails = new CoinDetails(coinSymbol, coinName, network.Consensus.CoinType);
+            coinDetails = new CoinDetails(network.Consensus.CoinType, network.Name);
             return coinDetails;
         }
 

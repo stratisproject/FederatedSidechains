@@ -41,9 +41,9 @@ namespace Stratis.Sidechains.Features.BlockchainGeneration.Tests
                 var node = nodeBuilder.CreatePowPosSidechainApiMiningNode(SidechainNetwork.SidechainRegTest, start: true);
 
                 var coinDetails = await this.GetCoinDetailsAsync(node.ApiPort());
-                coinDetails.Name.Should().Be("SidechainCoin");
-                coinDetails.Symbol.Should().Be("rSID");
-                coinDetails.Type.Should().Be(3001);
+                coinDetails.Name.Should().Be("TestApex");
+                coinDetails.Symbol.Should().Be("TAPEX");
+                coinDetails.Type.Should().Be(3002);
             }
         }
 
