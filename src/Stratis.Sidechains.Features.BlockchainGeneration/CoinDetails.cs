@@ -7,10 +7,10 @@ namespace Stratis.Sidechains.Features.BlockchainGeneration
 {
     public class CoinDetails
     {
-        public int Type { get; }
+        public int Type { get; set; }
         public string Symbol { get; set; }
-        public string Name { get; }
-
+        public string Name { get; set; }
+        
         public CoinDetails(int coinType, string networkName)
         {
             if (networkName == null || !KnownCoinsByCoinType.TryGetValue(coinType, out var coinNamesAndSymbols)) return;
@@ -20,7 +20,7 @@ namespace Stratis.Sidechains.Features.BlockchainGeneration
                 : coinNamesAndSymbols.FirstOrDefault(ns => !ns.Name.ToLower().Contains("test"));
             Type = coinType;
             Symbol = nameAndSymbol.Symbol;
-            Name = nameAndSymbol.Symbol;
+            Name = nameAndSymbol.Name;
         }
 
         public static readonly ConcurrentDictionary<int, List<(string Name, string Symbol)>> KnownCoinsByCoinType =
@@ -31,7 +31,8 @@ namespace Stratis.Sidechains.Features.BlockchainGeneration
                     { 0, new List<(string Name, string Symbol)>{ ("Bitcoin", "BTC"), ("TestBitcoin", "TBTC") }},
                     { 3000, new List<(string Name, string Symbol)>{ ("Apex", "APEX") }},
                     { 3001, new List<(string Name, string Symbol)>{ ("TestApex", "TAPEX") }},
-                    { 3002, new List<(string Name, string Symbol)>{ ("TestApex", "TAPEX") }},
                 });
     }
+
+
 }

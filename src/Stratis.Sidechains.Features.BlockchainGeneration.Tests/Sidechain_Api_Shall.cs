@@ -28,12 +28,13 @@ namespace Stratis.Sidechains.Features.BlockchainGeneration.Tests
         public Sidechain_Api_Shall()
         {
             client = new HttpClient();
-            client.DefaultRequestHeaders.Accept.Clear();
-            client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+            //client.DefaultRequestHeaders.Accept.Clear();
+            //client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
         }
 
 
-        [Fact(Skip = "Figure out why the constructor of SidechainsManager is called twice")]
+        //[Fact(Skip = "Figure out why the constructor of SidechainsManager is called twice")]
+        [Fact]
         //TODO Figure out why the constructor of SidechainsManager is called twice,
         //once with good nodeSettings, and once with empty nodeSettings, causing this to fail
         public async Task be_able_to_give_CoinDetails()
@@ -41,11 +42,10 @@ namespace Stratis.Sidechains.Features.BlockchainGeneration.Tests
             using (var nodeBuilder = NodeBuilder.Create(this))
             {
                 var node = nodeBuilder.CreatePowPosSidechainApiMiningNode(SidechainNetwork.SidechainRegTest, start: true);
-
                 var coinDetails = await this.GetCoinDetailsAsync(node.ApiPort());
                 coinDetails.Name.Should().Be("TestApex");
                 coinDetails.Symbol.Should().Be("TAPEX");
-                coinDetails.Type.Should().Be(3002);
+                coinDetails.Type.Should().Be(3001);
             }
         }
 
@@ -55,7 +55,8 @@ namespace Stratis.Sidechains.Features.BlockchainGeneration.Tests
             var uri = new Uri($"http://localhost:{apiPort}/api/Sidechains/get-coindetails");
             var httpResponseMessage = await client.GetAsync(uri);
             httpResponseMessage.IsSuccessStatusCode.Should().BeTrue(httpResponseMessage.ReasonPhrase);
-            var coinDetails = JsonConvert.DeserializeObject<CoinDetails>(await httpResponseMessage.Content.ReadAsStringAsync());
+            var jsonResult = await httpResponseMessage.Content.ReadAsStringAsync();
+            var coinDetails = JsonConvert.DeserializeObject<CoinDetails>(jsonResult);
             return coinDetails;
         }
 
