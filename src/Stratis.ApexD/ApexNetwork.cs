@@ -76,7 +76,7 @@ namespace Stratis.ApexD
 
             this.Consensus.CoinType = 3000;
             this.Consensus.DefaultAssumeValid = null;
-            this.Consensus.CoinbaseMaturity = 100;
+            this.Consensus.CoinbaseMaturity = 50;
             this.Consensus.PremineReward = Money.Coins(20000000);
             this.Consensus.ProofOfWorkReward = Money.Zero;
             this.Consensus.ProofOfStakeReward = Money.Zero;
