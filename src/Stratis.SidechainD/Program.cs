@@ -1,8 +1,4 @@
-﻿using System;
-using System.Linq;
-using System.Threading.Tasks;
-using NBitcoin;
-using NBitcoin.Protocol;
+﻿using NBitcoin.Protocol;
 using Stratis.Bitcoin.Builder;
 using Stratis.Bitcoin.Configuration;
 using Stratis.Bitcoin.Features.Api;
@@ -16,8 +12,9 @@ using Stratis.Bitcoin.Utilities;
 using Stratis.FederatedPeg.Features.SidechainGeneratorServices;
 using Stratis.Sidechains.Features.BlockchainGeneration;
 using Stratis.Sidechains.Features.BlockchainGeneration.Network;
-using Stratis.Sidechains.Features.BlockGenerator;
-
+using System;
+using System.Linq;
+using System.Threading.Tasks;
 namespace Stratis.SidechainD
 {
     public class Program
@@ -100,7 +97,6 @@ namespace Stratis.SidechainD
                       .UseMempool()
                       .UseWallet()
                       .AddPowPosMining()
-                      .UseBlockGenerator()
                       .UseApi()
                       .AddRPC()
                       .UseSidechains()
