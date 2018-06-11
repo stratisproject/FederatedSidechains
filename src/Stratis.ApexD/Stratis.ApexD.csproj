@@ -17,4 +17,10 @@
     <PackageReference Include="Stratis.Bitcoin.Features.Wallet" Version="1.1.9-beta" />
   </ItemGroup>
 
+  <ItemGroup>
+    <None Update="NLog.config">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+  
 </Project>
