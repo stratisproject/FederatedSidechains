@@ -16,7 +16,6 @@ using Stratis.Bitcoin.Features.RPC;
 using Stratis.Bitcoin.Features.Wallet;
 using Stratis.Bitcoin.Features.Wallet.Controllers;
 using Stratis.Bitcoin.Features.Wallet.Models;
-using Stratis.Bitcoin.IntegrationTests.Common;
 using Stratis.Bitcoin.IntegrationTests.Common.EnvironmentMockUpHelpers;
 using Stratis.Bitcoin.Tests.Common;
 using Stratis.FederatedPeg.Features.FederationGateway;
@@ -34,7 +33,6 @@ using WtRecipient = Stratis.Bitcoin.Features.Wallet.Recipient;
 using GpTransactionBuildContext = Stratis.Bitcoin.Features.GeneralPurposeWallet.TransactionBuildContext;
 using WtTransactionBuildContext = Stratis.Bitcoin.Features.Wallet.TransactionBuildContext;
 using System;
-using Stratis.ApexD;
 using Stratis.Networks.Apex;
 
 //todo: this is pre-refactoring code
