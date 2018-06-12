@@ -11,19 +11,21 @@ As a first step make sure you have prepared 2 configuration files, they should l
 ####Sidechain Federation Settings####
 apiport=38226
 counterchainapiport=38202
-federationips="104.211.178.243;51.144.35.218;65.52.5.149"
-redeemscript="2 026ebcbf6bfe7ce1d957adbef8ab2b66c788656f35896a170257d6838bda70b95c 02a97b7d0fad7ea10f456311dcd496ae9293952d4c5f2ebdfc32624195fde14687 02e9d3cd0c2fa501957149ff9d21150f3901e6ece0e3fe3007f2372720c84e3ee1 3 OP_CHECKMULTISIG"
+federationips=104.211.178.243,51.144.35.218,65.52.5.149
+redeemscript=2 026ebcbf6bfe7ce1d957adbef8ab2b66c788656f35896a170257d6838bda70b95c 02a97b7d0fad7ea10f456311dcd496ae9293952d4c5f2ebdfc32624195fde14687 02e9d3cd0c2fa501957149ff9d21150f3901e6ece0e3fe3007f2372720c84e3ee1 3 OP_CHECKMULTISIG
 ```
 
 Then you will have to start two deamons and connect them, here is how you can do that :
 
 #### sidechain deamon startup 
 ```sh
-copy apex.gateway.conf %AppData%\Roaming\StratisNode\apex\Test.Gateway.To.Stratis\
-dotnet Stratis.FederationGatewayD.dll -sidechain -datadir="%AppData%\Roaming\StratisNode\apex\Test.Gateway.To.Stratis" -conf="apex.gateway.conf"
+md %AppData%\Roaming\StratisNode\apex\Test\
+copy apex.gateway.conf %AppData%\Roaming\StratisNode\apex\Test\
+dotnet Stratis.FederationGatewayD.dll -sidechain -conf="apex.gateway.conf"
 ```
 #### mainchain deamon startup 
 ```sh
-copy stratis.gateway.conf %AppData%\Roaming\StratisNode\apex\StratisTest.Gateway.To.Apex\
-dotnet Stratis.FederationGatewayD.dll -mainchain -datadir="%AppData%\Roaming\StratisNode\apex\StratisTest.Gateway.To.Apex" -conf="stratis.gateway.conf"
+md %AppData%\Roaming\StratisNode\apex\StratisTest\
+copy stratis.gateway.conf %AppData%\Roaming\StratisNode\apex\StratisTest\
+dotnet Stratis.FederationGatewayD.dll -mainchain -conf="stratis.gateway.conf"
 ```

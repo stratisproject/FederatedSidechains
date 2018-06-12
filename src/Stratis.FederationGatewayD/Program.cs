@@ -8,6 +8,7 @@ using Stratis.Bitcoin.Configuration;
 using Stratis.Bitcoin.Features.Api;
 using Stratis.Bitcoin.Features.BlockStore;
 using Stratis.Bitcoin.Features.Consensus;
+using Stratis.Bitcoin.Features.GeneralPurposeWallet;
 using Stratis.Bitcoin.Features.MemoryPool;
 using Stratis.Bitcoin.Features.Miner;
 using Stratis.Bitcoin.Features.Notifications;
@@ -38,16 +39,16 @@ namespace Stratis.FederationGatewayD
                 if(isSidechainNode == isMainchainNode) throw new ArgumentException(
                     $"Gateway node needs to be started specifiying either a {SidechainArgument} or a {MainchainArgument} argument");
 
-                var network = isMainchainNode ? Network.StratisTest : ApexNetwork.Test;
-                NodeSettings nodeSettings = new NodeSettings(network, ProtocolVersion.ALT_PROTOCOL_VERSION, args: args);
-                
-                // NOTES: running BTC and STRAT side by side is not possible yet as the flags for serialization are static
+                var network = isMainchainNode ? Network.StratisTest : ApexNetwork.Test; 
+                var nodeSettings = new NodeSettings(network, ProtocolVersion.ALT_PROTOCOL_VERSION, args: args);
+
                 var node = new FullNodeBuilder()
                     .UseNodeSettings(nodeSettings)
-                    .UsePosConsensus()
                     .UseBlockStore()
+                    .UsePosConsensus()
                     .UseMempool()
                     .UseWallet()
+                    .UseGeneralPurposeWallet()
                     .UseTransactionNotification()
                     .UseBlockNotification()
                     .AddPowPosMining()
@@ -55,7 +56,6 @@ namespace Stratis.FederationGatewayD
                     .UseApi()
                     .AddRPC()
                     .Build();
-
                 if (node != null)
                     await node.RunAsync();
             }
