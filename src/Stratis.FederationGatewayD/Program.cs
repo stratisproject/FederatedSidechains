@@ -42,20 +42,36 @@ namespace Stratis.FederationGatewayD
                 var network = isMainchainNode ? Network.StratisTest : ApexNetwork.Test; 
                 var nodeSettings = new NodeSettings(network, ProtocolVersion.ALT_PROTOCOL_VERSION, args: args);
 
-                var node = new FullNodeBuilder()
-                    .UseNodeSettings(nodeSettings)
-                    .UseBlockStore()
-                    .UsePosConsensus()
-                    .UseMempool()
-                    .UseWallet()
-                    .UseGeneralPurposeWallet()
-                    .UseTransactionNotification()
-                    .UseBlockNotification()
-                    .AddPowPosMining()
-                    .AddFederationGateway()
-                    .UseApi()
-                    .AddRPC()
-                    .Build();
+                var node = isMainchainNode
+                    ? new FullNodeBuilder()
+                        .UseNodeSettings(nodeSettings)
+                        .UseBlockStore()
+                        .UsePosConsensus()
+                        .UseMempool()
+                        .UseWallet()
+                        .UseGeneralPurposeWallet()
+                        .UseTransactionNotification()
+                        .UseBlockNotification()
+                        .AddPowPosMining()
+                        .AddFederationGateway()
+                        .UseApi()
+                        .AddRPC()
+                        .Build()
+                    : new FullNodeBuilder()
+                        .UseNodeSettings(nodeSettings)
+                        .UseBlockStore()
+                        .UsePowConsensus()
+                        .UseMempool()
+                        .UseWallet()
+                        .UseGeneralPurposeWallet()
+                        .UseTransactionNotification()
+                        .UseBlockNotification()
+                        .AddMining()
+                        .AddFederationGateway()
+                        .UseApi()
+                        .AddRPC()
+                        .Build();
+
                 if (node != null)
                     await node.RunAsync();
             }

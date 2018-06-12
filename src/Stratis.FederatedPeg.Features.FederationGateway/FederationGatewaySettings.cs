@@ -1,4 +1,7 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Net;
 using NBitcoin;
 using Stratis.Bitcoin.Configuration;
 using Stratis.Bitcoin.Configuration.Settings;
@@ -39,7 +42,13 @@ namespace Stratis.FederatedPeg.Features.FederationGateway
             this.FederationFolder = configReader.GetOrDefault<string>("federationfolder", null);
             this.MemberPrivateFolder = configReader.GetOrDefault<string>("memberprivatefolder", null);
             this.CounterChainApiPort = configReader.GetOrDefault("counterchainapiport", 0);
+
+            this.FederationNodeIPs = configReader.GetOrDefault<string>("federationips", null)?
+                .Split(',').Select(IPAddress.Parse)
+                .Where(ip => ip.ToString() != connectionManagerSettings.ExternalEndpoint.Address.ToString());
         }
+
+        public IEnumerable<IPAddress> FederationNodeIPs { get; set; }
 
         /// <summary>
         /// The MemberName is used to distiguish between federation gateways in the debug logs.
