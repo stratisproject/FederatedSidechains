@@ -30,44 +30,5 @@ namespace Stratis.FederatedSidechains.IntegrationTests.Common
             var node = nodeBuilder.CreateCustomNode(start, callback, network, protocolVersion, configFileName, agent);
             return node;
         }
-
-        public static CoreNode CreatePowPosMiningNode(this NodeBuilder nodeBuilder,
-            Network network, bool start = false, string agent = "PowPosMining")
-        {
-            var node = nodeBuilder.CreateCustomNodeWithFreeApiPort(start, fullNodeBuilder =>
-            {
-                fullNodeBuilder
-                    .UseBlockStore()
-                    .UsePosConsensus()
-                    .UseMempool()
-                    .UseWallet()
-                    .AddPowPosMining()
-                    .UseApi()
-                    .AddRPC()
-                    .MockIBD();
-            }, network, agent: agent);
-
-            return node;
-        }
-
-        public static CoreNode CreatePowPosSidechainApiMiningNode(this NodeBuilder nodeBuilder,
-            Network network, bool start = false, string agent = "PowPosMining")
-        {
-            var node = nodeBuilder.CreateCustomNodeWithFreeApiPort(start, fullNodeBuilder =>
-            {
-                fullNodeBuilder
-                    .UseBlockStore()
-                    .UsePosConsensus()
-                    .UseMempool()
-                    .UseWallet()
-                    .AddPowPosMining()
-                    .UseApi()
-                    .UseSidechains()
-                    .AddRPC()
-                    .MockIBD();
-            }, network, agent: agent);
-
-            return node;
-        }
     }
 }
