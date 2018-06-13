@@ -1,5 +1,4 @@
-﻿using System;
-using NBitcoin;
+﻿using NBitcoin;
 using NBitcoin.DataEncoders;
 
 namespace Stratis.Sidechains.Networks
@@ -46,15 +45,6 @@ namespace Stratis.Sidechains.Networks
             genesis.Header.HashPrevBlock = uint256.Zero;
             genesis.UpdateMerkleRoot();
             return genesis;
-        }
-
-        private static void Assert(bool condition)
-        {
-            // TODO: use Guard when this moves to the FN.
-            if (!condition)
-            {
-                throw new InvalidOperationException("Invalid network");
-            }
         }
     }
 }
