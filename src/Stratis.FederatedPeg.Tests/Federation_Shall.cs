@@ -4,7 +4,6 @@ using FluentAssertions;
 using Xunit;
 
 using NBitcoin;
-using Stratis.Sidechains.Features.BlockchainGeneration;
 
 namespace Stratis.FederatedPeg.Tests
 {
@@ -36,40 +35,6 @@ namespace Stratis.FederatedPeg.Tests
         {
             var federation = new Federation(2, 3, this.GetSampleMembers());
             federation.GenerateScriptPubkey(Chain.Mainchain).ToHex().Length.Should().BeGreaterThan(160);
-        }
-
-        [Fact]
-        public void generate_public_address()
-        {
-            string sidechain_folder = @"..\..\..\..\..\assets";
-            using (SidechainIdentifier.Create("enigma", sidechain_folder))
-            {
-                var federation = new Federation(2, 3, this.GetSampleMembers());
-                string address = federation.GenerateScriptPubkey(Chain.Sidechain).Hash.GetAddress(SidechainNetwork.SidechainRegTest).ToString();
-
-                address.Length.Should().BeLessThan(40);
-                address.Length.Should().BeGreaterThan(1);
-                address.StartsWith("2").Should().BeTrue();
-            }
-        }
-
-        [Fact]
-        public void can_round_trip_serialize_public_key()
-        {
-            string sidechain_folder = @"..\..\..\..\..\assets";
-            using (SidechainIdentifier.Create("enigma", sidechain_folder))
-            {
-                var key = new Key();
-                var pubKey = key.PubKey;
-                string pubKeyString = pubKey.ToHex();
-
-                File.WriteAllText("test.txt", pubKeyString);
-                string txt = File.ReadAllText("test.txt");
-                txt.Should().Be(pubKeyString);
-
-                var pubKey2 = new PubKey(pubKeyString);
-                pubKey.Should().BeEquivalentTo(pubKey2);
-            }
         }
 
         [Fact]

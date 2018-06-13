@@ -1,5 +1,7 @@
-﻿using NBitcoin;
-using Stratis.Sidechains.Features.BlockchainGeneration;
+﻿using System.Collections.Generic;
+using System.Linq;
+using NBitcoin;
+using Stratis.Sidechains.Networks;
 
 namespace Stratis.FederatedPeg
 {
@@ -8,6 +10,11 @@ namespace Stratis.FederatedPeg
     /// </summary>
     public static class NetworkExtensions
     {
+        public static readonly List<string> MainChainNames = new List<Network> {
+            Network.StratisMain, Network.StratisTest, Network.StratisRegTest,
+            Network.Main, Network.TestNet, Network.RegTest
+        }.Select(n => n.Name.ToLower()).ToList();
+
         /// <summary>
         /// Returns whether we are on a sidechain or a mainchain network.
         /// </summary>
@@ -15,7 +22,7 @@ namespace Stratis.FederatedPeg
         /// <returns>This function tests for a sidechain and returns mainchain for any non sidechain network.</returns>
         public static Chain ToChain(this Network network)
         {
-            return network.Name.ToLower().Contains("sidechain") ? Chain.Sidechain : Chain.Mainchain;
+            return MainChainNames.Contains(network.Name.ToLower()) ? Chain.Mainchain : Chain.Sidechain;
         }
 
         /// <summary>
@@ -25,12 +32,12 @@ namespace Stratis.FederatedPeg
         /// <returns></returns>
         public static Network ToCounterChainNetwork(this Network network)
         {
-            if (network == Network.StratisMain) return SidechainNetwork.SidechainMain;
-            if (network == Network.StratisTest) return SidechainNetwork.SidechainTest;
-            if (network == Network.StratisRegTest) return SidechainNetwork.SidechainRegTest;
-            if (network == SidechainNetwork.SidechainMain) return Network.StratisMain;
-            if (network == SidechainNetwork.SidechainTest) return Network.StratisTest;
-            if (network == SidechainNetwork.SidechainRegTest) return Network.StratisRegTest;
+            if (network == Network.StratisMain) return ApexNetwork.Main;
+            if (network == Network.StratisTest) return ApexNetwork.Test;
+            if (network == Network.StratisRegTest) return ApexNetwork.RegTest;
+            if (network == ApexNetwork.Main) return Network.StratisMain;
+            if (network == ApexNetwork.Test) return Network.StratisTest;
+            if (network == ApexNetwork.RegTest) return Network.StratisRegTest;
             throw new System.ArgumentException("Unknown network.");
         }
     }

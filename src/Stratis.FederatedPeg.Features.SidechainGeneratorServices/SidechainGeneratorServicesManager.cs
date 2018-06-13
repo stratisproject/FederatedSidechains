@@ -3,7 +3,6 @@ using Stratis.Bitcoin;
 using Stratis.Bitcoin.Features.Miner;
 using Stratis.Bitcoin.Features.Miner.Interfaces;
 using Stratis.Bitcoin.Utilities;
-using Stratis.Sidechains.Features.BlockchainGeneration;
 
 namespace Stratis.FederatedPeg.Features.SidechainGeneratorServices
 {
@@ -28,12 +27,6 @@ namespace Stratis.FederatedPeg.Features.SidechainGeneratorServices
 
             this.network = network;
             this.powMining = fullNode.NodeService<IPowMining>();
-        }
-
-        ///<inheritdoc/>
-        public string GetSidechainName()
-        {
-            return SidechainIdentifier.Instance.Name;
         }
 
         ///<inheritdoc/>

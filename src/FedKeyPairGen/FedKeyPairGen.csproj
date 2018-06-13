@@ -15,11 +15,12 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="NStratis" Version="4.0.0.57" />
+    <PackageReference Include="NStratis" Version="4.0.0.60" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\Stratis.FederatedPeg\Stratis.FederatedPeg.csproj" />
+    <ProjectReference Include="..\Stratis.Sidechains.Networks\Stratis.Sidechains.Networks.csproj" />
   </ItemGroup>
 
 </Project>

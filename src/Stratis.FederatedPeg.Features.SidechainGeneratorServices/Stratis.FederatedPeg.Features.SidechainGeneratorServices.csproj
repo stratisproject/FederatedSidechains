@@ -12,11 +12,12 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Stratis.Bitcoin" Version="1.1.7-beta" />
-    <PackageReference Include="Stratis.Bitcoin.Features.Miner" Version="1.1.7-beta" />
+    <PackageReference Include="Stratis.Bitcoin" Version="1.1.11-beta" />
+    <PackageReference Include="Stratis.Bitcoin.Features.Miner" Version="1.1.11-beta" />
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\Stratis.FederatedPeg.Features.MainchainGeneratorServices\Stratis.FederatedPeg.Features.MainchainGeneratorServices.csproj" />
     <ProjectReference Include="..\Stratis.FederatedPeg\Stratis.FederatedPeg.csproj" />
   </ItemGroup>
 
