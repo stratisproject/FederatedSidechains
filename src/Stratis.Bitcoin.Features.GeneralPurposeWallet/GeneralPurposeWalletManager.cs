@@ -1084,7 +1084,6 @@ namespace Stratis.Bitcoin.Features.GeneralPurposeWallet
             {
                 Name = name,
                 EncryptedSeed = encryptedSeed,
-                ChainCode = chainCode,
                 CreationTime = creationTime ?? this.dateTimeProvider.GetTimeOffset(),
                 Network = this.network,
                 AccountsRoot = new List<AccountRoot> { new AccountRoot() { Accounts = new List<GeneralPurposeAccount>(), CoinType = this.coinType } },

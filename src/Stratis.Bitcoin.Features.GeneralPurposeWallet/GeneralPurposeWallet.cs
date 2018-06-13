@@ -38,13 +38,6 @@ namespace Stratis.Bitcoin.Features.GeneralPurposeWallet
 		public string EncryptedSeed { get; set; }
 
 		/// <summary>
-		/// The chain code for the multisig addresses.
-		/// </summary>
-		[JsonProperty(PropertyName = "chainCode")]
-		[JsonConverter(typeof(ByteArrayConverter))]
-		public byte[] ChainCode { get; set; }
-
-		/// <summary>
 		/// Gets or sets the merkle path.
 		/// </summary>
 		[JsonProperty(PropertyName = "blockLocator", ItemConverterType = typeof(UInt256JsonConverter))]
@@ -507,7 +500,7 @@ namespace Stratis.Bitcoin.Features.GeneralPurposeWallet
 			Transaction signed =
 				builder
 					.AddCoins(scriptCoins)
-					.AddKeys(multiSigAddress.GetPrivateKey(wallet.EncryptedSeed, wallet.ChainCode, password, network))
+					.AddKeys(multiSigAddress.GetPrivateKey(wallet.EncryptedSeed, password, network))
 					.SignTransaction(partial);
 
 			return signed;

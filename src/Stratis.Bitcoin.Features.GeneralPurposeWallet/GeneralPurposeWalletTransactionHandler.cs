@@ -244,7 +244,7 @@ namespace Stratis.Bitcoin.Features.GeneralPurposeWallet
 					    continue;
 
 				    var address = unspentOutputsItem.Address;
-				    var privKey = address.GetPrivateKey(wallet.EncryptedSeed, wallet.ChainCode, context.WalletPassword, wallet.Network);
+				    var privKey = address.GetPrivateKey(wallet.EncryptedSeed, context.WalletPassword, wallet.Network);
 				    var secret = new BitcoinSecret(privKey, wallet.Network);
 					signingKeys.Add(secret);
 				    added.Add(unspentOutputsItem.Address);

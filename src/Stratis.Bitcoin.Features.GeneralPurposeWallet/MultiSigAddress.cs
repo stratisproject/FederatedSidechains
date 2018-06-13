@@ -122,12 +122,9 @@ namespace Stratis.Bitcoin.Features.GeneralPurposeWallet
             this.Address = scriptPubKey.Hash.GetAddress(network).ToString();
         }
 
-        public Key GetPrivateKey(string encryptedSeed, byte[] chainCode, string password, Network network)
+        public Key GetPrivateKey(string encryptedSeed, string password, Network network)
         {
-            Key key = MultiSigHdOperations.DecryptSeed(encryptedSeed, password, network);
-            var extKey = MultiSigHdOperations.GetExtendedPrivateKey(key, chainCode, this.HdPath, network);
-
-            return extKey.PrivateKey;
+            return Key.Parse(encryptedSeed, password, network);
         }
 
         /// <summary>
