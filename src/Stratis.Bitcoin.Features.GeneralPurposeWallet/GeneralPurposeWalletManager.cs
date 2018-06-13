@@ -168,7 +168,7 @@ namespace Stratis.Bitcoin.Features.GeneralPurposeWallet
             {
                 this.logger.LogTrace("()");
 
-                this.SaveWallets();
+                this.SaveWallet(this.Wallets.First());
                 this.logger.LogInformation("Wallets saved to file at {0}.", this.dateTimeProvider.GetUtcNow());
 
                 this.logger.LogTrace("(-)");
@@ -190,250 +190,11 @@ namespace Stratis.Bitcoin.Features.GeneralPurposeWallet
                 this.broadcasterManager.TransactionStateChanged -= this.BroadcasterManager_TransactionStateChanged;
 
             this.asyncLoop?.Dispose();
-            this.SaveWallets();
+            this.SaveWallet(this.Wallets.First());
 
             this.logger.LogTrace("(-)");
         }
-
-        /// <inheritdoc />
-        public Mnemonic CreateWallet(string password, string name, string multisigMnemonic = null)
-        {
-            Guard.NotEmpty(password, nameof(password));
-            Guard.NotEmpty(name, nameof(name));
-
-            this.logger.LogTrace("({0}:'{1}')", nameof(name), name);
-
-            // Generate the root seed used to generate keys from a mnemonic picked at random.
-            Mnemonic mnemonic = string.IsNullOrEmpty(multisigMnemonic)
-                ? new Mnemonic(Wordlist.English, WordCount.Twelve)
-                : new Mnemonic(multisigMnemonic);
-            ExtKey extendedKey = MultiSigHdOperations.GetHdPrivateKey(mnemonic, password);
-
-            // Create a wallet file .
-            string encryptedSeed = extendedKey.PrivateKey.GetEncryptedBitcoinSecret(password, this.network).ToWif();
-            GeneralPurposeWallet wallet = this.GenerateWalletFile(name, encryptedSeed, extendedKey.ChainCode);
-
-            // Generate multiple accounts and addresses from the get-go.
-            for (int i = 0; i < WalletCreationAccountsCount; i++)
-            {
-                GeneralPurposeAccount account = wallet.AddNewAccount($"account {i}", this.coinType, this.dateTimeProvider.GetTimeOffset());
-                account.CreateAddresses(this.network, UnusedAddressesBuffer);
-                account.CreateAddresses(this.network, UnusedAddressesBuffer, true);
-            }
-
-            // If the chain is downloaded, we set the height of the newly created wallet to it.
-            // However, if the chain is still downloading when the user creates a wallet,
-            // we wait until it is downloaded in order to set it. Otherwise, the height of the wallet will be the height of the chain at that moment.
-            if (this.chain.IsDownloaded())
-            {
-                this.UpdateLastBlockSyncedHeight(wallet, this.chain.Tip);
-            }
-            else
-            {
-                this.UpdateWhenChainDownloaded(new[] { wallet }, DateTime.Now);
-            }
-
-            // Save the changes to the file and add addresses to be tracked.
-            this.SaveWallet(wallet);
-            this.Load(wallet);
-            this.LoadKeysLookupLock();
-
-            this.logger.LogTrace("(-)");
-            return mnemonic;
-        }
-
-        // TODO: Port this logic in a form that makes sense for a non-HD wallet
-        /*
-        /// <inheritdoc />
-        public GeneralPurposeWallet LoadWallet(string password, string name)
-        {
-            Guard.NotEmpty(password, nameof(password));
-            Guard.NotEmpty(name, nameof(name));
-            this.logger.LogTrace("({0}:'{1}')", nameof(name), name);
-
-            // Load the file from the local system.
-            GeneralPurposeWallet wallet = this.fileStorage.LoadByFileName($"{name}.{WalletFileExtension}");
-
-            // Check the password.
-            try
-            {
-                Key.Parse(wallet.EncryptedSeed, password, wallet.Network);
-            }
-            catch (Exception ex)
-            {
-                this.logger.LogTrace("Exception occurred: {0}", ex.ToString());
-                this.logger.LogTrace("(-)[EXCEPTION]");
-                throw new SecurityException(ex.Message);
-            }
-
-            this.Load(wallet);
-
-            this.logger.LogTrace("(-)");
-            return wallet;
-        }
-
-        /// <inheritdoc />
-        public GeneralPurposeWallet RecoverWallet(string password, string name, string mnemonic, DateTime creationTime, string passphrase = null)
-        {
-            Guard.NotEmpty(password, nameof(password));
-            Guard.NotEmpty(name, nameof(name));
-            Guard.NotEmpty(mnemonic, nameof(mnemonic));
-            this.logger.LogTrace("({0}:'{1}')", nameof(name), name);
-
-            // For now the passphrase is set to be the password by default.
-            if (passphrase == null)
-                passphrase = password;
-
-            // Generate the root seed used to generate keys.
-            ExtKey extendedKey;
-            try
-            {
-                extendedKey = HdOperations.GetHdPrivateKey(mnemonic, passphrase);
-            }
-            catch (NotSupportedException ex)
-            {
-                this.logger.LogTrace("Exception occurred: {0}", ex.ToString());
-                this.logger.LogTrace("(-)[EXCEPTION]");
-
-                if (ex.Message == "Unknown")
-                    throw new WalletException("Please make sure you enter valid mnemonic words.");
-
-                throw;
-            }
-
-            // Create a wallet file.
-            string encryptedSeed = extendedKey.PrivateKey.GetEncryptedBitcoinSecret(password, this.network).ToWif();
-            GeneralPurposeWallet wallet = this.GenerateWalletFile(name, encryptedSeed, extendedKey.ChainCode, creationTime);
-
-            // Generate multiple accounts and addresses from the get-go.
-            for (int i = 0; i < WalletRecoveryAccountsCount; i++)
-            {
-                GeneralPurposeAccount account = wallet.AddNewAccount(password, this.coinType, this.dateTimeProvider.GetTimeOffset());
-                account.CreateAddresses(this.network, UnusedAddressesBuffer);
-                account.CreateAddresses(this.network, UnusedAddressesBuffer, true);
-            }
-
-            // If the chain is downloaded, we set the height of the recovered wallet to that of the recovery date.
-            // However, if the chain is still downloading when the user restores a wallet,
-            // we wait until it is downloaded in order to set it. Otherwise, the height of the wallet may not be known.
-            if (this.chain.IsDownloaded())
-            {
-                int blockSyncStart = this.chain.GetHeightAtTime(creationTime);
-                this.UpdateLastBlockSyncedHeight(wallet, this.chain.GetBlock(blockSyncStart));
-            }
-            else
-            {
-                this.UpdateWhenChainDownloaded(new[] { wallet }, creationTime);
-            }
-
-            // Save the changes to the file and add addresses to be tracked.
-            this.SaveWallet(wallet);
-            this.Load(wallet);
-            this.LoadKeysLookupLock();
-
-            this.logger.LogTrace("(-)");
-            return wallet;
-        }
-        */
-
-        /// <inheritdoc />
-        public GeneralPurposeAccount GetUnusedAccount(string walletName, string password)
-        {
-            Guard.NotEmpty(walletName, nameof(walletName));
-            Guard.NotEmpty(password, nameof(password));
-            this.logger.LogTrace("({0}:'{1}')", nameof(walletName), walletName);
-
-            GeneralPurposeWallet wallet = this.GetWalletByName(walletName);
-
-            GeneralPurposeAccount res = this.GetUnusedAccount(wallet, password);
-            this.logger.LogTrace("(-)");
-            return res;
-        }
-
-        /// <inheritdoc />
-        public GeneralPurposeAccount GetUnusedAccount(GeneralPurposeWallet wallet, string password)
-        {
-            Guard.NotNull(wallet, nameof(wallet));
-            Guard.NotEmpty(password, nameof(password));
-            this.logger.LogTrace("({0}:'{1}')", nameof(wallet), wallet.Name);
-
-            GeneralPurposeAccount account;
-
-            lock (this.lockObject)
-            {
-                account = wallet.GetFirstUnusedAccount(this.coinType);
-
-                if (account != null)
-                {
-                    return account;
-                }
-
-                // No unused account was found, create a new one.
-                account = wallet.AddNewAccount(password, this.coinType, this.dateTimeProvider.GetTimeOffset());
-            }
-
-            // save the changes to the file
-            this.SaveWallet(wallet);
-
-            this.logger.LogTrace("(-)");
-            return account;
-        }
-
-        /// <inheritdoc />
-        public GeneralPurposeAddress GetUnusedAddress(WalletAccountReference accountReference)
-        {
-            this.logger.LogTrace("({0}:'{1}')", nameof(accountReference), accountReference);
-
-            GeneralPurposeAddress res = this.GetUnusedAddresses(accountReference, 1).Single();
-
-            this.logger.LogTrace("(-)");
-            return res;
-        }
-
-        /// <inheritdoc />
-        public IEnumerable<GeneralPurposeAddress> GetUnusedAddresses(WalletAccountReference accountReference, int count)
-        {
-            Guard.NotNull(accountReference, nameof(accountReference));
-            Guard.Assert(count > 0);
-            this.logger.LogTrace("({0}:'{1}',{2}:{3})", nameof(accountReference), accountReference, nameof(count), count);
-
-            GeneralPurposeWallet wallet = this.GetWalletByName(accountReference.WalletName);
-
-            bool generated = false;
-            IEnumerable<GeneralPurposeAddress> addresses;
-
-            lock (this.lockObject)
-            {
-                // Get the account.
-                GeneralPurposeAccount account = wallet.GetAccountByCoinType(accountReference.AccountName, this.coinType);
-
-                List<GeneralPurposeAddress> unusedAddresses = account.ExternalAddresses.Where(acc => !acc.Transactions.Any()).ToList();
-                int diff = unusedAddresses.Count - count;
-                if (diff < 0)
-                {
-                    account.CreateAddresses(this.network, Math.Abs(diff), isChange: false);
-                    generated = true;
-                }
-
-                addresses = account
-                    .ExternalAddresses
-                    .Where(acc => !acc.Transactions.Any())
-                    .Take(count);
-            }
-
-            if (generated)
-            {
-                // save the changes to the file
-                this.SaveWallet(wallet);
-
-                // adds the address to the list of tracked addresses
-                this.LoadKeysLookupLock();
-            }
-
-            this.logger.LogTrace("(-)");
-            return addresses;
-        }
-
+        
         /// <inheritdoc />
         public GeneralPurposeAddress GetOrCreateChangeAddress(GeneralPurposeAccount account)
         {
@@ -457,16 +218,10 @@ namespace Stratis.Bitcoin.Features.GeneralPurposeWallet
             this.LoadKeysLookupLock();
 
             // Persist the address to the wallet files.
-            this.SaveWallets();
+            this.SaveWallet(this.Wallets.First());
 
             this.logger.LogTrace("(-)");
             return changeAddress;
-        }
-
-        /// <inheritdoc />
-        public (string folderPath, IEnumerable<string>) GetWalletsFiles()
-        {
-            return (this.fileStorage.FolderPath, this.fileStorage.GetFilesNames(this.GetWalletFileExtension()));
         }
 
         /// <inheritdoc />
@@ -1247,22 +1002,7 @@ namespace Stratis.Bitcoin.Features.GeneralPurposeWallet
 
             this.logger.LogTrace("()");
         }
-
-        /// <inheritdoc />
-        public void DeleteWallet()
-        {
-            throw new NotImplementedException();
-        }
-
-        /// <inheritdoc />
-        public void SaveWallets()
-        {
-            foreach (GeneralPurposeWallet wallet in this.Wallets)
-            {
-                this.SaveWallet(wallet);
-            }
-        }
-
+        
         /// <inheritdoc />
         public void SaveWallet(GeneralPurposeWallet wallet)
         {
@@ -1275,12 +1015,6 @@ namespace Stratis.Bitcoin.Features.GeneralPurposeWallet
             }
 
             this.logger.LogTrace("(-)");
-        }
-
-        /// <inheritdoc />
-        public string GetWalletFileExtension()
-        {
-            return WalletFileExtension;
         }
 
         /// <inheritdoc />
@@ -1364,25 +1098,6 @@ namespace Stratis.Bitcoin.Features.GeneralPurposeWallet
         }
 
         /// <summary>
-        /// Loads the wallet to be used by the manager.
-        /// </summary>
-        /// <param name="wallet">The wallet to load.</param>
-        private void Load(GeneralPurposeWallet wallet)
-        {
-            Guard.NotNull(wallet, nameof(wallet));
-            this.logger.LogTrace("({0}:'{1}')", nameof(wallet), wallet.Name);
-
-            if (this.Wallets.Any(w => w.Name == wallet.Name))
-            {
-                this.logger.LogTrace("(-)[NOT_FOUND]");
-                return;
-            }
-
-            this.Wallets.Add(wallet);
-            this.logger.LogTrace("(-)");
-        }
-
-        /// <summary>
         /// Loads the keys and transactions we're tracking in memory for faster lookups.
         /// </summary>
         public void LoadKeysLookupLock()
@@ -1461,18 +1176,6 @@ namespace Stratis.Bitcoin.Features.GeneralPurposeWallet
         public ICollection<uint256> GetFirstWalletBlockLocator()
         {
             return this.Wallets.First().BlockLocator;
-        }
-
-        /// <inheritdoc />
-        public int? GetEarliestWalletHeight()
-        {
-            return this.Wallets.Min(w => w.AccountsRoot.Single(a => a.CoinType == this.coinType).LastBlockSyncedHeight);
-        }
-
-        /// <inheritdoc />
-        public DateTimeOffset GetOldestWalletCreationTime()
-        {
-            return this.Wallets.Min(w => w.CreationTime);
         }
 
         /// <summary>

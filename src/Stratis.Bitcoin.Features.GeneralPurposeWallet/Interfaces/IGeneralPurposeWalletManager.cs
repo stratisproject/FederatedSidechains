@@ -44,75 +44,7 @@ namespace Stratis.Bitcoin.Features.GeneralPurposeWallet.Interfaces
 		/// </summary>
 		/// <returns>A collection of spendable outputs that belong to the given multisig address in the given account.</returns>
 		IEnumerable<UnspentMultiSigOutputReference> GetSpendableMultiSigTransactionsInAccount(WalletAccountReference walletAccountReference, Script scriptPubKey, int confirmations = 0);
-
-		/// <summary>
-		/// Creates a wallet and persist it as a file on the local system.
-		/// </summary>
-		/// <param name="password">The password used to encrypt sensitive info.</param>
-		/// <param name="name">The name of the wallet.</param>
-		/// <param name="multisigMnemonic">Specify the mnemonic for the multisigs instead of allowing a random generation.</param>
-		/// <returns>A mnemonic defining the wallet's seed used to generate multisig addresses.</returns>
-		Mnemonic CreateWallet(string password, string name, string multisigMnemonic = null);
-
-		/*
-		/// <summary>
-		/// Loads a wallet from a file.
-		/// </summary>
-		/// <param name="password">The user's password.</param>
-		/// <param name="name">The name of the wallet.</param>
-		/// <returns>The wallet.</returns>
-		GeneralPurposeWallet LoadWallet(string password, string name);
-
-		/// <summary>
-		/// Recovers a wallet.
-		/// </summary>
-		/// <param name="password">The user's password.</param>
-		/// <param name="name">The name of the wallet.</param>
-		/// <param name="mnemonic">The user's mnemonic for the wallet.</param>
-		/// <param name="passphrase">The passphrase used in the seed.</param>
-		/// <param name="creationTime">The date and time this wallet was created.</param>
-		/// <returns>The recovered wallet.</returns>
-		GeneralPurposeWallet RecoverWallet(string password, string name, string mnemonic, DateTime creationTime, string passphrase = null);
-		*/
-
-		/// <summary>
-		/// Deletes a wallet.
-		/// </summary>
-		void DeleteWallet();
-
-		/// <summary>
-		/// Gets an account that contains no transactions.
-		/// </summary>
-		/// <param name="walletName">The name of the wallet from which to get an account.</param>
-		/// <param name="password">The password used to decrypt the private key.</param>
-		/// <remarks>
-		/// According to BIP44, an account at index (i) can only be created when the account
-		/// at index (i - 1) contains transactions.
-		/// </remarks>
-		/// <returns>An unused account.</returns>
-		GeneralPurposeAccount GetUnusedAccount(string walletName, string password);
-
-		/// <summary>
-		/// Gets an account that contains no transactions.
-		/// </summary>
-		/// <param name="wallet">The wallet from which to get an account.</param>
-		/// <param name="password">The password used to decrypt the private key.</param>
-		/// <remarks>
-		/// According to BIP44, an account at index (i) can only be created when the account
-		/// at index (i - 1) contains transactions.
-		/// </remarks>
-		/// <returns>An unused account.</returns>
-		GeneralPurposeAccount GetUnusedAccount(GeneralPurposeWallet wallet, string password);
-
-		/// <summary>
-		/// Gets an address that contains no transaction.
-		/// </summary>
-		/// <param name="accountReference">The name of the wallet and account</param>
-		/// <returns>An unused address or a newly created address, in Base58 format.</returns>
-		GeneralPurposeAddress GetUnusedAddress(WalletAccountReference accountReference);
-
-		IEnumerable<GeneralPurposeAddress> GetUnusedAddresses(WalletAccountReference accountReference, int count);
-
+        
 		/// <summary>
 		/// Gets a collection of addresses containing transactions for this coin.
 		/// </summary>
@@ -175,17 +107,6 @@ namespace Stratis.Bitcoin.Features.GeneralPurposeWallet.Interfaces
 		void SaveWallet(GeneralPurposeWallet wallet);
 
 		/// <summary>
-		/// Saves all the loaded wallets into the file system.
-		/// </summary>
-		void SaveWallets();
-
-		/// <summary>
-		/// Gets the extension of the wallet files.
-		/// </summary>
-		/// <returns></returns>
-		string GetWalletFileExtension();
-
-		/// <summary>
 		/// Gets all the wallets' names.
 		/// </summary>
 		/// <returns>A collection of the wallets' names.</returns>
@@ -225,27 +146,10 @@ namespace Stratis.Bitcoin.Features.GeneralPurposeWallet.Interfaces
 		GeneralPurposeAddress GetOrCreateChangeAddress(GeneralPurposeAccount account);
 
 		/// <summary>
-		/// Gets the list of the wallet filenames, along with the folder in which they're contained.
-		/// </summary>
-		/// <returns>The wallet filenames, along with the folder in which they're contained.</returns>
-		(string folderPath, IEnumerable<string>) GetWalletsFiles();
-
-		/// <summary>
 		/// Gets whether there are any wallet files loaded or not.
 		/// </summary>
 		/// <returns>Whether any wallet files are loaded.</returns>
 		bool ContainsWallets { get; }
-
-		/// <summary>
-		/// Gets the lowest LastBlockSyncedHeight of all loaded wallet account roots.
-		/// </summary>
-		/// <returns>The lowest LastBlockSyncedHeight or null if there are no account roots yet.</returns>
-		int? GetEarliestWalletHeight();
-
-		/// <summary>
-		/// Gets the oldest wallet creation time.
-		/// </summary>
-		/// <returns></returns>
-		DateTimeOffset GetOldestWalletCreationTime();
+        
 	}
 }
