@@ -11,11 +11,11 @@ using Stratis.Bitcoin.Connection;
 using Stratis.Bitcoin.Features.GeneralPurposeWallet;
 using Stratis.Bitcoin.Features.GeneralPurposeWallet.Interfaces;
 using Stratis.Bitcoin.Features.Wallet;
+using Stratis.Bitcoin.Features.Wallet.Interfaces;
 using Stratis.Bitcoin.Interfaces;
 using Stratis.Bitcoin.P2P.Peer;
 using Stratis.Bitcoin.Utilities;
 using Stratis.FederatedPeg.Features.FederationGateway.Models;
-using CoinType = Stratis.Bitcoin.Features.GeneralPurposeWallet.CoinType;
 using Recipient = Stratis.Bitcoin.Features.GeneralPurposeWallet.Recipient;
 using TransactionBuildContext = Stratis.Bitcoin.Features.GeneralPurposeWallet.TransactionBuildContext;
 
@@ -40,7 +40,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.CounterChain
         private FederationGatewaySettings federationGatewaySettings;
 
         // Broadcaster we use to pass our payload to peers.
-        private IGeneralPurposeWalletBroadcasterManager broadcastManager;
+        private IBroadcasterManager broadcastManager;
 
         // The IBD status.
         private IInitialBlockDownloadState initialBlockDownloadState;
@@ -80,7 +80,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.CounterChain
             FederationGatewaySettings federationGatewaySettings, 
             IInitialBlockDownloadState initialBlockDownloadState, 
             IFullNode fullnode,
-            IGeneralPurposeWalletBroadcasterManager broadcastManager, 
+            IBroadcasterManager broadcastManager, 
             ConcurrentChain concurrentChain,
             DataFolder dataFolder,
             IDateTimeProvider dateTimeProvider,
@@ -215,8 +215,8 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.CounterChain
             // We are the Boss so first I build the multisig transaction template.
             // TODO: The password is currently hardcoded here
             var multiSigContext = new TransactionBuildContext(
-                new GeneralPurposeWalletAccountReference(this.federationGatewaySettings.MultiSigWalletName, "account 0"),
-                new[] { new Recipient { Amount = amount, ScriptPubKey = destination } }.ToList(),
+                new WalletAccountReference(this.federationGatewaySettings.MultiSigWalletName, "account 0"),
+                (new[] { new Recipient { Amount = amount, ScriptPubKey = destination } }).ToList(),
                 "password", sessionId.ToBytes())
             {
                 TransactionFee = Money.Coins(0.01m),

@@ -8,6 +8,7 @@ using NBitcoin;
 using Stratis.Bitcoin.Connection;
 using Stratis.Bitcoin.Features.GeneralPurposeWallet;
 using Stratis.Bitcoin.Features.GeneralPurposeWallet.Interfaces;
+using Stratis.Bitcoin.Features.Wallet.Interfaces;
 using Stratis.Bitcoin.IntegrationTests.Common.EnvironmentMockUpHelpers;
 using Stratis.Bitcoin.P2P.Peer;
 
@@ -114,7 +115,7 @@ namespace Stratis.FederatedPeg.IntegrationTests.Helpers
 
         public static void ResyncGeneralWallet(CoreNode node)
         {
-            var generalPurposeWalletSyncManager = node.FullNode.NodeService<IGeneralPurposeWalletSyncManager>();
+            var generalPurposeWalletSyncManager = node.FullNode.NodeService<IWalletSyncManager>();
             generalPurposeWalletSyncManager.SyncFromHeight(0);
         }
 

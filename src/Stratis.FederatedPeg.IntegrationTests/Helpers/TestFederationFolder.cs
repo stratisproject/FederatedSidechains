@@ -69,7 +69,7 @@ namespace Stratis.FederatedPeg.IntegrationTests.Helpers
             var wallet = generalWalletManager.GetWallet(walletName);
 
             // Use the first account.
-            var account = wallet.GetAccountsByCoinType((Stratis.Bitcoin.Features.GeneralPurposeWallet.CoinType)node.FullNode.Network.Consensus.CoinType).First();
+            var account = wallet.GetAccountsByCoinType((CoinType)node.FullNode.Network.Consensus.CoinType).First();
 
             //Decrypt the private key
             var chain = network.ToChain();

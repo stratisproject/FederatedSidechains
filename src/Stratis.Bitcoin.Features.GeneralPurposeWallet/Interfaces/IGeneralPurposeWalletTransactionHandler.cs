@@ -33,7 +33,7 @@ namespace Stratis.Bitcoin.Features.GeneralPurposeWallet.Interfaces
         /// <param name="feeType">The type of fee used to calculate the maximum amount the user can spend. The higher the fee, the smaller this amount will be.</param>
         /// <param name="allowUnconfirmed"><c>true</c> to include unconfirmed transactions in the calculation, <c>false</c> otherwise.</param>
         /// <returns>The maximum amount the user can spend in a single transaction, along with the fee required.</returns>
-        (Money maximumSpendableAmount, Money Fee) GetMaximumSpendableAmount(GeneralPurposeWalletAccountReference accountReference, FeeType feeType, bool allowUnconfirmed);
+        (Money maximumSpendableAmount, Money Fee) GetMaximumSpendableAmount(WalletAccountReference accountReference, FeeType feeType, bool allowUnconfirmed);
 
         /// <summary>
         /// Estimates the fee for the transaction based on information from the <see cref="TransactionBuildContext"/>.

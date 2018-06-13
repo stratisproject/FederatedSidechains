@@ -9,13 +9,14 @@ using Stratis.Bitcoin.Builder.Feature;
 using Stratis.Bitcoin.Configuration.Logging;
 using Stratis.Bitcoin.Connection;
 using Stratis.Bitcoin.Features.BlockStore;
-using Stratis.Bitcoin.Features.GeneralPurposeWallet.Broadcasting;
 using Stratis.Bitcoin.Features.GeneralPurposeWallet.Controllers;
 using Stratis.Bitcoin.Features.GeneralPurposeWallet.Interfaces;
-using Stratis.Bitcoin.Features.GeneralPurposeWallet.Notifications;
 using Stratis.Bitcoin.Features.MemoryPool;
 using Stratis.Bitcoin.Features.RPC;
 using Stratis.Bitcoin.Features.Wallet;
+using Stratis.Bitcoin.Features.Wallet.Broadcasting;
+using Stratis.Bitcoin.Features.Wallet.Interfaces;
+using Stratis.Bitcoin.Features.Wallet.Notifications;
 using Stratis.Bitcoin.Interfaces;
 
 namespace Stratis.Bitcoin.Features.GeneralPurposeWallet
@@ -27,7 +28,7 @@ namespace Stratis.Bitcoin.Features.GeneralPurposeWallet
 	/// <seealso cref="Stratis.Bitcoin.Interfaces.INodeStats" />
 	public class GeneralPurposeWalletFeature : FullNodeFeature, INodeStats, IFeatureStats
 	{
-		private readonly IGeneralPurposeWalletSyncManager walletSyncManager;
+		private readonly IWalletSyncManager walletSyncManager;
 
 		private readonly IGeneralPurposeWalletManager walletManager;
 
@@ -53,7 +54,7 @@ namespace Stratis.Bitcoin.Features.GeneralPurposeWallet
 		/// <param name="connectionManager">The connection manager.</param>
 		/// <param name="broadcasterBehavior">The broadcaster behavior.</param>
 		public GeneralPurposeWalletFeature(
-			IGeneralPurposeWalletSyncManager walletSyncManager,
+            IWalletSyncManager walletSyncManager,
 			IGeneralPurposeWalletManager walletManager,
 			Signals.Signals signals,
 			ConcurrentChain chain,
@@ -165,13 +166,13 @@ namespace Stratis.Bitcoin.Features.GeneralPurposeWallet
 				.DependOn<RPCFeature>()
 				.FeatureServices(services =>
 				{
-					services.AddSingleton<IGeneralPurposeWalletSyncManager, GeneralPurposeWalletSyncManager>();
+					services.AddSingleton<IWalletSyncManager, GeneralPurposeWalletSyncManager>();
 					services.AddSingleton<IGeneralPurposeWalletTransactionHandler, GeneralPurposeWalletTransactionHandler>();
 					services.AddSingleton<IGeneralPurposeWalletManager, GeneralPurposeWalletManager>();
-					services.AddSingleton<IGeneralPurposeWalletFeePolicy, GeneralPurposeWalletFeePolicy>();
+					services.AddSingleton<IWalletFeePolicy, WalletFeePolicy>();
 					services.AddSingleton<GeneralPurposeWalletController>();
 					//services.AddSingleton<WalletRPCController>();
-					services.AddSingleton<IGeneralPurposeWalletBroadcasterManager, GeneralPurposeFullNodeBroadcasterManager>();
+					services.AddSingleton<IBroadcasterManager, FullNodeBroadcasterManager>();
 					services.AddSingleton<BroadcasterBehavior>();
 				});
 			});

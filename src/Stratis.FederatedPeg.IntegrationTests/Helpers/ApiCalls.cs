@@ -83,7 +83,7 @@ namespace Stratis.FederatedPeg.IntegrationTests
         public static async Task CreateGeneralPurposeWallet(int apiPortForSidechain, string walletName,
             string password)
         {
-            var walletCreationRequest = new Stratis.Bitcoin.Features.GeneralPurposeWallet.Models.WalletCreationRequest()
+            var walletCreationRequest = new WalletCreationRequest()
             {
                 Name = walletName,
                 Password = password

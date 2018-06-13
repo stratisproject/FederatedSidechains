@@ -4,6 +4,7 @@ using System.Linq;
 using NBitcoin;
 using NBitcoin.JsonConverters;
 using Newtonsoft.Json;
+using Stratis.Bitcoin.Features.Wallet;
 using Stratis.Bitcoin.Utilities;
 using Stratis.Bitcoin.Utilities.JsonConverters;
 
@@ -213,7 +214,7 @@ namespace Stratis.Bitcoin.Features.GeneralPurposeWallet
 			// Check if the wallet contains the address.
 			if (!this.ContainsAddress(address))
 			{
-				throw new GeneralPurposeWalletException("Address not found in wallet.");
+				throw new WalletException("Address not found in wallet.");
 			}
 			
 			return address.PrivateKey;
@@ -298,12 +299,12 @@ namespace Stratis.Bitcoin.Features.GeneralPurposeWallet
 		public GeneralPurposeAccount GetAccountByName(string accountName)
 		{
 			if (this.Accounts == null)
-				throw new GeneralPurposeWalletException($"No account with the name {accountName} could be found.");
+				throw new WalletException($"No account with the name {accountName} could be found.");
 
 			// get the account
 			GeneralPurposeAccount account = this.Accounts.SingleOrDefault(a => a.Name == accountName);
 			if (account == null)
-				throw new GeneralPurposeWalletException($"No account with the name {accountName} could be found.");
+				throw new WalletException($"No account with the name {accountName} could be found.");
 
 			return account;
 		}
@@ -458,7 +459,7 @@ namespace Stratis.Bitcoin.Features.GeneralPurposeWallet
 			}
 
 			if (multiSigAddress == null)
-				throw new GeneralPurposeWalletException(
+				throw new WalletException(
 					"Unable to determine which multisig address to combine partial transactions for");
 
 			// Need to get the same ScriptCoins used by the other signatories.
@@ -536,7 +537,7 @@ namespace Stratis.Bitcoin.Features.GeneralPurposeWallet
 			}
 
 			if (multiSigAddress == null)
-				throw new GeneralPurposeWalletException(
+				throw new WalletException(
 					"Unable to determine which multisig address to combine partial transactions for");
 
 			// Need to get the same ScriptCoins used by the other signatories.

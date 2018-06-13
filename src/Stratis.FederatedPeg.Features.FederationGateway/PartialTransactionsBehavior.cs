@@ -3,11 +3,11 @@ using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using NBitcoin;
 using Stratis.Bitcoin.Features.GeneralPurposeWallet.Interfaces;
+using Stratis.Bitcoin.Features.Wallet;
 using Stratis.Bitcoin.P2P.Peer;
 using Stratis.Bitcoin.P2P.Protocol;
 using Stratis.Bitcoin.P2P.Protocol.Behaviors;
 using Stratis.FederatedPeg.Features.FederationGateway.CounterChain;
-using GpCoinType = Stratis.Bitcoin.Features.GeneralPurposeWallet.CoinType;
 
 //todo: this is pre-refactoring code
 //todo: ensure no duplicate or fake withdrawal or deposit transactions are possible (current work underway)
@@ -99,7 +99,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway
                     this.counterChainSessionManager.MarkSessionAsSigned(partialTransactionSession);
 
                     var wallet = this.generalPurposeWalletManager.GetWallet(this.federationGatewaySettings.MultiSigWalletName);
-                    var account = wallet.GetAccountsByCoinType((GpCoinType) this.network.Consensus.CoinType).First();
+                    var account = wallet.GetAccountsByCoinType((CoinType) this.network.Consensus.CoinType).First();
                     // TODO: The wallet password is hardcoded here
                     var signedTransaction = account.SignPartialTransaction(template, wallet, "password", this.network);
                     payload.AddPartial(signedTransaction, BossTable.MakeBossTableEntry(payload.SessionId, this.federationGatewaySettings.PublicKey));

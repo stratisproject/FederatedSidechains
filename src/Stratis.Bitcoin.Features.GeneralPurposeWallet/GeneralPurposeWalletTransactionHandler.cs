@@ -7,6 +7,8 @@ using Microsoft.Extensions.Logging;
 using NBitcoin;
 using NBitcoin.Policy;
 using Stratis.Bitcoin.Features.GeneralPurposeWallet.Interfaces;
+using Stratis.Bitcoin.Features.Wallet;
+using Stratis.Bitcoin.Features.Wallet.Interfaces;
 using Stratis.Bitcoin.Utilities;
 
 namespace Stratis.Bitcoin.Features.GeneralPurposeWallet
@@ -31,7 +33,7 @@ namespace Stratis.Bitcoin.Features.GeneralPurposeWallet
 
         private readonly IGeneralPurposeWalletManager walletManager;
 
-        private readonly IGeneralPurposeWalletFeePolicy walletFeePolicy;
+        private readonly IWalletFeePolicy walletFeePolicy;
 
         private readonly CoinType coinType;
 
@@ -42,7 +44,7 @@ namespace Stratis.Bitcoin.Features.GeneralPurposeWallet
         public GeneralPurposeWalletTransactionHandler(
             ILoggerFactory loggerFactory,
             IGeneralPurposeWalletManager walletManager,
-            IGeneralPurposeWalletFeePolicy walletFeePolicy,
+            IWalletFeePolicy walletFeePolicy,
             Network network)
         {
             this.walletManager = walletManager;
@@ -73,7 +75,7 @@ namespace Stratis.Bitcoin.Features.GeneralPurposeWallet
 		        {
 			        string errorsMessage = string.Join(" - ", errors.Select(s => s.ToString()));
 			        this.logger.LogError($"Build transaction failed: {errorsMessage}");
-			        throw new GeneralPurposeWalletException($"Could not build the transaction. Details: {errorsMessage}");
+			        throw new WalletException($"Could not build the transaction. Details: {errorsMessage}");
 		        }
 	        }
 
@@ -84,7 +86,7 @@ namespace Stratis.Bitcoin.Features.GeneralPurposeWallet
         public void FundTransaction(TransactionBuildContext context, Transaction transaction)
         {
             if (context.Recipients.Any())
-                throw new GeneralPurposeWalletException("Adding outputs is not allowed.");
+                throw new WalletException("Adding outputs is not allowed.");
 
             // Turn the txout set into a Recipient array
             context.Recipients.AddRange(transaction.Outputs
@@ -132,7 +134,7 @@ namespace Stratis.Bitcoin.Features.GeneralPurposeWallet
         }
 
         /// <inheritdoc />
-        public (Money maximumSpendableAmount, Money Fee) GetMaximumSpendableAmount(GeneralPurposeWalletAccountReference accountReference, FeeType feeType, bool allowUnconfirmed)
+        public (Money maximumSpendableAmount, Money Fee) GetMaximumSpendableAmount(WalletAccountReference accountReference, FeeType feeType, bool allowUnconfirmed)
         {
             Guard.NotNull(accountReference, nameof(accountReference));
             Guard.NotEmpty(accountReference.WalletName, nameof(accountReference.WalletName));
@@ -168,7 +170,7 @@ namespace Stratis.Bitcoin.Features.GeneralPurposeWallet
                 this.AddFee(context);
 
                 // Throw an exception if this code is reached, as building a transaction without any funds for the fee should always throw an exception.
-                throw new GeneralPurposeWalletException("This should be unreachable; please find and fix the bug that caused this to be reached.");
+                throw new WalletException("This should be unreachable; please find and fix the bug that caused this to be reached.");
             }
             catch (NotEnoughFundsException e)
             {
@@ -276,7 +278,7 @@ namespace Stratis.Bitcoin.Features.GeneralPurposeWallet
         }
 
 		/// <summary>
-		/// Find all available outputs (UTXO's) that belong to <see cref="GeneralPurposeWalletAccountReference.AccountName"/>.
+		/// Find all available outputs (UTXO's) that belong to <see cref="WalletAccountReference.AccountName"/>.
 		/// Then add them to the <see cref="TransactionBuildContext.UnspentOutputs"/> or <see cref="TransactionBuildContext.UnspentMultiSigOutputs"/>.
 		/// </summary>
 		/// <param name="context">The context associated with the current transaction being built.</param>
@@ -289,14 +291,14 @@ namespace Stratis.Bitcoin.Features.GeneralPurposeWallet
 
 				if (context.UnspentOutputs.Count == 0)
 				{
-					throw new GeneralPurposeWalletException("No spendable transactions found.");
+					throw new WalletException("No spendable transactions found.");
 				}
 
 				// Get total spendable balance in the account.
 				var balance = context.UnspentOutputs.Sum(t => t.Transaction.Amount);
 				var totalToSend = context.Recipients.Sum(s => s.Amount);
 				if (balance < totalToSend)
-					throw new GeneralPurposeWalletException("Not enough funds.");
+					throw new WalletException("Not enough funds.");
 
 				if (context.SelectedInputs.Any())
 				{
@@ -308,7 +310,7 @@ namespace Stratis.Bitcoin.Features.GeneralPurposeWallet
 					var availableHashList = context.UnspentOutputs.ToDictionary(item => item.ToOutPoint(), item => item);
 
 					if (!context.SelectedInputs.All(input => availableHashList.ContainsKey(input)))
-						throw new GeneralPurposeWalletException("Not all the selected inputs were found on the wallet.");
+						throw new WalletException("Not all the selected inputs were found on the wallet.");
 
 					if (!context.AllowOtherInputs)
 					{
@@ -351,14 +353,14 @@ namespace Stratis.Bitcoin.Features.GeneralPurposeWallet
 
 		        if (context.UnspentMultiSigOutputs.Count == 0)
 		        {
-			        throw new GeneralPurposeWalletException("No spendable transactions found.");
+			        throw new WalletException("No spendable transactions found.");
 		        }
 
 		        // Get total spendable balance in the account.
 		        var balance = context.UnspentMultiSigOutputs.Sum(t => t.Transaction.Amount);
 		        var totalToSend = context.Recipients.Sum(s => s.Amount);
 		        if (balance < totalToSend)
-			        throw new GeneralPurposeWalletException("Not enough funds.");
+			        throw new WalletException("Not enough funds.");
 
 		        if (context.SelectedInputs.Any())
 		        {
@@ -370,7 +372,7 @@ namespace Stratis.Bitcoin.Features.GeneralPurposeWallet
 			        var availableHashList = context.UnspentMultiSigOutputs.ToDictionary(item => item.ToOutPoint(), item => item);
 
 			        if (!context.SelectedInputs.All(input => availableHashList.ContainsKey(input)))
-				        throw new GeneralPurposeWalletException("Not all the selected inputs were found on the wallet.");
+				        throw new WalletException("Not all the selected inputs were found on the wallet.");
 
 			        if (!context.AllowOtherInputs)
 			        {
@@ -417,7 +419,7 @@ namespace Stratis.Bitcoin.Features.GeneralPurposeWallet
         private void AddRecipients(TransactionBuildContext context)
         {
             if (context.Recipients.Any(a => a.Amount == Money.Zero))
-                throw new GeneralPurposeWalletException("No amount specified.");
+                throw new WalletException("No amount specified.");
 
             if (context.Recipients.Any(a => a.SubtractFeeFromAmount))
                 throw new NotImplementedException("Substracting the fee from the recipient is not supported yet.");
@@ -469,7 +471,7 @@ namespace Stratis.Bitcoin.Features.GeneralPurposeWallet
         /// </summary>
         /// <param name="accountReference">The wallet and account from which to build this transaction</param>
         /// <param name="recipients">The target recipients to send coins to.</param>
-        public TransactionBuildContext(GeneralPurposeWalletAccountReference accountReference, List<Recipient> recipients)
+        public TransactionBuildContext(WalletAccountReference accountReference, List<Recipient> recipients)
             : this(accountReference, recipients, string.Empty)
         {
         }
@@ -480,7 +482,7 @@ namespace Stratis.Bitcoin.Features.GeneralPurposeWallet
         /// <param name="accountReference">The wallet and account from which to build this transaction</param>
         /// <param name="recipients">The target recipients to send coins to.</param>
         /// <param name="walletPassword">The password that protects the wallet in <see cref="accountReference"/></param>
-        public TransactionBuildContext(GeneralPurposeWalletAccountReference accountReference, List<Recipient> recipients, string walletPassword = "", byte[] opReturnData = null)
+        public TransactionBuildContext(WalletAccountReference accountReference, List<Recipient> recipients, string walletPassword = "", byte[] opReturnData = null)
         {
             Guard.NotNull(recipients, nameof(recipients));
 
@@ -500,7 +502,7 @@ namespace Stratis.Bitcoin.Features.GeneralPurposeWallet
         /// <summary>
         /// The wallet account to use for building a transaction
         /// </summary>
-        public GeneralPurposeWalletAccountReference AccountReference { get; set; }
+        public WalletAccountReference AccountReference { get; set; }
 
         /// <summary>
         /// The recipients to send Bitcoin to.

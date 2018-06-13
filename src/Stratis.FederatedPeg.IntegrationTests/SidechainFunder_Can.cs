@@ -451,7 +451,7 @@ namespace Stratis.FederatedPeg.IntegrationTests
                 amounts.ConfirmedAmount.Should().Be(new Money(98000196, MoneyUnit.BTC));
 
                 // Send Funds (Deposit from Mainchain to Sidechain)
-                var sendingWalletAccountReference = new WalletAccountReference("mainchain_wallet", "account 0");
+                var sendingWalletAccountReference = new Bitcoin.Features.Wallet.WalletAccountReference("mainchain_wallet", "account 0");
 
                 var transactionBuildContext = new WtTransactionBuildContext(
                         sendingWalletAccountReference,
@@ -858,7 +858,7 @@ namespace Stratis.FederatedPeg.IntegrationTests
                 // Now use the newly arrived funds to create a withdrawal transaction.
 
                 // Withdraw Funds (Withdraw from Sidechain to Mainchain)
-                sendingWalletAccountReference = new WalletAccountReference("sidechain_wallet", "account 0");
+                sendingWalletAccountReference = new Bitcoin.Features.Wallet.WalletAccountReference("sidechain_wallet", "account 0");
 
                 transactionBuildContext = new WtTransactionBuildContext(
                     sendingWalletAccountReference,

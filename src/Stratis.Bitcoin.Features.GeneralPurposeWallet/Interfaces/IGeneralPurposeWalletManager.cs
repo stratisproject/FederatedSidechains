@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using NBitcoin;
 using Stratis.Bitcoin.Features.GeneralPurposeWallet;
+using Stratis.Bitcoin.Features.Wallet;
 
 namespace Stratis.Bitcoin.Features.GeneralPurposeWallet.Interfaces
 {
@@ -33,16 +34,16 @@ namespace Stratis.Bitcoin.Features.GeneralPurposeWallet.Interfaces
 		IEnumerable<UnspentOutputReference> GetSpendableTransactionsInWallet(string walletName, int confirmations = 0);
 
 		/// <summary>
-		/// Lists all spendable transactions from the account specified in <see cref="GeneralPurposeWalletAccountReference"/>.
+		/// Lists all spendable transactions from the account specified in <see cref="WalletAccountReference"/>.
 		/// </summary>
 		/// <returns>A collection of spendable outputs that belong to the given account.</returns>
-		IEnumerable<UnspentOutputReference> GetSpendableTransactionsInAccount(GeneralPurposeWalletAccountReference walletAccountReference, int confirmations = 0);
+		IEnumerable<UnspentOutputReference> GetSpendableTransactionsInAccount(WalletAccountReference walletAccountReference, int confirmations = 0);
 
 		/// <summary>
-		/// Lists all spendable transactions from the given multisig address in the account specified in <see cref="GeneralPurposeWalletAccountReference"/>.
+		/// Lists all spendable transactions from the given multisig address in the account specified in <see cref="WalletAccountReference"/>.
 		/// </summary>
 		/// <returns>A collection of spendable outputs that belong to the given multisig address in the given account.</returns>
-		IEnumerable<UnspentMultiSigOutputReference> GetSpendableMultiSigTransactionsInAccount(GeneralPurposeWalletAccountReference walletAccountReference, Script scriptPubKey, int confirmations = 0);
+		IEnumerable<UnspentMultiSigOutputReference> GetSpendableMultiSigTransactionsInAccount(WalletAccountReference walletAccountReference, Script scriptPubKey, int confirmations = 0);
 
 		/// <summary>
 		/// Creates a wallet and persist it as a file on the local system.
@@ -108,9 +109,9 @@ namespace Stratis.Bitcoin.Features.GeneralPurposeWallet.Interfaces
 		/// </summary>
 		/// <param name="accountReference">The name of the wallet and account</param>
 		/// <returns>An unused address or a newly created address, in Base58 format.</returns>
-		GeneralPurposeAddress GetUnusedAddress(GeneralPurposeWalletAccountReference accountReference);
+		GeneralPurposeAddress GetUnusedAddress(WalletAccountReference accountReference);
 
-		IEnumerable<GeneralPurposeAddress> GetUnusedAddresses(GeneralPurposeWalletAccountReference accountReference, int count);
+		IEnumerable<GeneralPurposeAddress> GetUnusedAddresses(WalletAccountReference accountReference, int count);
 
 		/// <summary>
 		/// Gets a collection of addresses containing transactions for this coin.

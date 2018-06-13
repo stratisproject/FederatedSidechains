@@ -7,11 +7,12 @@ using NBitcoin;
 using Stratis.Bitcoin.Features.BlockStore;
 using Stratis.Bitcoin.Features.GeneralPurposeWallet;
 using Stratis.Bitcoin.Features.GeneralPurposeWallet.Interfaces;
+using Stratis.Bitcoin.Features.Wallet.Interfaces;
 using Stratis.Bitcoin.Utilities;
 
 namespace Stratis.Bitcoin.Features.Wallet
 {
-    public class GeneralPurposeWalletSyncManager : IGeneralPurposeWalletSyncManager
+    public class GeneralPurposeWalletSyncManager : IWalletSyncManager
     {
         protected readonly IGeneralPurposeWalletManager walletManager;
 
@@ -63,7 +64,7 @@ namespace Stratis.Bitcoin.Features.Wallet
             // To support pruning the wallet will need to be
             // able to download blocks from peers to catch up.
             if (this.storeSettings.Prune)
-                throw new GeneralPurposeWalletException("Wallet can not yet run on a pruned node");
+                throw new WalletException("Wallet can not yet run on a pruned node");
 
             this.logger.LogInformation("WalletSyncManager initialized. Wallet at block {0}.", this.walletManager.LastBlockHeight());
 
@@ -245,7 +246,7 @@ namespace Stratis.Bitcoin.Features.Wallet
             this.logger.LogTrace("({0}:{1})", nameof(height), height);
 
             ChainedHeader chainedBlock = this.chain.GetBlock(height);
-            this.walletTip = chainedBlock ?? throw new GeneralPurposeWalletException("Invalid block height");
+            this.walletTip = chainedBlock ?? throw new WalletException("Invalid block height");
             this.walletManager.WalletTipHash = chainedBlock.HashBlock;
 
             this.logger.LogTrace("(-)");

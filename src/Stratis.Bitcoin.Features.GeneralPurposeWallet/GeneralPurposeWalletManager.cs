@@ -7,8 +7,10 @@ using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using NBitcoin;
 using Stratis.Bitcoin.Configuration;
-using Stratis.Bitcoin.Features.GeneralPurposeWallet.Broadcasting;
 using Stratis.Bitcoin.Features.GeneralPurposeWallet.Interfaces;
+using Stratis.Bitcoin.Features.Wallet;
+using Stratis.Bitcoin.Features.Wallet.Broadcasting;
+using Stratis.Bitcoin.Features.Wallet.Interfaces;
 using Stratis.Bitcoin.Utilities;
 
 [assembly: InternalsVisibleTo("Stratis.Bitcoin.Features.GeneralPurposeWallet.Tests")]
@@ -85,7 +87,7 @@ namespace Stratis.Bitcoin.Features.GeneralPurposeWallet
         private readonly FileStorage<GeneralPurposeWallet> fileStorage;
 
         /// <summary>The broadcast manager.</summary>
-        private readonly IGeneralPurposeWalletBroadcasterManager broadcasterManager;
+        private readonly IBroadcasterManager broadcasterManager;
 
         /// <summary>Provider of time functions.</summary>
         private readonly IDateTimeProvider dateTimeProvider;
@@ -104,11 +106,11 @@ namespace Stratis.Bitcoin.Features.GeneralPurposeWallet
             Network network,
             ConcurrentChain chain,
             NodeSettings settings, DataFolder dataFolder,
-            IGeneralPurposeWalletFeePolicy walletFeePolicy,
+            IWalletFeePolicy walletFeePolicy,
             IAsyncLoopFactory asyncLoopFactory,
             INodeLifetime nodeLifetime,
             IDateTimeProvider dateTimeProvider,
-            IGeneralPurposeWalletBroadcasterManager broadcasterManager = null) // no need to know about transactions the node broadcasted
+            IBroadcasterManager broadcasterManager = null) // no need to know about transactions the node broadcasted
         {
             Guard.NotNull(loggerFactory, nameof(loggerFactory));
             Guard.NotNull(network, nameof(network));
@@ -294,7 +296,7 @@ namespace Stratis.Bitcoin.Features.GeneralPurposeWallet
                 this.logger.LogTrace("(-)[EXCEPTION]");
 
                 if (ex.Message == "Unknown")
-                    throw new GeneralPurposeWalletException("Please make sure you enter valid mnemonic words.");
+                    throw new WalletException("Please make sure you enter valid mnemonic words.");
 
                 throw;
             }
@@ -378,7 +380,7 @@ namespace Stratis.Bitcoin.Features.GeneralPurposeWallet
         }
 
         /// <inheritdoc />
-        public GeneralPurposeAddress GetUnusedAddress(GeneralPurposeWalletAccountReference accountReference)
+        public GeneralPurposeAddress GetUnusedAddress(WalletAccountReference accountReference)
         {
             this.logger.LogTrace("({0}:'{1}')", nameof(accountReference), accountReference);
 
@@ -389,7 +391,7 @@ namespace Stratis.Bitcoin.Features.GeneralPurposeWallet
         }
 
         /// <inheritdoc />
-        public IEnumerable<GeneralPurposeAddress> GetUnusedAddresses(GeneralPurposeWalletAccountReference accountReference, int count)
+        public IEnumerable<GeneralPurposeAddress> GetUnusedAddresses(WalletAccountReference accountReference, int count)
         {
             Guard.NotNull(accountReference, nameof(accountReference));
             Guard.Assert(count > 0);
@@ -625,7 +627,7 @@ namespace Stratis.Bitcoin.Features.GeneralPurposeWallet
         }
 
         /// <inheritdoc />
-        public IEnumerable<UnspentOutputReference> GetSpendableTransactionsInAccount(GeneralPurposeWalletAccountReference walletAccountReference, int confirmations = 0)
+        public IEnumerable<UnspentOutputReference> GetSpendableTransactionsInAccount(WalletAccountReference walletAccountReference, int confirmations = 0)
         {
             Guard.NotNull(walletAccountReference, nameof(walletAccountReference));
             this.logger.LogTrace("({0}:'{1}',{2}:{3})", nameof(walletAccountReference), walletAccountReference, nameof(confirmations), confirmations);
@@ -639,7 +641,7 @@ namespace Stratis.Bitcoin.Features.GeneralPurposeWallet
                 if (account == null)
                 {
                     this.logger.LogTrace("(-)[ACT_NOT_FOUND]");
-                    throw new GeneralPurposeWalletException(
+                    throw new WalletException(
                         $"Account '{walletAccountReference.AccountName}' in wallet '{walletAccountReference.WalletName}' not found.");
                 }
 
@@ -651,7 +653,7 @@ namespace Stratis.Bitcoin.Features.GeneralPurposeWallet
         }
 
         /// <inheritdoc />
-        public IEnumerable<UnspentMultiSigOutputReference> GetSpendableMultiSigTransactionsInAccount(GeneralPurposeWalletAccountReference walletAccountReference, Script scriptPubKey, int confirmations = 0)
+        public IEnumerable<UnspentMultiSigOutputReference> GetSpendableMultiSigTransactionsInAccount(WalletAccountReference walletAccountReference, Script scriptPubKey, int confirmations = 0)
         {
             Guard.NotNull(walletAccountReference, nameof(walletAccountReference));
             this.logger.LogTrace("({0}:'{1}',{2}:{3})", nameof(walletAccountReference), walletAccountReference, nameof(confirmations), confirmations);
@@ -665,7 +667,7 @@ namespace Stratis.Bitcoin.Features.GeneralPurposeWallet
                 if (account == null)
                 {
                     this.logger.LogTrace("(-)[ACT_NOT_FOUND]");
-                    throw new GeneralPurposeWalletException(
+                    throw new WalletException(
                         $"Account '{walletAccountReference.AccountName}' in wallet '{walletAccountReference.WalletName}' not found.");
                 }
 
@@ -732,7 +734,7 @@ namespace Stratis.Bitcoin.Features.GeneralPurposeWallet
                 if (current == null)
                 {
                     this.logger.LogTrace("(-)[REORG]");
-                    throw new GeneralPurposeWalletException("Reorg");
+                    throw new WalletException("Reorg");
                 }
 
                 // The block coming in to the wallet should
@@ -740,7 +742,7 @@ namespace Stratis.Bitcoin.Features.GeneralPurposeWallet
                 if (ChainedHeader.Height > current.Height)
                 {
                     this.logger.LogTrace("(-)[BLOCK_TOO_FAR]");
-                    throw new GeneralPurposeWalletException("block too far in the future has arrived to the wallet");
+                    throw new WalletException("block too far in the future has arrived to the wallet");
                 }
             }
 
@@ -1341,7 +1343,7 @@ namespace Stratis.Bitcoin.Features.GeneralPurposeWallet
             if (this.Wallets.Any(w => string.Equals(w.Name, name, StringComparison.OrdinalIgnoreCase)))
             {
                 this.logger.LogTrace("(-)[WALLET_ALREADY_EXISTS]");
-                throw new GeneralPurposeWalletException($"Wallet with name '{name}' already exists.");
+                throw new WalletException($"Wallet with name '{name}' already exists.");
             }
 
             GeneralPurposeWallet walletFile = new GeneralPurposeWallet
@@ -1448,7 +1450,7 @@ namespace Stratis.Bitcoin.Features.GeneralPurposeWallet
             if (wallet == null)
             {
                 this.logger.LogTrace("(-)[NOT_FOUND]");
-                throw new GeneralPurposeWalletException($"No wallet with name {walletName} could be found.");
+                throw new WalletException($"No wallet with name {walletName} could be found.");
             }
 
             this.logger.LogTrace("(-)");
