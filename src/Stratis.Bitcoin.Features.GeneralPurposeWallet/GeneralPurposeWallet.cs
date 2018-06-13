@@ -63,19 +63,6 @@ namespace Stratis.Bitcoin.Features.GeneralPurposeWallet
 		[JsonProperty(PropertyName = "accountsRoot")]
 		public ICollection<AccountRoot> AccountsRoot { get; set; }
 
-		public GeneralPurposeAddress GetAddressFromBase58(string base58)
-		{
-			foreach (GeneralPurposeAccount account in this.GetAccountsByCoinType((CoinType)this.Network.Consensus.CoinType))
-			{
-				var address = account.GetAddressFromBase58(base58);
-
-				if (address != null)
-					return address;
-			}
-
-			return null;
-		}
-
 		/// <summary>
 		/// Gets the accounts the wallet has for this type of coin.
 		/// </summary>
@@ -137,82 +124,7 @@ namespace Stratis.Bitcoin.Features.GeneralPurposeWallet
 				yield return script;
 			}
 		}
-
-		/// <summary>
-		/// Adds an account to the current wallet.
-		/// </summary>
-		/// <param name="name">The name of the account.</param>
-		/// <param name="coinType">The type of coin this account is for.</param>
-		/// <param name="accountCreationTime">Creation time of the account to be created.</param>
-		/// <returns>A new HD account.</returns>
-		public GeneralPurposeAccount AddNewAccount(string name, CoinType coinType, DateTimeOffset accountCreationTime)
-		{
-			Guard.NotEmpty(name, nameof(name));
-
-			AccountRoot accountRoot = this.AccountsRoot.Single(a => a.CoinType == coinType);
-			return accountRoot.AddNewAccount(name, this.Network, accountCreationTime);
-		}
-
-		/// <summary>
-		/// Gets the first account that contains no transaction.
-		/// </summary>
-		/// <returns>An unused account.</returns>
-		public GeneralPurposeAccount GetFirstUnusedAccount(CoinType coinType)
-		{
-			// Get the accounts root for this type of coin.
-			var accountsRoot = this.AccountsRoot.Single(a => a.CoinType == coinType);
-
-			if (accountsRoot.Accounts.Any())
-			{
-				// Get an unused account.
-				var firstUnusedAccount = accountsRoot.GetFirstUnusedAccount();
-				if (firstUnusedAccount != null)
-				{
-					return firstUnusedAccount;
-				}
-			}
-
-			return null;
-		}
-
-		/// <summary>
-		/// Determines whether the wallet contains the specified address.
-		/// </summary>
-		/// <param name="address">The address to check.</param>
-		/// <returns>A value indicating whether the wallet contains the specified address.</returns>
-		public bool ContainsAddress(GeneralPurposeAddress address)
-		{
-			if (!this.AccountsRoot.Any(r => r.Accounts.Any(
-				a => a.ExternalAddresses.Any(i => i.Address == address.Address) ||
-					 a.InternalAddresses.Any(i => i.Address == address.Address))))
-			{
-				return false;
-			}
-
-			return true;
-		}
-
-		// TODO: The private key is not encrypted yet.
-		/// <summary>
-		/// Gets the extended private key for the given address.
-		/// </summary>
-		/// <param name="password">The password used to encrypt/decrypt sensitive info.</param>
-		/// <param name="address">The address to get the private key for.</param>
-		/// <returns>The private key.</returns>
-		public Key GetPrivateKeyForAddress(string password, GeneralPurposeAddress address)
-		{
-			Guard.NotEmpty(password, nameof(password));
-			Guard.NotNull(address, nameof(address));
-
-			// Check if the wallet contains the address.
-			if (!this.ContainsAddress(address))
-			{
-				throw new WalletException("Address not found in wallet.");
-			}
-			
-			return address.PrivateKey;
-		}
-
+        
 		/// <summary>
 		/// Lists all spendable transactions from all accounts in the wallet.
 		/// </summary>
@@ -268,22 +180,6 @@ namespace Stratis.Bitcoin.Features.GeneralPurposeWallet
 		public ICollection<GeneralPurposeAccount> Accounts { get; set; }
 
 		/// <summary>
-		/// Gets the first account that contains no transaction.
-		/// </summary>
-		/// <returns>An unused account</returns>
-		public GeneralPurposeAccount GetFirstUnusedAccount()
-		{
-			if (this.Accounts == null)
-				return null;
-
-			var unusedAccounts = this.Accounts.Where(acc => !acc.ExternalAddresses.Any() && !acc.InternalAddresses.Any()).ToList();
-			if (!unusedAccounts.Any())
-				return null;
-
-			return unusedAccounts.First();
-		}
-
-		/// <summary>
 		/// Gets the account matching the name passed as a parameter.
 		/// </summary>
 		/// <param name="accountName">The name of the account to get.</param>
@@ -300,35 +196,6 @@ namespace Stratis.Bitcoin.Features.GeneralPurposeWallet
 				throw new WalletException($"No account with the name {accountName} could be found.");
 
 			return account;
-		}
-
-		/// <summary>
-		/// Adds an account to the current account root.
-		/// </summary>
-		/// <param name="name">The name of the account.</param>
-		/// <param name="network">The network for which this account will be created.</param>
-		/// <param name="accountCreationTime">Creation time of the account to be created.</param>
-		/// <returns>A new general purpose account that can contain non-HD addresses.</returns>
-		public GeneralPurposeAccount AddNewAccount(string name, Network network, DateTimeOffset accountCreationTime)
-		{
-			Guard.NotEmpty(name, nameof(name));
-
-			// Get the current collection of accounts.
-			List<GeneralPurposeAccount> accounts = this.Accounts.ToList();
-
-			var newAccount = new GeneralPurposeAccount
-			{
-				ExternalAddresses = new List<GeneralPurposeAddress>(),
-				InternalAddresses = new List<GeneralPurposeAddress>(),
-				Name = name,
-				CreationTime = accountCreationTime,
-				CoinType = this.CoinType
-			};
-
-			accounts.Add(newAccount);
-			this.Accounts = accounts;
-
-			return newAccount;
 		}
 	}
 
@@ -409,27 +276,7 @@ namespace Stratis.Bitcoin.Features.GeneralPurposeWallet
 		{
 			return this.CoinType;
 		}
-
-		/// <summary>
-		/// Adds the key and address information from a MultiSigAddress into the account's
-		/// multisig address list. Future transactions affecting this address will then
-		/// automatically be processed and recorded by the wallet.
-		/// </summary>
-		/// <param name="multiSigAddress">The MultiSigAddress to import into the address list.</param>
-		public bool ImportMultiSigAddress(MultiSigAddress multiSigAddress)
-		{
-			if (!this.MultiSigAddresses.Contains(multiSigAddress))
-			{
-				this.MultiSigAddresses.Add(multiSigAddress);
-
-				// Indicate that the address was successfully added to the account
-				return true;
-			}
-
-			// The address was already imported
-			return false;
-		}
-
+        
 		public Transaction SignPartialTransaction(Transaction partial, GeneralPurposeWallet wallet, string password, Network network)
 		{
 			// Find which multisig address is being referred to by the inputs
@@ -584,15 +431,6 @@ namespace Stratis.Bitcoin.Features.GeneralPurposeWallet
 		}
 
 		/// <summary>
-		/// Gets the first receiving address that contains no transactions.
-		/// </summary>
-		/// <returns>An unused address</returns>
-		public GeneralPurposeAddress GetFirstUnusedReceivingAddress()
-		{
-			return this.GetFirstUnusedAddress(false);
-		}
-
-		/// <summary>
 		/// Gets the first change address that contains no transactions.
 		/// </summary>
 		/// <returns>An unused address</returns>
@@ -619,34 +457,7 @@ namespace Stratis.Bitcoin.Features.GeneralPurposeWallet
 
 			return unusedAddresses.First();
 		}
-
-		public GeneralPurposeAddress GetAddressFromBase58(string base58)
-		{
-			foreach (GeneralPurposeAddress address in this.ExternalAddresses)
-			{
-				if (address.Address.Equals(base58))
-					return address;
-			}
-
-			foreach (GeneralPurposeAddress address in this.InternalAddresses)
-			{
-				if (address.Address.Equals(base58))
-					return address;
-			}
-
-			return null;
-		}
-
-		public MultiSigAddress GetMultiSigAddressFromBase58(string base58)
-		{
-			foreach (MultiSigAddress address in this.MultiSigAddresses)
-			{
-				if (address.Address.Equals(base58))
-					return address;
-			}
-
-			return null;
-		}
+        
 
 		/// <summary>
 		/// Gets a collection of transactions by id.
@@ -706,22 +517,6 @@ namespace Stratis.Bitcoin.Features.GeneralPurposeWallet
 			var total = allTransactions.Sum(t => t.SpendableAmount(false));
 
 			return (confirmed, total - confirmed);
-		}
-
-		/// <summary>
-		/// Finds the addresses in which a transaction is contained.
-		/// </summary>
-		/// <remarks>
-		/// Returns a collection because a transaction can be contained in a change address as well as in a receive address (as a spend).
-		/// </remarks>
-		/// <param name="predicate">A predicate by which to filter the transactions.</param>
-		/// <returns></returns>
-		public IEnumerable<GeneralPurposeAddress> FindAddressesForTransaction(Func<TransactionData, bool> predicate)
-		{
-			Guard.NotNull(predicate, nameof(predicate));
-
-			var addresses = this.GetCombinedAddresses();
-			return addresses.Where(t => t.Transactions != null).Where(a => a.Transactions.Any(predicate));
 		}
 
 		/// <summary>

@@ -38,15 +38,6 @@ namespace Stratis.Bitcoin.Features.GeneralPurposeWallet
     /// </summary>
     public class GeneralPurposeWalletManager : IGeneralPurposeWalletManager
     {
-        /// <summary>Size of the buffer of unused addresses maintained in an account. </summary>
-        private const int UnusedAddressesBuffer = 20;
-
-        /// <summary>Quantity of accounts created in a wallet file when a wallet is restored.</summary>
-        private const int WalletRecoveryAccountsCount = 1;
-
-        /// <summary>Quantity of accounts created in a wallet file when a wallet is created.</summary>
-        private const int WalletCreationAccountsCount = 1;
-
         /// <summary>File extension for wallet files.</summary>
         private const string WalletFileExtension = "nonhdwallet.json";
 
@@ -969,37 +960,10 @@ namespace Stratis.Bitcoin.Features.GeneralPurposeWallet
         {
             this.logger.LogTrace("()");
 
-            foreach (GeneralPurposeWallet wallet in this.Wallets)
-            {
-                foreach (GeneralPurposeAccount account in wallet.GetAccountsByCoinType(this.coinType))
-                {
-                    bool isChange;
-                    if (account.ExternalAddresses.Any(address => address.ScriptPubKey == script))
-                    {
-                        isChange = false;
-                    }
-                    else if (account.InternalAddresses.Any(address => address.ScriptPubKey == script))
-                    {
-                        isChange = true;
-                    }
-                    else
-                    {
-                        continue;
-                    }
+            this.LoadKeysLookupLock();
 
-                    // Calculate how many accounts to add to keep a buffer of 20 unused addresses.
-                    int addressesCount = isChange ? account.InternalAddresses.Count() : account.ExternalAddresses.Count();
-                    int emptyAddressesCount = addressesCount - 1;
-                    int accountsToAdd = UnusedAddressesBuffer - emptyAddressesCount;
-                    account.CreateAddresses(this.network, accountsToAdd, isChange);
-
-                    this.LoadKeysLookupLock();
-
-                    // Persists the address to the wallet file.
-                    this.SaveWallet(wallet);
-                }
-            }
-
+            // Persists the address to the wallet file.
+            this.SaveWallet(this.Wallets.First());
             this.logger.LogTrace("()");
         }
         
