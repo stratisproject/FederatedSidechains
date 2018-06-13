@@ -41,7 +41,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway
             this.MemberPrivateFolder = configReader.GetOrDefault<string>("memberprivatefolder", null);
             this.CounterChainApiPort = configReader.GetOrDefault("counterchainapiport", 0);
            
-            this.FederationNodeIps = configReader.GetOrDefault<string>("federationips", string.Empty)?.Split(',').Select(a => a.ToIPEndPoint(nodeSettings.Network.DefaultPort));
+            this.FederationNodeIps = configReader.GetOrDefault<string>("federationips", null)?.Split(',').Select(a => a.ToIPEndPoint(nodeSettings.Network.DefaultPort));
         }
 
         public IEnumerable<IPEndPoint> FederationNodeIps { get; set; }
