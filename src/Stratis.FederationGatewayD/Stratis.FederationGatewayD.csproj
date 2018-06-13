@@ -13,18 +13,29 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Stratis.Bitcoin" Version="1.1.9-beta" />
-    <PackageReference Include="Stratis.Bitcoin.Api" Version="1.1.9-beta" />
-    <PackageReference Include="Stratis.Bitcoin.Features.BlockStore" Version="1.1.9-beta" />
-    <PackageReference Include="Stratis.Bitcoin.Features.Consensus" Version="1.1.9-beta" />
-    <PackageReference Include="Stratis.Bitcoin.Features.MemoryPool" Version="1.1.9-beta" />
-    <PackageReference Include="Stratis.Bitcoin.Features.Miner" Version="1.1.9-beta" />
-    <PackageReference Include="Stratis.Bitcoin.Features.RPC" Version="1.1.9-beta" />
-    <PackageReference Include="Stratis.Bitcoin.Features.Wallet" Version="1.1.9-beta" />
+    <PackageReference Include="Stratis.Bitcoin" Version="1.1.11-beta" />
+    <PackageReference Include="Stratis.Bitcoin.Api" Version="1.1.11-beta" />
+    <PackageReference Include="Stratis.Bitcoin.Features.BlockStore" Version="1.1.11-beta" />
+    <PackageReference Include="Stratis.Bitcoin.Features.Consensus" Version="1.1.11-beta" />
+    <PackageReference Include="Stratis.Bitcoin.Features.MemoryPool" Version="1.1.11-beta" />
+    <PackageReference Include="Stratis.Bitcoin.Features.Miner" Version="1.1.11-beta" />
+    <PackageReference Include="Stratis.Bitcoin.Features.RPC" Version="1.1.11-beta" />
+    <PackageReference Include="Stratis.Bitcoin.Features.Wallet" Version="1.1.11-beta" />
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\Stratis.Bitcoin.Features.GeneralPurposeWallet\Stratis.Bitcoin.Features.GeneralPurposeWallet.csproj" />
     <ProjectReference Include="..\Stratis.FederatedPeg.Features.FederationGateway\Stratis.FederatedPeg.Features.FederationGateway.csproj" />
+    <ProjectReference Include="..\Stratis.Networks.Apex\Stratis.Networks.Apex.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Update="apex.gateway.conf">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="stratis.gateway.conf">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
   </ItemGroup>
 
 </Project>
