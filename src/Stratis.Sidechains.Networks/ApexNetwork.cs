@@ -10,7 +10,6 @@ namespace Stratis.Sidechains.Networks
         public const string TestNetworkName = ChainName + "Test";
         public const string RegTestNetworkName = ChainName + "RegTest";
 
-
         public static Network Main => Network.GetNetwork(MainNetworkName) ?? Network.Register(new ApexMain());
 
         public static Network Test => Network.GetNetwork(TestNetworkName) ?? Network.Register(new ApexTest());
