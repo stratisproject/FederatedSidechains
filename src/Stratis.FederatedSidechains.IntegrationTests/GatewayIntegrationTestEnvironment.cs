@@ -18,25 +18,28 @@ using System.Linq;
 
 namespace Stratis.FederatedSidechains.IntegrationTests
 {
-    public class GatewayIntegrationTestEnvironment
+    public class GatewayIntegrationTestEnvironment : IDisposable
     {
-        Dictionary<Chain, Network> Networks { get; }
-        Dictionary<Chain, Mnemonic> ChainMnemonics { get; }
+        public IDictionary<Chain, Network> Networks { get; }
+        public IDictionary<Chain, Mnemonic> ChainMnemonics { get; }
         public List<NodeKey> FederationNodeKeys { get; private set; }
-        public List<FederationMemberKey> FederationMemberKeys { get; private set; }
-        public Dictionary<FederationMemberKey, Mnemonic> FederationMembersMnemonics { get; private set; }
+        public IList<FederationMemberKey> FederationMemberKeys { get; private set; }
+        public IDictionary<FederationMemberKey, Mnemonic> FederationMembersMnemonics { get; private set; }
         public Script RedeemScript { get; private set; }
-        public Dictionary<NodeKey, GeneralPurposeAccount> GpAccountsByKey { get; }
+        public IDictionary<NodeKey, GeneralPurposeAccount> GpAccountsByKey { get; }
+        public IDictionary<NodeKey, CoreNode> NodesByKey { get; }
 
         private readonly NodeBuilder nodeBuilder;
-        private readonly Dictionary<NodeKey, CoreNode> nodesByKey;
 
         public readonly int FederationMemberCount;
         public int QuorumSize => FederationMemberCount / 2 + 1;
 
         public GatewayIntegrationTestEnvironment(NodeBuilder nodeBuilder, Network mainchainNetwork, Network sidechainNetwork, int federationMemberCount = 3)
         {
+            FederationMembersMnemonics = new Dictionary<FederationMemberKey, Mnemonic>();
             ChainMnemonics = new Dictionary<Chain, Mnemonic>();
+            NodesByKey = new Dictionary<NodeKey, CoreNode>();
+            GpAccountsByKey = new Dictionary<NodeKey, GeneralPurposeAccount>();
             Networks = new Dictionary<Chain, Network>
             {
                 {Chain.Mainchain, mainchainNetwork},
@@ -45,76 +48,11 @@ namespace Stratis.FederatedSidechains.IntegrationTests
 
             this.nodeBuilder = nodeBuilder;
             FederationMemberCount = federationMemberCount;
+            BuildFederationMembersNodeKeys();
             BuildMnemonics();
             BuildRedeemScript();
-            BuildFederationMembersNodeKeys();
             BuildFederationNodes();
             BuildGeneralPurposeWallets();
-        }
-
-        private void BuildMnemonics()
-        {
-            foreach (var federationMemberKey in FederationMemberKeys)
-            {
-                var mnemonic = new Mnemonic(Wordlist.English, WordCount.Twelve);
-                FederationMembersMnemonics.Add(federationMemberKey, mnemonic);
-            }
-            ChainMnemonics[Chain.Mainchain] = new Mnemonic(Wordlist.English, WordCount.Twelve);
-            ChainMnemonics[Chain.Sidechain] = new Mnemonic(Wordlist.English, WordCount.Twelve);
-        }
-
-        private void BuildRedeemScript()
-        {
-            this.RedeemScript = PayToMultiSigTemplate.Instance.GenerateScriptPubKey(QuorumSize,
-                FederationMembersMnemonics.Values
-                    .Select(m => m.DeriveExtKey().PrivateKey.PubKey).ToArray());
-        }
-
-        private void BuildFederationNodes()
-        {
-            foreach (var key in FederationNodeKeys)
-            {
-                BuildFederationNode(key);
-            }
-        }
-
-        private CoreNode BuildFederationNode(NodeKey key)
-        {
-            var addParametersAction = new Action<CoreNode>(n =>
-            {
-                n.ConfigParameters.Add("membername", key.AsFederationMemberKey().Name);
-                n.ConfigParameters.Add("apiport", key.SelfApiPort.ToString());
-                n.ConfigParameters.Add("counterchainapiport", key.CounterChainApiPort.ToString());
-                n.ConfigParameters.Add("redeemscript", this.RedeemScript.ToString());
-                n.ConfigParameters.Add("federationips", 
-                    string.Join(",", Enumerable.Range(0, FederationMemberCount).Select(i => "127.0.0.1")));
-            });
-            TestHelper.BuildStartAndRegisterNode(nodeBuilder,
-                fullNodeBuilder => fullNodeBuilder
-                    .UsePosConsensus()
-                    .UseBlockStore()
-                    .UseMempool()
-                    .UseWallet()
-                    .AddPowPosMining()
-                    .AddFederationGateway()
-                    .UseGeneralPurposeWallet()
-                    .UseBlockNotification()
-                    .UseApi()
-                    .AddRPC(),
-                key, nodesByKey, Networks[key.Chain], addParametersAction);
-            TestHelper.ConnectNodeToOtherNodesInTest(key, nodesByKey);
-            return nodesByKey[key];
-        }
-
-        private void BuildGeneralPurposeWallets()
-        {
-            foreach (var key in FederationNodeKeys)
-            {
-                //todo: change that when GeneralPurposeWallets are ready again
-                //var generalWalletManager = nodesByKey[key].FullNode.NodeService<IGeneralPurposeWalletManager>();
-                //generalWalletManager.CreateWallet(NamingConstants.MultisigPassword, NamingConstants.MultisigWallet)
-                GpAccountsByKey.Add(key, null);
-            }
         }
 
         private void BuildFederationMembersNodeKeys()
@@ -132,7 +70,68 @@ namespace Stratis.FederatedSidechains.IntegrationTests
             FederationNodeKeys.Count.Should().Be(FederationMemberCount * 2);
             FederationMemberKeys.Count.Should().Be(FederationMemberCount);
         }
-        
+
+        private void BuildMnemonics()
+        {
+            foreach (var federationMemberKey in FederationMemberKeys)
+            {
+                var mnemonic = new Mnemonic(Wordlist.English, WordCount.Twelve);
+                FederationMembersMnemonics.Add(federationMemberKey, mnemonic);
+            }
+            //todo: make sure this is needed
+            ChainMnemonics[Chain.Mainchain] = new Mnemonic(Wordlist.English, WordCount.Twelve);
+            ChainMnemonics[Chain.Sidechain] = new Mnemonic(Wordlist.English, WordCount.Twelve);
+        }
+
+        private void BuildRedeemScript()
+        {
+            this.RedeemScript = PayToMultiSigTemplate.Instance.GenerateScriptPubKey(QuorumSize,
+                FederationMembersMnemonics.Values
+                    .Select(m => m.DeriveExtKey().PrivateKey.PubKey).ToArray());
+        }
+
+        private void BuildFederationNodes()
+        {
+            foreach (var key in FederationNodeKeys)
+            {
+                var addParametersAction = new Action<CoreNode>(n =>
+                {
+                    n.ConfigParameters.Add("membername", key.AsFederationMemberKey().Name);
+                    n.ConfigParameters.Add("apiport", key.SelfApiPort.ToString());
+                    n.ConfigParameters.Add("counterchainapiport", key.CounterChainApiPort.ToString());
+                    n.ConfigParameters.Add("redeemscript", this.RedeemScript.ToString());
+                    n.ConfigParameters.Add("federationips",
+                        string.Join(",", Enumerable.Repeat("127.0.0.1", FederationMemberCount)));
+                });
+                TestHelper.BuildStartAndRegisterNode(nodeBuilder,
+                    fullNodeBuilder => fullNodeBuilder
+                        .UseBlockStore()
+                        .UsePowConsensus()
+                        .UseMempool()
+                        .UseWallet()
+                        .AddMining()
+                        .AddFederationGateway()
+                        .UseGeneralPurposeWallet()
+                        .UseBlockNotification()
+                        .UseApi()
+                        .AddRPC(),
+                    key, NodesByKey, Networks[key.Chain], addParametersAction);
+                //todo: check this is needed
+                //TestHelper.ConnectNodeToOtherNodesInTest(key, nodesByKey);
+            }
+        }
+
+        private void BuildGeneralPurposeWallets()
+        {
+            foreach (var key in FederationNodeKeys)
+            {
+                //todo: change that when GeneralPurposeWallets are ready again
+                //var generalWalletManager = nodesByKey[key].FullNode.NodeService<IGeneralPurposeWalletManager>();
+                //generalWalletManager.CreateWallet(NamingConstants.MultisigPassword, NamingConstants.MultisigWallet)
+                GpAccountsByKey.Add(key, null);
+            }
+        }
+
         public BitcoinAddress GetMultisigAddress(Chain chain)
         {
             return RedeemScript.Hash.GetAddress(Networks[chain]);
@@ -141,6 +140,11 @@ namespace Stratis.FederatedSidechains.IntegrationTests
         public Script GetMultisigPubKey(Chain chain)
         {
             return GetMultisigAddress(chain).ScriptPubKey;
+        }
+
+        public void Dispose()
+        {
+            nodeBuilder?.Dispose();
         }
     }
 }

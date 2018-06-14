@@ -16,6 +16,7 @@ using Stratis.Sidechains.Networks;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Stratis.Bitcoin.Features.Miner.Interfaces;
 using Stratis.Bitcoin.Tests.Common.TestFramework;
 using Xunit;
 using Xunit.Abstractions;
@@ -43,6 +44,7 @@ namespace Stratis.FederatedSidechains.IntegrationTests.FederationGateway
         {
             this.output = output;
             nodesByKey = new Dictionary<NodeKey, CoreNode>();
+            hdAccountsByKey = new Dictionary<NodeKey, HdAccount>();
             nodeBuilder = NodeBuilder.Create(this.CurrentTest.DisplayName);
             this.mainchainNetwork = Network.StratisRegTest;
             this.sidechainNetwork = ApexNetwork.RegTest;
@@ -92,6 +94,8 @@ namespace Stratis.FederatedSidechains.IntegrationTests.FederationGateway
                     .AddPowPosMining()
                     .UseApi()
                     .AddRPC()
+                    .MockIBD()
+                    .SubstituteDateTimeProviderFor<MiningFeature>()
                 );
             
             TestHelper.BuildStartAndRegisterNode(nodeBuilder, buildNodeAction, nodeKey, nodesByKey, mainchainNetwork);
@@ -100,7 +104,7 @@ namespace Stratis.FederatedSidechains.IntegrationTests.FederationGateway
             var account = CreateAndRegisterHdAccount(node, nodeKey);
 
             sharedSteps.MinePremineBlocks(node, nodeKey.WalletName, account.Name, nodeKey.Password);
-            sharedSteps.MineBlocks(100, node, account.Name, nodeKey.WalletName, nodeKey.Password);
+            //sharedSteps.MineBlocks(100, node, account.Name, nodeKey.WalletName, nodeKey.Password);
 
             //todo: check that we got this.moneyFromMining after the mining
         }
@@ -111,15 +115,19 @@ namespace Stratis.FederatedSidechains.IntegrationTests.FederationGateway
             var buildNodeAction = new Action<IFullNodeBuilder>(fullNodeBuilder =>
                 fullNodeBuilder
                     .UseBlockStore()
-                    .UsePosConsensus()
+                    .UsePowConsensus()
                     .UseMempool()
                     .UseWallet()
-                    .AddPowPosMining()
+                    .AddMining()
                     .UseApi()
                     .AddRPC()
+                    .MockIBD()
             );
 
             TestHelper.BuildStartAndRegisterNode(nodeBuilder, buildNodeAction, nodeKey, nodesByKey, sidechainNetwork);
+            var node = nodesByKey[nodeKey];
+
+            var account = CreateAndRegisterHdAccount(node, nodeKey);
         }
 
         public void a_federation_with_general_purpose_accounts()
@@ -127,6 +135,11 @@ namespace Stratis.FederatedSidechains.IntegrationTests.FederationGateway
             this.gatewayEnvironment = new GatewayIntegrationTestEnvironment(nodeBuilder,
                 mainchainNetwork: mainchainNetwork,
                 sidechainNetwork: sidechainNetwork);
+
+            gatewayEnvironment.NodesByKey.ToList().ForEach(k => this.nodesByKey.Add(k.Key, k.Value));
+
+            TestHelper.ConnectNodeToOtherNodesInTest(new NodeKey() { Chain = Chain.Mainchain, Role = NodeRole.Wallet }, nodesByKey);
+            TestHelper.ConnectNodeToOtherNodesInTest(new NodeKey() { Chain = Chain.Sidechain, Role = NodeRole.Wallet }, nodesByKey);
         }
 
         public void the_mainchain_account_transfers_money_to_the_sidechain_account()
@@ -208,8 +221,8 @@ namespace Stratis.FederatedSidechains.IntegrationTests.FederationGateway
         public HdAccount CreateAndRegisterHdAccount(CoreNode node, NodeKey nodeKey)
         {
             var walletManager = node.FullNode.WalletManager();
-            var mnemonic = walletManager.CreateWallet(nodeKey.WalletName, nodeKey.Password);
-            var account = walletManager.GetAccounts(nodeKey.WalletName).First();
+            var mnemonic = walletManager.CreateWallet(nodeKey.Password, nodeKey.WalletName);
+            var account = walletManager.GetAccounts(nodeKey.WalletName).First(n => n.Name == NamingConstants.AccountZero);
             hdAccountsByKey.Add(nodeKey, account);
             return account;
         }

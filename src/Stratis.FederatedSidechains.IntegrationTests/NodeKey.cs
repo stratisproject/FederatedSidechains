@@ -18,27 +18,6 @@ namespace Stratis.FederatedSidechains.IntegrationTests
         public string Password => NamingConstants.Password + Name;
         public string MultisigWalletName => NamingConstants.Multisig + NamingConstants.Wallet;
 
-        public string[] GetKeyFilesFromPattern(string pattern, string baseFolder = null)
-        {
-            return new []
-            {
-                GetKeyFileFromPattern(pattern, Chain.Mainchain, baseFolder),
-                GetKeyFileFromPattern(pattern, Chain.Sidechain, baseFolder),
-            };
-        }
-
-        public string GetKeyFileFromPattern(string pattern, Chain chain, string baseFederationFolder = null)
-        {
-            var fileName = string.Format(pattern, chain, Name);
-            return baseFederationFolder == null
-                ? fileName
-                : Path.Combine(GetIndividualFolderPath(baseFederationFolder), fileName);
-        }
-
-        public string GetIndividualFolderPath(string baseFolder)
-        {
-            return Path.Combine(baseFolder, Name);
-        }
     }
 
 
@@ -54,11 +33,6 @@ namespace Stratis.FederatedSidechains.IntegrationTests
         public string Name => Chain.ToString() + Role + Index;
         public string Password => nameof(Password) + Name;
         public string WalletName => NamingConstants.Wallet + Name;
-
-        public NodeKey Clone()
-        {
-            return new NodeKey() {Chain = this.Chain, Role = this.Role, Index = this.Index};
-        }
 
         public FederationMemberKey AsFederationMemberKey()
         {
