@@ -16,7 +16,10 @@ using Stratis.Sidechains.Networks;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
+using NBitcoin.Protocol;
 using Stratis.Bitcoin.Features.Miner.Interfaces;
+using Stratis.Bitcoin.IntegrationTests.Common.Runners;
 using Stratis.Bitcoin.Tests.Common.TestFramework;
 using Xunit;
 using Xunit.Abstractions;
@@ -45,7 +48,7 @@ namespace Stratis.FederatedSidechains.IntegrationTests.FederationGateway
             this.output = output;
             nodesByKey = new Dictionary<NodeKey, CoreNode>();
             hdAccountsByKey = new Dictionary<NodeKey, HdAccount>();
-            nodeBuilder = NodeBuilder.Create(this.CurrentTest.DisplayName);
+            nodeBuilder = NodeBuilder.Create(this.CurrentTest.TestCase.TestMethod.Method.Name);
             this.mainchainNetwork = Network.StratisRegTest;
             this.sidechainNetwork = ApexNetwork.RegTest;
             sharedSteps = new SharedSteps();
@@ -91,22 +94,23 @@ namespace Stratis.FederatedSidechains.IntegrationTests.FederationGateway
                     .UseBlockStore()
                     .UsePosConsensus()
                     .UseMempool()
+                    .AddMining()
                     .UseWallet()
-                    .AddPowPosMining()
                     .UseApi()
                     .AddRPC()
                     .MockIBD()
                     .SubstituteDateTimeProviderFor<MiningFeature>()
                 );
             
-            TestHelper.BuildStartAndRegisterNode(nodeBuilder, buildNodeAction, nodeKey, nodesByKey, mainchainNetwork);
+            TestHelper.BuildStartAndRegisterNode(nodeBuilder, buildNodeAction, nodeKey, nodesByKey, mainchainNetwork, protocolVersion: ProtocolVersion.ALT_PROTOCOL_VERSION);
             var node = nodesByKey[nodeKey];
 
             var account = CreateAndRegisterHdAccount(node, nodeKey);
 
             sharedSteps.MinePremineBlocks(node, nodeKey.WalletName, account.Name, nodeKey.Password);
-            //sharedSteps.MineBlocks(100, node, account.Name, nodeKey.WalletName, nodeKey.Password);
-
+            //todo: find why mining further creates file info issues
+            //node.GenerateStratisWithMiner(100);
+            this.sharedSteps.WaitForNodeToSync(node);
             //todo: check that we got this.moneyFromMining after the mining
         }
 
@@ -137,10 +141,17 @@ namespace Stratis.FederatedSidechains.IntegrationTests.FederationGateway
                 mainchainNetwork: mainchainNetwork,
                 sidechainNetwork: sidechainNetwork);
 
+            output.WriteLine("creating gateway");
             gatewayEnvironment.NodesByKey.ToList().ForEach(k => this.nodesByKey.Add(k.Key, k.Value));
+            output.WriteLine("gateway created");
 
-            TestHelper.ConnectNodeToOtherNodesInTest(new NodeKey() { Chain = Chain.Mainchain, Role = NodeRole.Wallet }, nodesByKey);
-            TestHelper.ConnectNodeToOtherNodesInTest(new NodeKey() { Chain = Chain.Sidechain, Role = NodeRole.Wallet }, nodesByKey);
+            var mainWalletKey = new NodeKey() { Chain = Chain.Mainchain, Role = NodeRole.Wallet };
+            TestHelper.ConnectNodeToOtherNodesInTest(mainWalletKey, nodesByKey);
+            TestHelper.WaitLoop(() => TestHelper.IsNodeConnected(nodesByKey[mainWalletKey]));
+
+            var sidechainWalletKey = new NodeKey() { Chain = Chain.Sidechain, Role = NodeRole.Wallet };
+            TestHelper.ConnectNodeToOtherNodesInTest(sidechainWalletKey, nodesByKey);
+            TestHelper.WaitLoop(() => TestHelper.IsNodeConnected(nodesByKey[sidechainWalletKey]));
         }
 
         public void the_mainchain_account_transfers_money_to_the_sidechain_account()

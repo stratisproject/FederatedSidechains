@@ -101,7 +101,10 @@ namespace Stratis.FederatedSidechains.IntegrationTests
                     n.ConfigParameters.Add("counterchainapiport", key.CounterChainApiPort.ToString());
                     n.ConfigParameters.Add("redeemscript", this.RedeemScript.ToString());
                     n.ConfigParameters.Add("federationips",
-                        string.Join(",", Enumerable.Repeat("127.0.0.1", FederationMemberCount)));
+                        string.Join(",", FederationNodeKeys
+                            .Where(k => k.Chain == key.Chain && k.Index != key.Index)
+                            .Select(k => $"127.0.0.1:{k.SelfApiPort}")
+                        ));
                 });
                 TestHelper.BuildStartAndRegisterNode(nodeBuilder,
                     fullNodeBuilder => fullNodeBuilder

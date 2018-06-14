@@ -19,8 +19,7 @@ namespace Stratis.FederatedSidechains.IntegrationTests
         public string MultisigWalletName => NamingConstants.Multisig + NamingConstants.Wallet;
 
     }
-
-
+    
     public struct NodeKey
     {
         public Chain Chain;
@@ -28,7 +27,6 @@ namespace Stratis.FederatedSidechains.IntegrationTests
         public int Index;
         public int SelfApiPort => (Chain == Chain.Mainchain ? 101 : 102) * 100 + Index;
         public int CounterChainApiPort => (Chain == Chain.Mainchain ? 102 : 101) * 100 + Index;
-
 
         public string Name => Chain.ToString() + Role + Index;
         public string Password => nameof(Password) + Name;
