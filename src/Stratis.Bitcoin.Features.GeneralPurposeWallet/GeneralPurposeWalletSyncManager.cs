@@ -79,7 +79,7 @@ namespace Stratis.Bitcoin.Features.Wallet
                 // that in the wallet. The block locator will help finding
                 // a common fork and bringing the wallet back to a good
                 // state (behind the best chain).
-                ICollection<uint256> locators = this.walletManager.GetFirstWalletBlockLocator();
+                ICollection<uint256> locators = this.walletManager.GetWallet().BlockLocator;
                 BlockLocator blockLocator = new BlockLocator { Blocks = locators.ToList() };
                 ChainedHeader fork = this.chain.FindFork(blockLocator);
                 this.walletManager.RemoveBlocks(fork);

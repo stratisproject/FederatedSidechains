@@ -129,8 +129,8 @@ namespace Stratis.FederatedPeg.IntegrationTests.Helpers
         public static void SaveGeneralWallet(CoreNode node, string walletName)
         {
             var generalWalletManager = node.FullNode.NodeService<IGeneralPurposeWalletManager>() as GeneralPurposeWalletManager;
-            var wallet = generalWalletManager.GetWallet(walletName);
-            generalWalletManager.SaveWallet(wallet);
+            var wallet = generalWalletManager.GetWallet();
+            generalWalletManager.SaveWallet();
         }
 
         public static bool AreConnected(CoreNode node1, CoreNode node2)

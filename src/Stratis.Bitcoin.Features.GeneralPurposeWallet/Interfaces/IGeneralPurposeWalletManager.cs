@@ -31,47 +31,14 @@ namespace Stratis.Bitcoin.Features.GeneralPurposeWallet.Interfaces
 		/// Lists all spendable transactions from all accounts in the wallet.
 		/// </summary>
 		/// <returns>A collection of spendable outputs</returns>
-		IEnumerable<UnspentOutputReference> GetSpendableTransactionsInWallet(string walletName, int confirmations = 0);
-
-		/// <summary>
-		/// Lists all spendable transactions from the account specified in <see cref="WalletAccountReference"/>.
-		/// </summary>
-		/// <returns>A collection of spendable outputs that belong to the given account.</returns>
-		IEnumerable<UnspentOutputReference> GetSpendableTransactionsInAccount(WalletAccountReference walletAccountReference, int confirmations = 0);
-
-		/// <summary>
-		/// Lists all spendable transactions from the given multisig address in the account specified in <see cref="WalletAccountReference"/>.
-		/// </summary>
-		/// <returns>A collection of spendable outputs that belong to the given multisig address in the given account.</returns>
-		IEnumerable<UnspentMultiSigOutputReference> GetSpendableMultiSigTransactionsInAccount(WalletAccountReference walletAccountReference, Script scriptPubKey, int confirmations = 0);
-        
-		/// <summary>
-		/// Gets a collection of addresses containing transactions for this coin.
-		/// </summary>
-		/// <param name="walletName">The wallet name.</param>
-		/// <returns>Collection of address history and transaction pairs.</returns>
-		IEnumerable<FlatHistory> GetHistory(string walletName);
+		IEnumerable<UnspentOutputReference> GetSpendableTransactionsInWallet(int confirmations = 0);
 
 		/// <summary>
 		/// Gets a collection of addresses containing transactions for this coin.
 		/// </summary>
 		/// <param name="wallet">The wallet to get history from.</param>
 		/// <returns></returns>
-		IEnumerable<FlatHistory> GetHistory(GeneralPurposeWallet wallet);
-
-		/// <summary>
-		/// Gets some general information about a wallet.
-		/// </summary>
-		/// <param name="walletName">The name of the wallet.</param>
-		/// <returns></returns>
-		GeneralPurposeWallet GetWallet(string walletName);
-
-		/// <summary>
-		/// Gets a list of accounts.
-		/// </summary>
-		/// <param name="walletName">The name of the wallet to look into.</param>
-		/// <returns></returns>
-		IEnumerable<GeneralPurposeAccount> GetAccounts(string walletName);
+		IEnumerable<FlatHistory> GetHistory();
 
 		/// <summary>
 		/// Gets the last block height.
@@ -91,65 +58,51 @@ namespace Stratis.Bitcoin.Features.GeneralPurposeWallet.Interfaces
 		/// <param name="chainedBlock">The blocks chain of headers.</param>
 		void ProcessBlock(Block block, ChainedHeader chainedBlock);
 
-		/// <summary>
-		/// Processes a transaction received from the network.
-		/// </summary>
-		/// <param name="transaction">The transaction.</param>
-		/// <param name="blockHeight">The height of the block this transaction came from. Null if it was not a transaction included in a block.</param>
-		/// <param name="block">The block in which this transaction was included.</param>
-		/// <param name="isPropagated">Transaction propagation state.</param>
-		void ProcessTransaction(Transaction transaction, int? blockHeight = null, Block block = null, bool isPropagated = true);
+        /// <summary>
+        /// Processes a transaction received from the network.
+        /// </summary>
+        /// <param name="transaction">The transaction.</param>
+        /// <param name="blockHeight">The height of the block this transaction came from. Null if it was not a transaction included in a block.</param>
+        /// <param name="block">The block in which this transaction was included.</param>
+        /// <param name="isPropagated">Transaction propagation state.</param>
+        /// <returns>A value indicating whether this transaction affects the wallet.</returns>
+        bool ProcessTransaction(Transaction transaction, int? blockHeight = null, Block block = null, bool isPropagated = true);
 
-		/// <summary>
-		/// Saves the wallet into the file system.
-		/// </summary>
-		/// <param name="wallet">The wallet to save.</param>
-		void SaveWallet(GeneralPurposeWallet wallet);
+        /// <summary>
+        /// Saves the wallet into the file system.
+        /// </summary>
+        void SaveWallet();
 
-		/// <summary>
-		/// Gets all the wallets' names.
-		/// </summary>
-		/// <returns>A collection of the wallets' names.</returns>
-		IEnumerable<string> GetWalletsNames();
+        /// <summary>
+        /// Gets some general information about a wallet.
+        /// </summary>
+        /// <returns></returns>
+        GeneralPurposeWallet GetWallet();
 
-		/// <summary>
-		/// Updates the wallet with the height of the last block synced.
-		/// </summary>
-		/// <param name="wallet">The wallet to update.</param>
-		/// <param name="chainedBlock">The height of the last block synced.</param>
-		void UpdateLastBlockSyncedHeight(GeneralPurposeWallet wallet, ChainedHeader chainedBlock);
+        /// <summary>
+        /// Updates the wallet with the height of the last block synced.
+        /// </summary>
+        /// <param name="wallet">The wallet to update.</param>
+        /// <param name="chainedBlock">The height of the last block synced.</param>
+        void UpdateLastBlockSyncedHeight(ChainedHeader chainedBlock);
 
 		/// <summary>
 		/// Updates all the loaded wallets with the height of the last block synced.
 		/// </summary>
 		/// <param name="chainedBlock">The height of the last block synced.</param>
-		void UpdateLastBlockSyncedHeight(ChainedHeader chainedBlock);
-
-		/// <summary>
-		/// Gets a wallet given its name.
-		/// </summary>
-		/// <param name="walletName">The name of the wallet to get.</param>
-		/// <returns>A wallet or null if it doesn't exist</returns>
-		GeneralPurposeWallet GetWalletByName(string walletName);
-
-		/// <summary>
-		/// Gets the block locator of the first loaded wallet.
-		/// </summary>
-		/// <returns></returns>
-		ICollection<uint256> GetFirstWalletBlockLocator();
-
-		/// <summary>
-		/// Gets a change address or create one if all change addresses are used.
-		/// </summary>
-		/// <param name="account">The account to create the change address.</param>
-		/// <returns>The new HD address.</returns>
-		GeneralPurposeAddress GetOrCreateChangeAddress(GeneralPurposeAccount account);
+		void UpdateBlockLocator(ChainedHeader chainedBlock);
 
 		/// <summary>
 		/// Gets whether there are any wallet files loaded or not.
 		/// </summary>
 		/// <returns>Whether any wallet files are loaded.</returns>
 		bool ContainsWallets { get; }
-        
-	}
+
+        /// <summary>
+        /// Imports the federation member's mnemonic key.
+        /// </summary>
+        /// <param name="password">The user's password.</param>
+        /// <param name="mnemonic">The user's mnemonic.</param>
+        void ImportMemberKey(string password, string mnemonic);
+    }
 }

@@ -15,6 +15,7 @@ using Stratis.Bitcoin.Utilities;
 using Stratis.Bitcoin.Utilities.JsonErrors;
 using Stratis.Bitcoin.Features.Wallet.Interfaces;
 using Stratis.Bitcoin.Features.Wallet.Models;
+using Stratis.Bitcoin.Features.GeneralPurposeWallet.Models;
 
 namespace Stratis.Bitcoin.Features.GeneralPurposeWallet.Controllers
 {
@@ -89,13 +90,13 @@ namespace Stratis.Bitcoin.Features.GeneralPurposeWallet.Controllers
 
             try
             {
-                GeneralPurposeWallet wallet = this.walletManager.GetWallet(request.Name);
+                GeneralPurposeWallet wallet = this.walletManager.GetWallet();
 
                 var model = new WalletGeneralInfoModel
                 {
                     Network = wallet.Network,
                     CreationTime = wallet.CreationTime,
-                    LastBlockSyncedHeight = wallet.AccountsRoot.Single(a => a.CoinType == this.coinType).LastBlockSyncedHeight,
+                    LastBlockSyncedHeight = wallet.LastBlockSyncedHeight,
                     ConnectedNodes = this.connectionManager.ConnectedPeers.Count(),
                     ChainTip = this.chain.Tip.Height,
                     IsChainSynced = this.chain.IsDownloaded(),
@@ -300,21 +301,16 @@ namespace Stratis.Bitcoin.Features.GeneralPurposeWallet.Controllers
             {
                 WalletBalanceModel model = new WalletBalanceModel();
 
-                var accounts = this.walletManager.GetAccounts(request.WalletName).ToList();
-                foreach (var account in accounts)
+                var result = this.walletManager.GetWallet().GetSpendableAmount();
+
+                AccountBalanceModel balance = new AccountBalanceModel
                 {
-                    var result = account.GetSpendableAmount();
+                    CoinType = this.coinType,
+                    AmountConfirmed = result.ConfirmedAmount,
+                    AmountUnconfirmed = result.UnConfirmedAmount,
+                };
 
-                    AccountBalanceModel balance = new AccountBalanceModel
-                    {
-                        CoinType = this.coinType,
-                        Name = account.Name,
-                        AmountConfirmed = result.ConfirmedAmount,
-                        AmountUnconfirmed = result.UnConfirmedAmount,
-                    };
-
-                    model.AccountsBalances.Add(balance);
-                }
+                model.AccountsBalances.Add(balance);
 
                 return this.Json(model);
             }
@@ -371,7 +367,7 @@ namespace Stratis.Bitcoin.Features.GeneralPurposeWallet.Controllers
         /// <returns>All the details of the transaction, including the hex used to execute it.</returns>
         [Route("build-transaction")]
         [HttpPost]
-        public IActionResult BuildTransaction([FromBody] Models.BuildTransactionRequest request)
+        public IActionResult BuildTransaction([FromBody] BuildTransactionRequest request)
         {
             Guard.NotNull(request, nameof(request));
 
@@ -495,6 +491,35 @@ namespace Stratis.Bitcoin.Features.GeneralPurposeWallet.Controllers
 
             this.walletSyncManager.SyncFromHeight(block.Height);
             return this.Ok();
+        }
+
+        /// <summary>
+        /// Imports the federation member's mnemonic key.
+        /// </summary>
+        /// <param name="request">The object containing the parameters used to recover a wallet.</param>
+        /// <returns></returns>
+        [Route("import-key")]
+        [HttpPost]
+        public IActionResult ImportMemberKey([FromBody]ImportMemberKeyRequest request)
+        {
+            Guard.NotNull(request, nameof(request));
+
+            // checks the request is valid
+            if (!this.ModelState.IsValid)
+            {
+                return BuildErrorResponse(this.ModelState);
+            }
+
+            try
+            {
+                this.walletManager.ImportMemberKey(request.Password, request.Mnemonic);
+                return this.Ok();
+            }
+            catch (Exception e)
+            {
+                this.logger.LogError("Exception occurred: {0}", e.ToString());
+                return ErrorHelpers.BuildErrorResponse(HttpStatusCode.BadRequest, e.Message, e.ToString());
+            }
         }
 
         /// <summary>

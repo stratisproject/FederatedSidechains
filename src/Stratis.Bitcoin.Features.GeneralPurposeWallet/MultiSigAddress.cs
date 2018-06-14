@@ -1,8 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Reflection.Metadata.Ecma335;
-using System.Text;
 using NBitcoin;
 using NBitcoin.JsonConverters;
 using Newtonsoft.Json;
@@ -18,19 +16,6 @@ namespace Stratis.Bitcoin.Features.GeneralPurposeWallet
         {
             this.Transactions = new List<TransactionData>();
         }
-
-        /// <summary>
-        /// The index of the address.
-        /// </summary>
-        [JsonProperty(PropertyName = "index")]
-        public int Index { get; set; }
-
-        /// <summary>
-        /// The path to this wallet's portion of the multisig key (see BIP45).
-        /// m / purpose' / cosigner_index / change / address_index
-        /// </summary>
-        [JsonProperty(PropertyName = "hdPath")]
-        public string HdPath { get; set; }
 
         /// <summary>
         /// The script pub key for this address. This is the P2SH version incorporating all the signatories.
@@ -76,52 +61,7 @@ namespace Stratis.Bitcoin.Features.GeneralPurposeWallet
         /// </summary>
         [JsonProperty(PropertyName = "transactions")]
         public ICollection<TransactionData> Transactions { get; set; }
-
-        public void Create(int index, KeyPath keyPath, ExtPubKey[] extPubKeys, int M, Network network)
-        {
-            this.Index = index;
-
-            this.HdPath = keyPath.ToString();
-
-            // FIXME: For BIP45 the keys need to be lexicographically sorted, but ExtPubKeys do not implement IComparable
-            //Array.Sort(extPubKeys);
-
-            List<PubKey> pubKeys = new List<PubKey>();
-
-            foreach (var extPubKey in extPubKeys)
-            {
-                // Get the BIP45 public key for each cosigner at the desired index.
-                // For simplicity only the first cosigner's branch is used at present;
-                // a fully BIP45 compatible implementation will use a particular
-                // branch depending on whether a particular cosigner needs to send or
-                // receive funds. Only one address presently needs to be used for
-                // a federation's 'receive' transactions, although this can be extended
-                // going forwards.
-
-                pubKeys.Add(extPubKey.Derive(45).Derive(0).Derive(0).Derive((uint)index).PubKey);
-            }
-
-            // M-of-N multisig, where N is implicitly the number of PubKeys in the array
-            Script scriptPubKey = PayToMultiSigTemplate
-                .Instance
-                .GenerateScriptPubKey(M, pubKeys.ToArray());
-
-            this.M = M;
-
-            this.Pubkeys = new List<Script>();
-
-            foreach (var pubKey in pubKeys)
-            {
-                this.Pubkeys.Add(pubKey.ScriptPubKey);
-            }
-
-            this.RedeemScript = scriptPubKey;
-
-            this.ScriptPubKey = scriptPubKey.PaymentScript;
-
-            this.Address = scriptPubKey.Hash.GetAddress(network).ToString();
-        }
-
+        
         public Key GetPrivateKey(string encryptedSeed, string password, Network network)
         {
             return Key.Parse(encryptedSeed, password, network);
@@ -139,23 +79,6 @@ namespace Stratis.Bitcoin.Features.GeneralPurposeWallet
             }
 
             return this.Transactions.Where(t => t.IsSpendable());
-        }
-
-        /// <summary>
-        /// Parts of the TransactionBuilder, e.g. the change address handling, require
-        /// a GeneralPurposeAddress to function. This method is a temporary workaround
-        /// until the logic can be abstracted to work with any address type. Does not
-        /// include private key material.
-        /// </summary>
-        public GeneralPurposeAddress AsGeneralPurposeAddress()
-        {
-            var address = new GeneralPurposeAddress()
-            {
-                Address = this.Address,
-                ScriptPubKey = this.ScriptPubKey
-            };
-
-            return address;
         }
     }
 }

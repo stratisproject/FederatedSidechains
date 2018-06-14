@@ -134,53 +134,6 @@ namespace Stratis.Bitcoin.Features.GeneralPurposeWallet
         }
 
         /// <inheritdoc />
-        public (Money maximumSpendableAmount, Money Fee) GetMaximumSpendableAmount(WalletAccountReference accountReference, FeeType feeType, bool allowUnconfirmed)
-        {
-            Guard.NotNull(accountReference, nameof(accountReference));
-            Guard.NotEmpty(accountReference.WalletName, nameof(accountReference.WalletName));
-            Guard.NotEmpty(accountReference.AccountName, nameof(accountReference.AccountName));
-
-            // Get the total value of spendable coins in the account.
-            var maxSpendableAmount = this.walletManager.GetSpendableTransactionsInAccount(accountReference, allowUnconfirmed ? 0 : 1).Sum(x => x.Transaction.Amount);
-
-            // Return 0 if the user has nothing to spend.
-            if (maxSpendableAmount == Money.Zero)
-            {
-                return (Money.Zero, Money.Zero);
-            }
-
-            // Create a recipient with a dummy destination address as it's required by NBitcoin's transaction builder.
-            List<Recipient> recipients = new[] { new Recipient { Amount = new Money(maxSpendableAmount), ScriptPubKey = new Key().ScriptPubKey } }.ToList();
-            Money fee;
-
-            try
-            {
-                // Here we try to create a transaction that contains all the spendable coins, leaving no room for the fee.
-                // When the transaction builder throws an exception informing us that we have insufficient funds,
-                // we use the amount we're missing as the fee.
-                var context = new TransactionBuildContext(accountReference, recipients, null)
-                {
-                    FeeType = feeType,
-                    MinConfirmations = allowUnconfirmed ? 0 : 1,
-                    TransactionBuilder = new TransactionBuilder(this.network)
-                };
-
-                this.AddRecipients(context);
-                this.AddCoins(context);
-                this.AddFee(context);
-
-                // Throw an exception if this code is reached, as building a transaction without any funds for the fee should always throw an exception.
-                throw new WalletException("This should be unreachable; please find and fix the bug that caused this to be reached.");
-            }
-            catch (NotEnoughFundsException e)
-            {
-                fee = (Money)e.Missing;
-            }
-
-            return (maxSpendableAmount - fee, fee);
-        }
-
-        /// <inheritdoc />
         public Money EstimateFee(TransactionBuildContext context)
         {
             this.InitializeTransactionBuilder(context);
@@ -209,7 +162,7 @@ namespace Stratis.Bitcoin.Features.GeneralPurposeWallet
         }
 
         /// <summary>
-        /// Loads all the private keys for each <see cref="GeneralPurposeAddress"/> in <see cref="TransactionBuildContext.UnspentOutputs"/>
+        /// Loads the private key for the multisig address.
         /// </summary>
         /// <param name="context">The context associated with the current transaction being built.</param>
         private void AddSecrets(TransactionBuildContext context)
@@ -217,40 +170,17 @@ namespace Stratis.Bitcoin.Features.GeneralPurposeWallet
             if (!context.Sign)
                 return;
 
-            GeneralPurposeWallet wallet = this.walletManager.GetWalletByName(context.AccountReference.WalletName);
+            GeneralPurposeWallet wallet = this.walletManager.GetWallet();
 	        var signingKeys = new HashSet<ISecret>();
 
-			if (context.MultiSig == null)
-	        {
-		        var added = new HashSet<GeneralPurposeAddress>();
-
-		        foreach (var unspentOutputsItem in context.UnspentOutputs)
-		        {
-			        if (added.Contains(unspentOutputsItem.Address))
-				        continue;
-
-			        var address = unspentOutputsItem.Address;
-			        signingKeys.Add(address.PrivateKey.GetBitcoinSecret(wallet.Network));
-			        added.Add(unspentOutputsItem.Address);
-		        }
-	        }
-	        else
-	        {
-			    var added = new HashSet<MultiSigAddress>();
-
-			    foreach (var unspentOutputsItem in context.UnspentMultiSigOutputs)
-			    {
-				    if (added.Contains(unspentOutputsItem.Address))
-					    continue;
-
-				    var address = unspentOutputsItem.Address;
-				    var privKey = address.GetPrivateKey(wallet.EncryptedSeed, context.WalletPassword, wallet.Network);
-				    var secret = new BitcoinSecret(privKey, wallet.Network);
-					signingKeys.Add(secret);
-				    added.Add(unspentOutputsItem.Address);
-			    }
-			}
-
+			//foreach (var unspentOutputsItem in context.UnspentOutputs)
+			//{
+			//	var privKey = address.GetPrivateKey(wallet.EncryptedSeed, context.WalletPassword, wallet.Network);
+			//	var secret = new BitcoinSecret(privKey, wallet.Network);
+			//	signingKeys.Add(secret);
+			//	added.Add(unspentOutputsItem.Address);
+			//}
+			
 	        context.TransactionBuilder.AddKeys(signingKeys.ToArray());
         }
 
@@ -260,21 +190,9 @@ namespace Stratis.Bitcoin.Features.GeneralPurposeWallet
         /// <param name="context">The context associated with the current transaction being built.</param>
         private void FindChangeAddress(TransactionBuildContext context)
         {
-	        if (context.MultiSig != null)
-	        {
-		        context.ChangeAddress = context.MultiSig.AsGeneralPurposeAddress();
-		        context.TransactionBuilder.SetChange(context.MultiSig.ScriptPubKey);
-			}
-	        else
-	        {
-		        GeneralPurposeWallet wallet = this.walletManager.GetWalletByName(context.AccountReference.WalletName);
-		        GeneralPurposeAccount account = wallet.AccountsRoot.Single(a => a.CoinType == this.coinType)
-			        .GetAccountByName(context.AccountReference.AccountName);
-
-		        // get address to send the change to
-		        context.ChangeAddress = this.walletManager.GetOrCreateChangeAddress(account);
-		        context.TransactionBuilder.SetChange(context.ChangeAddress.ScriptPubKey);
-	        }
+            // get address to send the change to
+            context.ChangeAddress = this.walletManager.GetWallet().MultiSigAddress;
+            context.TransactionBuilder.SetChange(context.ChangeAddress.ScriptPubKey);
         }
 
 		/// <summary>
@@ -284,129 +202,64 @@ namespace Stratis.Bitcoin.Features.GeneralPurposeWallet
 		/// <param name="context">The context associated with the current transaction being built.</param>
 		private void AddCoins(TransactionBuildContext context)
         {
-	        if (context.MultiSig == null)
-	        {
-		        context.UnspentOutputs = this.walletManager
-			        .GetSpendableTransactionsInAccount(context.AccountReference, context.MinConfirmations).ToList();
+		    context.UnspentOutputs = this.walletManager.GetSpendableTransactionsInWallet(context.MinConfirmations).ToList();
 
-				if (context.UnspentOutputs.Count == 0)
-				{
-					throw new WalletException("No spendable transactions found.");
-				}
+		    if (context.UnspentOutputs.Count == 0)
+		    {
+			    throw new WalletException("No spendable transactions found.");
+		    }
 
-				// Get total spendable balance in the account.
-				var balance = context.UnspentOutputs.Sum(t => t.Transaction.Amount);
-				var totalToSend = context.Recipients.Sum(s => s.Amount);
-				if (balance < totalToSend)
-					throw new WalletException("Not enough funds.");
+		    // Get total spendable balance in the account.
+		    var balance = context.UnspentOutputs.Sum(t => t.Transaction.Amount);
+		    var totalToSend = context.Recipients.Sum(s => s.Amount);
+		    if (balance < totalToSend)
+			    throw new WalletException("Not enough funds.");
 
-				if (context.SelectedInputs.Any())
-				{
-					// 'SelectedInputs' are inputs that must be included in the
-					// current transaction. At this point we check the given
-					// input is part of the UTXO set and filter out UTXOs that are not
-					// in the initial list if 'context.AllowOtherInputs' is false.
+		    if (context.SelectedInputs.Any())
+		    {
+			    // 'SelectedInputs' are inputs that must be included in the
+			    // current transaction. At this point we check the given
+			    // input is part of the UTXO set and filter out UTXOs that are not
+			    // in the initial list if 'context.AllowOtherInputs' is false.
 
-					var availableHashList = context.UnspentOutputs.ToDictionary(item => item.ToOutPoint(), item => item);
+			    var availableHashList = context.UnspentOutputs.ToDictionary(item => item.ToOutPoint(), item => item);
 
-					if (!context.SelectedInputs.All(input => availableHashList.ContainsKey(input)))
-						throw new WalletException("Not all the selected inputs were found on the wallet.");
+			    if (!context.SelectedInputs.All(input => availableHashList.ContainsKey(input)))
+				    throw new WalletException("Not all the selected inputs were found on the wallet.");
 
-					if (!context.AllowOtherInputs)
-					{
-						foreach (var unspentOutputsItem in availableHashList)
-							if (!context.SelectedInputs.Contains(unspentOutputsItem.Key))
-								context.UnspentOutputs.Remove(unspentOutputsItem.Value);
-					}
-				}
+			    if (!context.AllowOtherInputs)
+			    {
+				    foreach (var unspentOutputsItem in availableHashList)
+					    if (!context.SelectedInputs.Contains(unspentOutputsItem.Key))
+						    context.UnspentOutputs.Remove(unspentOutputsItem.Value);
+			    }
+		    }
 
-				Money sum = 0;
-				int index = 0;
-				var coins = new List<Coin>();
-				foreach (var item in context.UnspentOutputs.OrderByDescending(a => a.Transaction.Amount))
-				{
-					coins.Add(new Coin(item.Transaction.Id, (uint)item.Transaction.Index, item.Transaction.Amount, item.Transaction.ScriptPubKey));
-					sum += item.Transaction.Amount;
-					index++;
+		    Money sum = 0;
+		    int index = 0;
+		    var coins = new List<Coin>();
+		    foreach (var item in context.UnspentOutputs.OrderByDescending(a => a.Transaction.Amount))
+		    {
+                // TODO 
+				//coins.Add(ScriptCoin.Create(this.network, item.Transaction.Id, (uint)item.Transaction.Index, item.Transaction.Amount, item.Transaction.ScriptPubKey, item.Address.RedeemScript));
+			    sum += item.Transaction.Amount;
+			    index++;
 
-					// If threshold is reached and the total value is above the target
-					// then its safe to stop adding UTXOs to the coin list.
-					// The primary goal is to reduce the time it takes to build a trx
-					// when the wallet is bloated with UTXOs.
-					if (index > SendCountThresholdLimit && sum > totalToSend)
-						break;
-				}
+			    // If threshold is reached and the total value is above the target
+			    // then its safe to stop adding UTXOs to the coin list.
+			    // The primary goal is to reduce the time it takes to build a trx
+			    // when the wallet is bloated with UTXOs.
+			    if (index > SendCountThresholdLimit && sum > totalToSend)
+				    break;
+		    }
 
-		        // All the UTXOs are added to the builder without filtering.
-		        // The builder then has its own coin selection mechanism
-		        // to select the best UTXO set for the corresponding amount.
-		        // To add a custom implementation of a coin selection override
-		        // the builder using builder.SetCoinSelection().
+		    // All the UTXOs are added to the builder without filtering.
+		    // The builder then has its own coin selection mechanism
+		    // to select the best UTXO set for the corresponding amount.
+		    // To add a custom implementation of a coin selection override
+		    // the builder using builder.SetCoinSelection().
 
-		        context.TransactionBuilder.AddCoins(coins);
-			}
-	        else
-	        {
-		        context.UnspentMultiSigOutputs = this.walletManager
-			        .GetSpendableMultiSigTransactionsInAccount(context.AccountReference, context.MultiSig.ScriptPubKey,
-				        context.MinConfirmations).ToList();
-
-		        if (context.UnspentMultiSigOutputs.Count == 0)
-		        {
-			        throw new WalletException("No spendable transactions found.");
-		        }
-
-		        // Get total spendable balance in the account.
-		        var balance = context.UnspentMultiSigOutputs.Sum(t => t.Transaction.Amount);
-		        var totalToSend = context.Recipients.Sum(s => s.Amount);
-		        if (balance < totalToSend)
-			        throw new WalletException("Not enough funds.");
-
-		        if (context.SelectedInputs.Any())
-		        {
-			        // 'SelectedInputs' are inputs that must be included in the
-			        // current transaction. At this point we check the given
-			        // input is part of the UTXO set and filter out UTXOs that are not
-			        // in the initial list if 'context.AllowOtherInputs' is false.
-
-			        var availableHashList = context.UnspentMultiSigOutputs.ToDictionary(item => item.ToOutPoint(), item => item);
-
-			        if (!context.SelectedInputs.All(input => availableHashList.ContainsKey(input)))
-				        throw new WalletException("Not all the selected inputs were found on the wallet.");
-
-			        if (!context.AllowOtherInputs)
-			        {
-				        foreach (var unspentOutputsItem in availableHashList)
-					        if (!context.SelectedInputs.Contains(unspentOutputsItem.Key))
-						        context.UnspentMultiSigOutputs.Remove(unspentOutputsItem.Value);
-			        }
-		        }
-
-		        Money sum = 0;
-		        int index = 0;
-		        var coins = new List<Coin>();
-		        foreach (var item in context.UnspentMultiSigOutputs.OrderByDescending(a => a.Transaction.Amount))
-		        {
-					coins.Add(ScriptCoin.Create(this.network, item.Transaction.Id, (uint)item.Transaction.Index, item.Transaction.Amount, item.Transaction.ScriptPubKey, item.Address.RedeemScript));
-			        sum += item.Transaction.Amount;
-			        index++;
-
-			        // If threshold is reached and the total value is above the target
-			        // then its safe to stop adding UTXOs to the coin list.
-			        // The primary goal is to reduce the time it takes to build a trx
-			        // when the wallet is bloated with UTXOs.
-			        if (index > SendCountThresholdLimit && sum > totalToSend)
-				        break;
-		        }
-
-		        // All the UTXOs are added to the builder without filtering.
-		        // The builder then has its own coin selection mechanism
-		        // to select the best UTXO set for the corresponding amount.
-		        // To add a custom implementation of a coin selection override
-		        // the builder using builder.SetCoinSelection().
-
-		        context.TransactionBuilder.AddCoins(coins);
-			}
+		    context.TransactionBuilder.AddCoins(coins);
         }
 
         /// <summary>
@@ -459,7 +312,7 @@ namespace Stratis.Bitcoin.Features.GeneralPurposeWallet
         {
             if (context.OpReturnData == null) return;
 
-            var opReturnScript = TxNullDataTemplate.Instance.GenerateScriptPubKey(context.OpReturnData);
+            var opReturnScript = TxNullDataTemplate.Instance.GenerateScriptPubKey(Encoding.UTF8.GetBytes(context.OpReturnData));
             context.TransactionBuilder.Send(opReturnScript, Money.Zero);
         }
     }
@@ -482,7 +335,7 @@ namespace Stratis.Bitcoin.Features.GeneralPurposeWallet
         /// <param name="accountReference">The wallet and account from which to build this transaction</param>
         /// <param name="recipients">The target recipients to send coins to.</param>
         /// <param name="walletPassword">The password that protects the wallet in <see cref="accountReference"/></param>
-        public TransactionBuildContext(WalletAccountReference accountReference, List<Recipient> recipients, string walletPassword = "", byte[] opReturnData = null)
+        public TransactionBuildContext(WalletAccountReference accountReference, List<Recipient> recipients, string walletPassword = "", string opReturnData = null)
         {
             Guard.NotNull(recipients, nameof(recipients));
 
@@ -527,11 +380,6 @@ namespace Stratis.Bitcoin.Features.GeneralPurposeWallet
         /// </summary>
         public List<UnspentOutputReference> UnspentOutputs { get; set; }
 
-	    /// <summary>
-	    /// Coins that are available to be spent from the selected multisig address.
-	    /// </summary>
-	    public List<UnspentMultiSigOutputReference> UnspentMultiSigOutputs { get; set; }
-
 		public Network Network { get; set; }
 
 		/// <summary>
@@ -546,7 +394,7 @@ namespace Stratis.Bitcoin.Features.GeneralPurposeWallet
         /// A Bitcoin has to spend the entire UTXO, if total value is greater then the send target
         /// the rest of the coins go in to a change address that is under the senders control.
         /// </remarks>
-        public GeneralPurposeAddress ChangeAddress { get; set; }
+        public MultiSigAddress ChangeAddress { get; set; }
 
         /// <summary>
         /// The total fee on the transaction.
@@ -598,7 +446,7 @@ namespace Stratis.Bitcoin.Features.GeneralPurposeWallet
         /// <summary>
         /// Optional data to be added as an extra OP_RETURN transaction output with Money.Zero value.
         /// </summary>
-        public byte[] OpReturnData { get; set; }
+        public string OpReturnData { get; set; }
 
         /// <summary>
         /// If not null, indicates the multisig address details that funds can be sourced from.

@@ -22,14 +22,7 @@ namespace Stratis.Bitcoin.Features.GeneralPurposeWallet
 		/// </summary>
 		public GeneralPurposeWallet()
 		{
-			this.AccountsRoot = new List<AccountRoot>();
 		}
-
-		/// <summary>
-		/// The name of this wallet.
-		/// </summary>
-		[JsonProperty(PropertyName = "name")]
-		public string Name { get; set; }
 
 		/// <summary>
 		/// The seed for this wallet's multisig addresses, password encrypted.
@@ -57,668 +50,185 @@ namespace Stratis.Bitcoin.Features.GeneralPurposeWallet
 		[JsonConverter(typeof(DateTimeOffsetConverter))]
 		public DateTimeOffset CreationTime { get; set; }
 
-		/// <summary>
-		/// The root of the accounts tree.
-		/// </summary>
-		[JsonProperty(PropertyName = "accountsRoot")]
-		public ICollection<AccountRoot> AccountsRoot { get; set; }
-
-		/// <summary>
-		/// Gets the accounts the wallet has for this type of coin.
-		/// </summary>
-		/// <param name="coinType">Type of the coin.</param>
-		/// <returns>The accounts in the wallet corresponding to this type of coin.</returns>
-		public IEnumerable<GeneralPurposeAccount> GetAccountsByCoinType(CoinType coinType)
-		{
-			return this.AccountsRoot.Where(a => a.CoinType == coinType).SelectMany(a => a.Accounts);
-		}
-
-		/// <summary>
-		/// Gets an account from the wallet's accounts.
-		/// </summary>
-		/// <param name="accountName">The name of the account to retrieve.</param>
-		/// <param name="coinType">The type of the coin this account is for.</param>
-		/// <returns>The requested account.</returns>
-		public GeneralPurposeAccount GetAccountByCoinType(string accountName, CoinType coinType)
-		{
-			AccountRoot accountRoot = this.AccountsRoot.SingleOrDefault(a => a.CoinType == coinType);
-			return accountRoot?.GetAccountByName(accountName);
-		}
-
-		/// <summary>
-		/// Gets all the transactions by coin type.
-		/// </summary>
-		/// <param name="coinType">Type of the coin.</param>
-		/// <returns></returns>
-		public IEnumerable<TransactionData> GetAllTransactionsByCoinType(CoinType coinType)
-		{
-			var accounts = this.GetAccountsByCoinType(coinType).ToList();
-
-			foreach (TransactionData txData in accounts.SelectMany(x => x.ExternalAddresses).SelectMany(x => x.Transactions))
-			{
-				yield return txData;
-			}
-
-			foreach (TransactionData txData in accounts.SelectMany(x => x.InternalAddresses).SelectMany(x => x.Transactions))
-			{
-				yield return txData;
-			}
-		}
-
-		/// <summary>
-		/// Gets all the pub keys contained in this wallet.
-		/// </summary>
-		/// <param name="coinType">Type of the coin.</param>
-		/// <returns></returns>
-		public IEnumerable<Script> GetAllPubKeysByCoinType(CoinType coinType)
-		{
-			var accounts = this.GetAccountsByCoinType(coinType).ToList();
-
-			foreach (Script script in accounts.SelectMany(x => x.ExternalAddresses).Select(x => x.ScriptPubKey))
-			{
-				yield return script;
-			}
-
-			foreach (Script script in accounts.SelectMany(x => x.InternalAddresses).Select(x => x.ScriptPubKey))
-			{
-				yield return script;
-			}
-		}
-        
-		/// <summary>
-		/// Lists all spendable transactions from all accounts in the wallet.
-		/// </summary>
-		/// <param name="coinType">Type of the coin to get transactions from.</param>
-		/// <param name="currentChainHeight">Height of the current chain, used in calculating the number of confirmations.</param>
-		/// <param name="confirmations">The number of confirmations required to consider a transaction spendable.</param>
-		/// <returns>A collection of spendable outputs.</returns>
-		public IEnumerable<UnspentOutputReference> GetAllSpendableTransactions(CoinType coinType, int currentChainHeight, int confirmations = 0)
-		{
-			IEnumerable<GeneralPurposeAccount> accounts = this.GetAccountsByCoinType(coinType);
-
-			return accounts
-				.SelectMany(x => x.GetSpendableTransactions(currentChainHeight, confirmations));
-		}
-	}
-
-	/// <summary>
-	/// The root for the accounts for any type of coins.
-	/// </summary>
-	public class AccountRoot
-	{
-		/// <summary>
-		/// Initializes a new instance of the object.
-		/// </summary>
-		public AccountRoot()
-		{
-			this.Accounts = new List<GeneralPurposeAccount>();
-		}
-
-		/// <summary>
-		/// The type of coin, Bitcoin or Stratis.
-		/// </summary>
-		[JsonProperty(PropertyName = "coinType")]
-		public CoinType CoinType { get; set; }
-
-		/// <summary>
-		/// The height of the last block that was synced.
-		/// </summary>
-		[JsonProperty(PropertyName = "lastBlockSyncedHeight", NullValueHandling = NullValueHandling.Ignore)]
-		public int? LastBlockSyncedHeight { get; set; }
-
-		/// <summary>
-		/// The hash of the last block that was synced.
-		/// </summary>
-		[JsonProperty(PropertyName = "lastBlockSyncedHash", NullValueHandling = NullValueHandling.Ignore)]
-		[JsonConverter(typeof(UInt256JsonConverter))]
-		public uint256 LastBlockSyncedHash { get; set; }
-
-		/// <summary>
-		/// The accounts used in the wallet.
-		/// </summary>
-		[JsonProperty(PropertyName = "accounts")]
-		public ICollection<GeneralPurposeAccount> Accounts { get; set; }
-
-		/// <summary>
-		/// Gets the account matching the name passed as a parameter.
-		/// </summary>
-		/// <param name="accountName">The name of the account to get.</param>
-		/// <returns></returns>
-		/// <exception cref="System.Exception"></exception>
-		public GeneralPurposeAccount GetAccountByName(string accountName)
-		{
-			if (this.Accounts == null)
-				throw new WalletException($"No account with the name {accountName} could be found.");
-
-			// get the account
-			GeneralPurposeAccount account = this.Accounts.SingleOrDefault(a => a.Name == accountName);
-			if (account == null)
-				throw new WalletException($"No account with the name {accountName} could be found.");
-
-			return account;
-		}
-	}
-
-	/// <summary>
-	/// A general purpose account's details.
-	/// </summary>
-	public class GeneralPurposeAccount
-	{
-		public GeneralPurposeAccount()
-		{
-			this.ExternalAddresses = new List<GeneralPurposeAddress>();
-			this.InternalAddresses = new List<GeneralPurposeAddress>();
-			this.MultiSigAddresses = new List<MultiSigAddress>();
-		}
-
-		/// <summary>
-		/// The name of this account.
-		/// </summary>
-		[JsonProperty(PropertyName = "name")]
-		public string Name { get; set; }
-
-		/// <summary>
-		/// For multisig addresses: a path to the account as defined in BIP44.
-		/// </summary>
-		[JsonProperty(PropertyName = "hdPath")]
-		public string HdPath { get; set; }
-
-		/// <summary>
-		/// The extended pub key belonging to this cosigner.
-		/// Used to generate portions of multisig addresses.
-		/// </summary>
-		[JsonProperty(PropertyName = "extPubKey")]
-		public string ExtendedPubKey { get; set; }
-
-		/// <summary>
-		/// The extended pub keys of the other cosigners involved in the multisig.
-		/// The assumption is that each account has its own group of cosigners.
-		/// </summary>
-		[JsonProperty(PropertyName = "extPubKeys")]
-		public ICollection<string> ExtendedPubKeys { get; set; }
-
-		/// <summary>
-		/// Gets or sets the creation time.
-		/// </summary>
-		[JsonProperty(PropertyName = "creationTime")]
-		[JsonConverter(typeof(DateTimeOffsetConverter))]
-		public DateTimeOffset CreationTime { get; set; }
-
-		/// <summary>
-		/// The list of external addresses, typically used for receiving money.
-		/// </summary>
-		[JsonProperty(PropertyName = "externalAddresses")]
-		public ICollection<GeneralPurposeAddress> ExternalAddresses { get; set; }
-
-		/// <summary>
-		/// The list of internal addresses, typically used to receive change.
-		/// </summary>
-		[JsonProperty(PropertyName = "internalAddresses")]
-		public ICollection<GeneralPurposeAddress> InternalAddresses { get; set; }
-
-		/// <summary>
-		/// The list of multisig addresses, where this node is one of several signatories to transactions.
-		/// </summary>
-		[JsonProperty(PropertyName = "multiSigAddresses")]
-		public ICollection<MultiSigAddress> MultiSigAddresses { get; set; }
-
-		/// <summary>
-		/// The coin type this account is used for.
-		/// </summary>
-		[JsonProperty(PropertyName = "coinType")]
-		public CoinType CoinType { get; set; }
-
-		/// <summary>
-		/// Gets the type of coin this account is for.
-		/// </summary>
-		/// <returns>A <see cref="CoinType"/>.</returns>
-		public CoinType GetCoinType()
-		{
-			return this.CoinType;
-		}
-        
-		public Transaction SignPartialTransaction(Transaction partial, GeneralPurposeWallet wallet, string password, Network network)
-		{
-			// Find which multisig address is being referred to by the inputs
-			// TODO: Require this to be passed in as a parameter to save the lookup?
-
-			MultiSigAddress multiSigAddress = null;
-
-			foreach (MultiSigAddress address in this.MultiSigAddresses)
-			{
-				foreach (TransactionData tx in address.Transactions)
-				{
-					foreach (var input in partial.Inputs)
-					{
-						if (input.PrevOut.Hash == tx.Id)
-						{
-							multiSigAddress = address;
-						}
-					}
-				}
-			}
-
-			if (multiSigAddress == null)
-				throw new WalletException(
-					"Unable to determine which multisig address to combine partial transactions for");
-
-			// Need to get the same ScriptCoins used by the other signatories.
-			// It is assumed that the funds are present in the MultiSigAddress
-			// transactions.
-
-			// Find the transaction(s) in the MultiSigAddress that have the
-			// referenced inputs among their outputs.
-
-			List<Transaction> fundingTransactions = new List<Transaction>();
-
-			foreach (TransactionData tx in multiSigAddress.Transactions)
-			{
-				foreach (var output in tx.Transaction.Outputs.AsIndexedOutputs())
-				{
-					foreach (var input in partial.Inputs)
-					{
-						if (input.PrevOut.Hash == tx.Id && input.PrevOut.N == output.N)
-							fundingTransactions.Add(tx.Transaction);
-					}
-				}
-			}
-
-			// Then convert the outputs to Coins & make ScriptCoins out of them.
-
-			List<ScriptCoin> scriptCoins = new List<ScriptCoin>();
-
-			foreach (var tx in fundingTransactions)
-			{
-				foreach (var coin in tx.Outputs.AsCoins())
-				{
-					// Only care about outputs for our particular multisig
-					if (coin.ScriptPubKey == multiSigAddress.ScriptPubKey)
-					{
-						scriptCoins.Add(coin.ToScriptCoin(multiSigAddress.RedeemScript));
-					}
-				}
-			}
-
-			// Need to construct a transaction using a transaction builder with
-			// the appropriate state
-
-			TransactionBuilder builder = new TransactionBuilder(network);
-
-			Transaction signed =
-				builder
-					.AddCoins(scriptCoins)
-					.AddKeys(multiSigAddress.GetPrivateKey(wallet.EncryptedSeed, password, network))
-					.SignTransaction(partial);
-
-			return signed;
-		}
-
-		public Transaction CombinePartialTransactions(Transaction[] partials, Network network)
-		{
-			Transaction firstPartial = partials[0];
-
-			// Find which multisig address is being referred to by the inputs
-			// TODO: Require this to be passed in as a parameter to save the lookup?
-
-			MultiSigAddress multiSigAddress = null;
-
-			foreach (MultiSigAddress address in this.MultiSigAddresses)
-			{
-				foreach (TransactionData tx in address.Transactions)
-				{
-					foreach (var input in firstPartial.Inputs)
-					{
-						if (input.PrevOut.Hash == tx.Id)
-						{
-							multiSigAddress = address;
-						}
-					}
-				}
-			}
-
-			if (multiSigAddress == null)
-				throw new WalletException(
-					"Unable to determine which multisig address to combine partial transactions for");
-
-			// Need to get the same ScriptCoins used by the other signatories.
-			// It is assumed that the funds are present in the MultiSigAddress
-			// transactions.
-
-			// Find the transaction(s) in the MultiSigAddress that have the
-			// referenced inputs among their outputs.
-
-			List<Transaction> fundingTransactions = new List<Transaction>();
-
-			foreach (TransactionData tx in multiSigAddress.Transactions)
-			{
-				foreach (var output in tx.Transaction.Outputs.AsIndexedOutputs())
-				{
-					foreach (var input in firstPartial.Inputs)
-					{
-						if (input.PrevOut.Hash == tx.Id && input.PrevOut.N == output.N)
-							fundingTransactions.Add(tx.Transaction);
-					}
-				}
-			}
-
-			// Then convert the outputs to Coins & make ScriptCoins out of them.
-
-			List<ScriptCoin> scriptCoins = new List<ScriptCoin>();
-
-			foreach (var tx in fundingTransactions)
-			{
-				foreach (var coin in tx.Outputs.AsCoins())
-				{
-					// Only care about outputs for our particular multisig
-					if (coin.ScriptPubKey == multiSigAddress.ScriptPubKey)
-					{
-						scriptCoins.Add(coin.ToScriptCoin(multiSigAddress.RedeemScript));
-					}
-				}
-			}
-
-			// Need to construct a transaction using a transaction builder with
-			// the appropriate state
-
-			TransactionBuilder builder = new TransactionBuilder(network);
-
-			Transaction combined =
-				builder
-					.AddCoins(scriptCoins)
-					.CombineSignatures(partials);
-
-			return combined;
-		}
-
-		/// <summary>
-		/// Gets the first change address that contains no transactions.
-		/// </summary>
-		/// <returns>An unused address</returns>
-		public GeneralPurposeAddress GetFirstUnusedChangeAddress()
-		{
-			return this.GetFirstUnusedAddress(true);
-		}
-
-		/// <summary>
-		/// Gets the first receiving address that contains no transaction.
-		/// </summary>
-		/// <returns>An unused address</returns>
-		private GeneralPurposeAddress GetFirstUnusedAddress(bool isChange)
-		{
-			IEnumerable<GeneralPurposeAddress> addresses = isChange ? this.InternalAddresses : this.ExternalAddresses;
-			if (addresses == null)
-				return null;
-
-			List<GeneralPurposeAddress> unusedAddresses = addresses.Where(acc => !acc.Transactions.Any()).ToList();
-			if (!unusedAddresses.Any())
-			{
-				return null;
-			}
-
-			return unusedAddresses.First();
-		}
-        
-
-		/// <summary>
-		/// Gets a collection of transactions by id.
-		/// </summary>
-		/// <param name="id">The identifier.</param>
-		/// <returns></returns>
-		public IEnumerable<TransactionData> GetTransactionsById(uint256 id)
-		{
-			Guard.NotNull(id, nameof(id));
-
-			var addresses = this.GetCombinedAddresses();
-			return addresses.Where(r => r.Transactions != null).SelectMany(a => a.Transactions.Where(t => t.Id == id));
-		}
-
-		/// <summary>
+        /// <summary>
+        /// The height of the last block that was synced.
+        /// </summary>
+        [JsonProperty(PropertyName = "lastBlockSyncedHeight", NullValueHandling = NullValueHandling.Ignore)]
+        public int? LastBlockSyncedHeight { get; set; }
+
+        /// <summary>
+        /// The hash of the last block that was synced.
+        /// </summary>
+        [JsonProperty(PropertyName = "lastBlockSyncedHash", NullValueHandling = NullValueHandling.Ignore)]
+        [JsonConverter(typeof(UInt256JsonConverter))]
+        public uint256 LastBlockSyncedHash { get; set; }
+
+        /// <summary>
+        /// The type of coin, Bitcoin or Stratis.
+        /// </summary>
+        [JsonProperty(PropertyName = "coinType")]
+        public CoinType CoinType { get; set; }
+
+        /// <summary>
+        /// The multisig address, where this node is one of several signatories to transactions.
+        /// </summary>
+        [JsonProperty(PropertyName = "multiSigAddress")]
+        public MultiSigAddress MultiSigAddress { get; set; }
+
+        /// <summary>
 		/// Gets a collection of transactions with spendable outputs.
 		/// </summary>
 		/// <returns></returns>
 		public IEnumerable<TransactionData> GetSpendableTransactions()
-		{
-			var addresses = this.GetCombinedAddresses();
-			return addresses.Where(r => r.Transactions != null).SelectMany(a => a.Transactions.Where(t => t.IsSpendable()));
-		}
+        {
+            return this.MultiSigAddress.Transactions.Where(t => t.IsSpendable());
+        }
 
-		/// <summary>
-		/// Get the accounts total spendable value for both confirmed and unconfirmed UTXO.
-		/// </summary>
-		public (Money ConfirmedAmount, Money UnConfirmedAmount) GetSpendableAmount(bool multiSig = false)
-		{
-			List<TransactionData> allTransactions;
-
-			if (!multiSig)
-			{
-				allTransactions = this.ExternalAddresses.SelectMany(a => a.Transactions)
-					.Concat(this.InternalAddresses.SelectMany(i => i.Transactions)).ToList();
-			}
-			else
-			{
-				allTransactions = this.MultiSigAddresses.SelectMany(a => a.Transactions).ToList();
-			}
-
-			var confirmed = allTransactions.Sum(t => t.SpendableAmount(true));
-			var total = allTransactions.Sum(t => t.SpendableAmount(false));
-
-			return (confirmed, total - confirmed);
-		}
-
-		/// <summary>
-		/// Get the total spendable value for both confirmed and unconfirmed UTXO for one multisig address.
-		/// </summary>
-		public (Money ConfirmedAmount, Money UnConfirmedAmount) GetMultiSigAddressSpendableAmount(string address)
-		{
-			MultiSigAddress multiSigAddress = this.MultiSigAddresses.Where(a => a.Address == address).FirstOrDefault();
-			List<TransactionData> allTransactions = multiSigAddress.UnspentTransactions().ToList();
-
-			var confirmed = allTransactions.Sum(t => t.SpendableAmount(true));
-			var total = allTransactions.Sum(t => t.SpendableAmount(false));
-
-			return (confirmed, total - confirmed);
-		}
-
-		/// <summary>
-		/// Return both the external and internal (change) address from an account.
-		/// </summary>
-		/// <returns>All addresses that belong to this account.</returns>
-		public IEnumerable<GeneralPurposeAddress> GetCombinedAddresses()
-		{
-			IEnumerable<GeneralPurposeAddress> addresses = new List<GeneralPurposeAddress>();
-			if (this.ExternalAddresses != null)
-			{
-				addresses = this.ExternalAddresses;
-			}
-
-			if (this.InternalAddresses != null)
-			{
-				addresses = addresses.Concat(this.InternalAddresses);
-			}
-
-			return addresses;
-		}
-
-		/// <summary>
-		/// Creates a number of additional addresses in the current account.
-		/// </summary>
-		/// <param name="network">The network these addresses will be for.</param>
-		/// <param name="addressesQuantity">The number of addresses to create.</param>
-		/// <param name="isChange">Whether the addresses added are change (internal) addresses or receiving (external) addresses.</param>
-		/// <returns>A list of addresses in Base58 format.</returns>
-		public List<string> CreateAddresses(Network network, int addressesQuantity, bool isChange = false)
-		{
-			List<string> addressesCreated = new List<string>();
-
-			var addresses = isChange ? this.InternalAddresses : this.ExternalAddresses;
-
-			for (int i = 0; i < addressesQuantity; i++)
-			{
-				// Generate a new address.
-				Key privateKey = new Key();
-				PubKey pubkey = privateKey.PubKey;
-				BitcoinPubKeyAddress address = pubkey.GetAddress(network);
-
-				// Add the new address details to the list of addresses.
-				addresses.Add(new GeneralPurposeAddress
-				{
-					PrivateKey = privateKey,
-					ScriptPubKey = address.ScriptPubKey,
-					Pubkey = pubkey.ScriptPubKey,
-					Address = address.ToString(),
-					Transactions = new List<TransactionData>(),
-					IsChangeAddress = isChange
-				});
-
-				addressesCreated.Add(address.ToString());
-			}
-
-			if (isChange)
-			{
-				this.InternalAddresses = addresses;
-			}
-			else
-			{
-				this.ExternalAddresses = addresses;
-			}
-
-			return addressesCreated;
-		}
-
-		/// <summary>
-		/// Lists all spendable transactions in the current account.
+        /// <summary>
+		/// Lists all spendable transactions in the current wallet.
 		/// </summary>
 		/// <param name="currentChainHeight">The current height of the chain. Used for calculating the number of confirmations a transaction has.</param>
 		/// <param name="confirmations">The minimum number of confirmations required for transactions to be considered.</param>
 		/// <returns>A collection of spendable outputs that belong to the given account.</returns>
 		public IEnumerable<UnspentOutputReference> GetSpendableTransactions(int currentChainHeight, int confirmations = 0)
-		{
-			// This will take all the spendable coins that belong to the account and keep the reference to the GeneralPurposeAddress and GeneralPurposeAccount.
-			// This is useful so later the private key can be calculated just from a given UTXO.
-			foreach (GeneralPurposeAddress address in this.GetCombinedAddresses())
-			{
-				// A block that is at the tip has 1 confirmation.
-				// When calculating the confirmations the tip must be advanced by one.
+        {
+            // A block that is at the tip has 1 confirmation.
+            // When calculating the confirmations the tip must be advanced by one.
 
-				int countFrom = currentChainHeight + 1;
-				foreach (TransactionData transactionData in address.UnspentTransactions())
-				{
-					int? confirmationCount = 0;
-					if (transactionData.BlockHeight != null)
-						confirmationCount = countFrom >= transactionData.BlockHeight ? countFrom - transactionData.BlockHeight : 0;
+            int countFrom = currentChainHeight + 1;
+            foreach (TransactionData transactionData in this.GetSpendableTransactions())
+            {
+                int? confirmationCount = 0;
+                if (transactionData.BlockHeight != null)
+                    confirmationCount = countFrom >= transactionData.BlockHeight ? countFrom - transactionData.BlockHeight : 0;
 
-					if (confirmationCount >= confirmations)
-					{
-						yield return new UnspentOutputReference
-						{
-							Account = this,
-							Address = address,
-							Transaction = transactionData,
-						};
-					}
-				}
-			}
-		}
+                if (confirmationCount >= confirmations)
+                {
+                    yield return new UnspentOutputReference
+                    {
+                       Transaction = transactionData,
+                    };
+                }
+            }
+        }
 
-		/// <summary>
-		/// Lists all spendable transactions in the current account.
-		/// </summary>
-		/// <param name="currentChainHeight">The current height of the chain. Used for calculating the number of confirmations a transaction has.</param>
-		/// <param name="confirmations">The minimum number of confirmations required for transactions to be considered.</param>
-		/// <returns>A collection of spendable outputs that belong to the given account.</returns>
-		public IEnumerable<UnspentMultiSigOutputReference> GetSpendableMultiSigTransactions(Script scriptPubKey, int currentChainHeight, int confirmations = 0)
-		{
-			// This will take all the spendable coins that belong to the account and keep the reference to the MultiSigAddress and GeneralPurposeAccount.
-			// This is useful so later the private key can be retrieved just from a given UTXO.
-			foreach (MultiSigAddress address in this.MultiSigAddresses)
-			{
-				// A block that is at the tip has 1 confirmation.
-				// When calculating the confirmations the tip must be advanced by one.
+        /// <summary>
+        /// Get the accounts total spendable value for both confirmed and unconfirmed UTXO.
+        /// </summary>
+        public (Money ConfirmedAmount, Money UnConfirmedAmount) GetSpendableAmount()
+        {
+            var confirmed = this.MultiSigAddress.Transactions.Sum(t => t.SpendableAmount(true));
+            var total = this.MultiSigAddress.Transactions.Sum(t => t.SpendableAmount(false));
 
-				int countFrom = currentChainHeight + 1;
-				foreach (TransactionData transactionData in address.UnspentTransactions())
-				{
-					int? confirmationCount = 0;
-					if (transactionData.BlockHeight != null)
-						confirmationCount = countFrom >= transactionData.BlockHeight ? countFrom - transactionData.BlockHeight : 0;
+            return (confirmed, total - confirmed);
+        }
 
-					if (confirmationCount >= confirmations)
-					{
-						yield return new UnspentMultiSigOutputReference
-						{
-							Account = this,
-							Address = address,
-							Transaction = transactionData,
-						};
-					}
-				}
-			}
-		}
-	}
+        public Transaction SignPartialTransaction(Transaction partial, string password)
+        {
+            // Need to get the same ScriptCoins used by the other signatories.
+            // It is assumed that the funds are present in the MultiSigAddress
+            // transactions.
 
-	/// <summary>
-	/// A general purpose address; not derived from an HD seed.
-	/// </summary>
-	public class GeneralPurposeAddress
-	{
-		public GeneralPurposeAddress()
-		{
-			this.Transactions = new List<TransactionData>();
-		}
-		
-		// TODO: Encrypt the private key with the wallet password
-		/// <summary>
-		/// The private key for this address.
-		/// </summary>
-		[JsonProperty(PropertyName = "privateKey")]
-		[JsonConverter(typeof(KeyJsonConverter))]
-		public Key PrivateKey { get; set; }
+            // Find the transaction(s) in the MultiSigAddress that have the
+            // referenced inputs among their outputs.
 
-		/// <summary>
-		/// The script pub key for this address.
-		/// </summary>
-		[JsonProperty(PropertyName = "scriptPubKey")]
-		[JsonConverter(typeof(ScriptJsonConverter))]
-		public Script ScriptPubKey { get; set; }
+            List<Transaction> fundingTransactions = new List<Transaction>();
 
-		/// <summary>
-		/// The script pub key for this address.
-		/// </summary>
-		[JsonProperty(PropertyName = "pubkey")]
-		[JsonConverter(typeof(ScriptJsonConverter))]
-		public Script Pubkey { get; set; }
+            foreach (TransactionData tx in this.MultiSigAddress.Transactions)
+            {
+                foreach (var output in tx.Transaction.Outputs.AsIndexedOutputs())
+                {
+                    foreach (var input in partial.Inputs)
+                    {
+                        if (input.PrevOut.Hash == tx.Id && input.PrevOut.N == output.N)
+                            fundingTransactions.Add(tx.Transaction);
+                    }
+                }
+            }
 
-		/// <summary>
-		/// The Base58 representation of this address.
-		/// </summary>
-		[JsonProperty(PropertyName = "address")]
-		public string Address { get; set; }
+            // Then convert the outputs to Coins & make ScriptCoins out of them.
 
-		/// <summary>
-		/// A list of transactions involving this address.
-		/// </summary>
-		[JsonProperty(PropertyName = "transactions")]
-		public ICollection<TransactionData> Transactions { get; set; }
+            List<ScriptCoin> scriptCoins = new List<ScriptCoin>();
 
-		/// <summary>
-		/// Whether or not this address is considered a change address.
-		/// </summary>
-		[JsonProperty(PropertyName = "isChangeAddress")]
-		public bool IsChangeAddress { get; set; }
+            foreach (var tx in fundingTransactions)
+            {
+                foreach (var coin in tx.Outputs.AsCoins())
+                {
+                    // Only care about outputs for our particular multisig
+                    if (coin.ScriptPubKey == this.MultiSigAddress.ScriptPubKey)
+                    {
+                        scriptCoins.Add(coin.ToScriptCoin(this.MultiSigAddress.RedeemScript));
+                    }
+                }
+            }
 
-		/// <summary>
-		/// List all spendable transactions in an address.
-		/// </summary>
-		/// <returns></returns>
-		public IEnumerable<TransactionData> UnspentTransactions()
-		{
-			if (this.Transactions == null)
-			{
-				return new List<TransactionData>();
-			}
+            // Need to construct a transaction using a transaction builder with
+            // the appropriate state
 
-			return this.Transactions.Where(t => t.IsSpendable());
-		}
+            TransactionBuilder builder = new TransactionBuilder(this.Network);
+
+            Transaction signed =
+                builder
+                    .AddCoins(scriptCoins)
+                    .AddKeys(this.MultiSigAddress.GetPrivateKey(this.EncryptedSeed, password, this.Network))
+                    .SignTransaction(partial);
+
+            return signed;
+        }
+
+        public Transaction CombinePartialTransactions(Transaction[] partials)
+        {
+            Transaction firstPartial = partials[0];
+
+            // Need to get the same ScriptCoins used by the other signatories.
+            // It is assumed that the funds are present in the MultiSigAddress
+            // transactions.
+
+            // Find the transaction(s) in the MultiSigAddress that have the
+            // referenced inputs among their outputs.
+
+            List<Transaction> fundingTransactions = new List<Transaction>();
+
+            foreach (TransactionData tx in this.MultiSigAddress.Transactions)
+            {
+                foreach (var output in tx.Transaction.Outputs.AsIndexedOutputs())
+                {
+                    foreach (var input in firstPartial.Inputs)
+                    {
+                        if (input.PrevOut.Hash == tx.Id && input.PrevOut.N == output.N)
+                            fundingTransactions.Add(tx.Transaction);
+                    }
+                }
+            }
+
+            // Then convert the outputs to Coins & make ScriptCoins out of them.
+
+            List<ScriptCoin> scriptCoins = new List<ScriptCoin>();
+
+            foreach (var tx in fundingTransactions)
+            {
+                foreach (var coin in tx.Outputs.AsCoins())
+                {
+                    // Only care about outputs for our particular multisig
+                    if (coin.ScriptPubKey == this.MultiSigAddress.ScriptPubKey)
+                    {
+                        scriptCoins.Add(coin.ToScriptCoin(this.MultiSigAddress.RedeemScript));
+                    }
+                }
+            }
+
+            // Need to construct a transaction using a transaction builder with
+            // the appropriate state
+
+            TransactionBuilder builder = new TransactionBuilder(this.Network);
+
+            Transaction combined =
+                builder
+                    .AddCoins(scriptCoins)
+                    .CombineSignatures(partials);
+
+            return combined;
+        }
 	}
 
 	/// <summary>
@@ -739,12 +249,6 @@ namespace Stratis.Bitcoin.Features.GeneralPurposeWallet
 		[JsonProperty(PropertyName = "amount")]
 		[JsonConverter(typeof(MoneyJsonConverter))]
 		public Money Amount { get; set; }
-
-		/// <summary>
-		/// A value indicating whether this is a coin stake transaction or not.
-		/// </summary>
-		[JsonProperty(PropertyName = "isCoinStake", NullValueHandling = NullValueHandling.Ignore)]
-		public bool? IsCoinStake { get; set; }
 
 		/// <summary>
 		/// The index of this scriptPubKey in the transaction it is contained.
@@ -941,46 +445,6 @@ namespace Stratis.Bitcoin.Features.GeneralPurposeWallet
 	/// </summary>
 	public class UnspentOutputReference
 	{
-		/// <summary>
-		/// The account associated with this UTXO
-		/// </summary>
-		public GeneralPurposeAccount Account { get; set; }
-
-		/// <summary>
-		/// The address associated with this UTXO
-		/// </summary>
-		public GeneralPurposeAddress Address { get; set; }
-
-		/// <summary>
-		/// The transaction representing the UTXO.
-		/// </summary>
-		public TransactionData Transaction { get; set; }
-
-		/// <summary>
-		/// Convert the <see cref="TransactionData"/> to an <see cref="OutPoint"/>
-		/// </summary>
-		/// <returns>The corresponding <see cref="OutPoint"/>.</returns>
-		public OutPoint ToOutPoint()
-		{
-			return new OutPoint(this.Transaction.Id, (uint)this.Transaction.Index);
-		}
-	}
-
-	/// <summary>
-	/// Represents an UTXO that keeps a reference to <see cref="MultiSigAddress"/> and <see cref="GeneralPurposeAccount"/>.
-	/// </summary>
-	public class UnspentMultiSigOutputReference
-	{
-		/// <summary>
-		/// The account associated with this UTXO
-		/// </summary>
-		public GeneralPurposeAccount Account { get; set; }
-
-		/// <summary>
-		/// The address associated with this UTXO
-		/// </summary>
-		public MultiSigAddress Address { get; set; }
-
 		/// <summary>
 		/// The transaction representing the UTXO.
 		/// </summary>
