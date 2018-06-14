@@ -15,6 +15,7 @@ using Stratis.FederatedPeg.Features.FederationGateway;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Stratis.Bitcoin.IntegrationTests.Common;
 
 namespace Stratis.FederatedSidechains.IntegrationTests
 {
@@ -117,7 +118,8 @@ namespace Stratis.FederatedSidechains.IntegrationTests
                         .UseGeneralPurposeWallet()
                         .UseBlockNotification()
                         .UseApi()
-                        .AddRPC(),
+                        .AddRPC()
+                        .MockIBD(),
                     key, NodesByKey, Networks[key.Chain], addParametersAction);
                 //todo: check this is needed
                 //TestHelper.ConnectNodeToOtherNodesInTest(key, nodesByKey);

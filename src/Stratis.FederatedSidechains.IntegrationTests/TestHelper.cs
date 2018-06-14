@@ -33,6 +33,7 @@ namespace Stratis.FederatedSidechains.IntegrationTests
 
             nodesByKey.Add(nodeKey, node);
             node.Start();
+            node.NotInIBD();
 
             WaitLoop(() => node.State == CoreNodeState.Running);
         }

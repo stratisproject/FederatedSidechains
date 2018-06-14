@@ -19,6 +19,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using NBitcoin.Protocol;
 using Stratis.Bitcoin.Features.Miner.Interfaces;
+using Stratis.Bitcoin.IntegrationTests.Common.Builders;
 using Stratis.Bitcoin.IntegrationTests.Common.Runners;
 using Stratis.Bitcoin.Tests.Common.TestFramework;
 using Xunit;
@@ -35,7 +36,7 @@ namespace Stratis.FederatedSidechains.IntegrationTests.FederationGateway
         private readonly Dictionary<NodeKey, HdAccount> hdAccountsByKey;
         private readonly NodeBuilder nodeBuilder;
         private readonly SharedSteps sharedSteps;
-        private readonly Money moneyFromMining = new Money(5000, MoneyUnit.BTC);
+        private readonly Money moneyFromMining = new Money(98000404, MoneyUnit.BTC);
         private readonly Money moneyFromMainchainToSidechain = new Money(1001, MoneyUnit.BTC);
         private readonly Money moneyFromSidechainToMainchain = new Money(402, MoneyUnit.BTC);
         private readonly Network mainchainNetwork;
@@ -89,29 +90,34 @@ namespace Stratis.FederatedSidechains.IntegrationTests.FederationGateway
         public void a_mainchain_node_with_funded_account()
         {
             var nodeKey = new NodeKey() { Chain = Chain.Mainchain, Role = NodeRole.Wallet };
-            var buildNodeAction = new Action<IFullNodeBuilder>(fullNodeBuilder =>
-                fullNodeBuilder
-                    .UseBlockStore()
-                    .UsePosConsensus()
-                    .UseMempool()
-                    .AddMining()
-                    .UseWallet()
-                    .UseApi()
-                    .AddRPC()
-                    .MockIBD()
-                    .SubstituteDateTimeProviderFor<MiningFeature>()
-                );
-            
-            TestHelper.BuildStartAndRegisterNode(nodeBuilder, buildNodeAction, nodeKey, nodesByKey, mainchainNetwork, protocolVersion: ProtocolVersion.ALT_PROTOCOL_VERSION);
-            var node = nodesByKey[nodeKey];
+            //todo: find out why this is different from the call to "CreateStratisPowMiningNode"
+            //var buildNodeAction = new Action<IFullNodeBuilder>(fullNodeBuilder =>
+            //    fullNodeBuilder
+            //        .UseBlockStore()
+            //        .UsePosConsensus()
+            //        .UseMempool()
+            //        .AddMining()
+            //        .UseWallet()
+            //        .UseApi()
+            //        .AddRPC()
+            //        .MockIBD()
+            //        .SubstituteDateTimeProviderFor<MiningFeature>()
+            //    );
+            //TestHelper.BuildStartAndRegisterNode(nodeBuilder, buildNodeAction, nodeKey, nodesByKey, mainchainNetwork, protocolVersion: ProtocolVersion.ALT_PROTOCOL_VERSION);
+            //var node = nodesByKey[nodeKey];
 
+            var node = this.nodeBuilder.CreateStratisPowMiningNode();
+            nodesByKey.Add(nodeKey, node);
+            node.Start();
+            node.NotInIBD();
+            
             var account = CreateAndRegisterHdAccount(node, nodeKey);
 
-            sharedSteps.MinePremineBlocks(node, nodeKey.WalletName, account.Name, nodeKey.Password);
-            //todo: find why mining further creates file info issues
-            //node.GenerateStratisWithMiner(100);
+            sharedSteps.MinePremineBlocks(node, nodeKey.WalletName, NamingConstants.AccountZero, nodeKey.Password);
+            sharedSteps.MineBlocks(100, node, NamingConstants.AccountZero, nodeKey.WalletName, nodeKey.Password);
+
             this.sharedSteps.WaitForNodeToSync(node);
-            //todo: check that we got this.moneyFromMining after the mining
+            account.GetSpendableAmount().ConfirmedAmount.Should().Be(moneyFromMining);
         }
 
         public void a_sidechain_node_with_an_account()
@@ -131,7 +137,7 @@ namespace Stratis.FederatedSidechains.IntegrationTests.FederationGateway
 
             TestHelper.BuildStartAndRegisterNode(nodeBuilder, buildNodeAction, nodeKey, nodesByKey, sidechainNetwork);
             var node = nodesByKey[nodeKey];
-
+            
             var account = CreateAndRegisterHdAccount(node, nodeKey);
         }
 
