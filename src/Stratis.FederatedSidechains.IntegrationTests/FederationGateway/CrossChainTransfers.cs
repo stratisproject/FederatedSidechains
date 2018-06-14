@@ -55,6 +55,7 @@ namespace Stratis.FederatedSidechains.IntegrationTests.FederationGateway
 
         protected override void AfterTest()
         {
+            gatewayEnvironment?.Dispose();
             nodeBuilder?.Dispose();
         }
 
