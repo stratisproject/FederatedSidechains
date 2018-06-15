@@ -28,7 +28,7 @@ namespace Stratis.Bitcoin.Features.GeneralPurposeWallet
     /// <seealso cref="Stratis.Bitcoin.Interfaces.INodeStats" />
     public class GeneralPurposeWalletFeature : FullNodeFeature, INodeStats, IFeatureStats
     {
-        private readonly IWalletSyncManager walletSyncManager;
+        private readonly IFederationWalletSyncManager walletSyncManager;
 
         private readonly IGeneralPurposeWalletManager walletManager;
 
@@ -54,7 +54,7 @@ namespace Stratis.Bitcoin.Features.GeneralPurposeWallet
         /// <param name="connectionManager">The connection manager.</param>
         /// <param name="broadcasterBehavior">The broadcaster behavior.</param>
         public GeneralPurposeWalletFeature(
-            IWalletSyncManager walletSyncManager,
+            IFederationWalletSyncManager walletSyncManager,
             IGeneralPurposeWalletManager walletManager,
             Signals.Signals signals,
             ConcurrentChain chain,
@@ -141,7 +141,7 @@ namespace Stratis.Bitcoin.Features.GeneralPurposeWallet
                 .DependOn<RPCFeature>()
                 .FeatureServices(services =>
                 {
-                    services.AddSingleton<IWalletSyncManager, GeneralPurposeWalletSyncManager>();
+                    services.AddSingleton<IFederationWalletSyncManager, GeneralPurposeWalletSyncManager>();
                     services.AddSingleton<IGeneralPurposeWalletTransactionHandler, GeneralPurposeWalletTransactionHandler>();
                     services.AddSingleton<IGeneralPurposeWalletManager, GeneralPurposeWalletManager>();
                     services.AddSingleton<IWalletFeePolicy, WalletFeePolicy>();

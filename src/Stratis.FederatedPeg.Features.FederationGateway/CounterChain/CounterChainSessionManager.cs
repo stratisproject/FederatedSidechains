@@ -8,16 +8,14 @@ using NBitcoin;
 using Stratis.Bitcoin;
 using Stratis.Bitcoin.Configuration;
 using Stratis.Bitcoin.Connection;
-using Stratis.Bitcoin.Features.GeneralPurposeWallet;
-using Stratis.Bitcoin.Features.GeneralPurposeWallet.Interfaces;
 using Stratis.Bitcoin.Features.Wallet;
 using Stratis.Bitcoin.Features.Wallet.Interfaces;
 using Stratis.Bitcoin.Interfaces;
 using Stratis.Bitcoin.P2P.Peer;
 using Stratis.Bitcoin.Utilities;
-using Stratis.FederatedPeg.Features.FederationGateway.Models;
-using Recipient = Stratis.Bitcoin.Features.GeneralPurposeWallet.Recipient;
-using TransactionBuildContext = Stratis.Bitcoin.Features.GeneralPurposeWallet.TransactionBuildContext;
+using Stratis.FederatedPeg.Features.FederationGateway.Interfaces;
+using Recipient = Stratis.FederatedPeg.Features.FederationGateway.Wallet;
+using TransactionBuildContext = Stratis.FederatedPeg.Features.FederationGateway.Wallet.TransactionBuildContext;
 
 namespace Stratis.FederatedPeg.Features.FederationGateway.CounterChain
 {
@@ -25,10 +23,10 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.CounterChain
     internal class CounterChainSessionManager : ICounterChainSessionManager
     {
         // The wallet that contains the multisig capabilities.
-        private IGeneralPurposeWalletManager generalPurposeWalletManager;
+        private IFederationWalletManager federationWalletManager;
 
         // Transaction handler used to build the final transaction.
-        private IGeneralPurposeWalletTransactionHandler generalPurposeWalletTransactionHandler;
+        private IFederationWalletTransactionHandler federationWalletTransactionHandler;
 
         // Peer connector for broadcasting the payloads.
         private IConnectionManager connectionManager;
@@ -68,8 +66,8 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.CounterChain
         // Get everything together before we get going.
         public CounterChainSessionManager(
             ILoggerFactory loggerFactory, 
-            IGeneralPurposeWalletManager generalPurposeWalletManager,
-            IGeneralPurposeWalletTransactionHandler generalPurposeWalletTransactionHandler, 
+            IFederationWalletManager federationWalletManager,
+            IFederationWalletTransactionHandler federationWalletTransactionHandler, 
             IConnectionManager connectionManager, 
             Network network,
             FederationGatewaySettings federationGatewaySettings, 
@@ -92,8 +90,8 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.CounterChain
             this.concurrentChain = concurrentChain;
             this.fullnode = fullnode;
             this.broadcastManager = broadcastManager;
-            this.generalPurposeWalletManager = generalPurposeWalletManager;
-            this.generalPurposeWalletTransactionHandler = generalPurposeWalletTransactionHandler;
+            this.federationWalletManager = federationWalletManager;
+            this.federationWalletTransactionHandler = federationWalletTransactionHandler;
             this.federationGatewaySettings = federationGatewaySettings;
             this.dateTimeProvider = dateTimeProvider;
         }
@@ -166,7 +164,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.CounterChain
 
             var partials = from t in counterChainSession.PartialTransactions where t != null select t;
 
-            var combinedTransaction = this.generalPurposeWalletManager.GetWallet().CombinePartialTransactions(partials.ToArray());
+            var combinedTransaction = this.federationWalletManager.GetWallet().CombinePartialTransactions(partials.ToArray());
             this.broadcastManager.BroadcastTransactionAsync(combinedTransaction).GetAwaiter().GetResult();
             this.logger.LogInformation("(-)");
         }
@@ -186,7 +184,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.CounterChain
             //todo: then we just return the transctionId
 
             //create the partial transaction template
-            var wallet = this.generalPurposeWalletManager.GetWallet();
+            var wallet = this.federationWalletManager.GetWallet();
             var multiSigAddress = wallet.MultiSigAddress;
 
             var destination = BitcoinAddress.Create(destinationAddress, this.network).ScriptPubKey;
@@ -198,7 +196,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.CounterChain
             // TODO: The password is currently hardcoded here
             var multiSigContext = new TransactionBuildContext(
                 new WalletAccountReference(this.federationGatewaySettings.MultiSigWalletName, "account 0"),
-                (new[] { new Recipient { Amount = amount, ScriptPubKey = destination } }).ToList(),
+                (new[] { new Recipient.Recipient { Amount = amount, ScriptPubKey = destination } }).ToList(),
                 "password", sessionId.ToString())
             {
                 TransactionFee = Money.Coins(0.01m),
@@ -210,7 +208,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.CounterChain
             };
 
             this.logger.LogInformation($"{this.federationGatewaySettings.MemberName} ProcessCounterChainSession: Building Transaction.");
-            var templateTransaction = this.generalPurposeWalletTransactionHandler.BuildTransaction(multiSigContext);
+            var templateTransaction = this.federationWalletTransactionHandler.BuildTransaction(multiSigContext);
 
             //add my own partial
             this.logger.LogInformation($"{this.federationGatewaySettings.MemberName} ProcessCounterChainSession: Signing own partial.");

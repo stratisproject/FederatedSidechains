@@ -80,7 +80,7 @@ namespace Stratis.FederatedPeg.IntegrationTests
             }
         }
 
-        public static async Task CreateGeneralPurposeWallet(int apiPortForSidechain, string walletName,
+        public static async Task CreateFederationWallet(int apiPortForSidechain, string walletName,
             string password)
         {
             var walletCreationRequest = new WalletCreationRequest()

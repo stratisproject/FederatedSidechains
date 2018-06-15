@@ -6,11 +6,11 @@ using System.Threading;
 using System.Threading.Tasks;
 using NBitcoin;
 using Stratis.Bitcoin.Connection;
-using Stratis.Bitcoin.Features.GeneralPurposeWallet;
-using Stratis.Bitcoin.Features.GeneralPurposeWallet.Interfaces;
 using Stratis.Bitcoin.Features.Wallet.Interfaces;
 using Stratis.Bitcoin.IntegrationTests.Common.EnvironmentMockUpHelpers;
 using Stratis.Bitcoin.P2P.Peer;
+using Stratis.FederatedPeg.Features.FederationGateway.Interfaces;
+using Stratis.FederatedPeg.Features.FederationGateway.Wallet;
 
 //using CoreNode = Stratis.Bitcoin.
 
@@ -103,9 +103,9 @@ namespace Stratis.FederatedPeg.IntegrationTests.Helpers
             return true;
         }
 
-        private static IGeneralPurposeWalletManager GetGeneralWalletManager(CoreNode node)
+        private static IFederationWalletManager GetGeneralWalletManager(CoreNode node)
         {
-            return node.FullNode.NodeService<IGeneralPurposeWalletManager>();
+            return node.FullNode.NodeService<IFederationWalletManager>();
         }
 
         public static bool AreNodeGeneralWalletsSynced(CoreNode node1, CoreNode node2)
@@ -115,20 +115,20 @@ namespace Stratis.FederatedPeg.IntegrationTests.Helpers
 
         public static void ResyncGeneralWallet(CoreNode node)
         {
-            var generalPurposeWalletSyncManager = node.FullNode.NodeService<IWalletSyncManager>();
-            generalPurposeWalletSyncManager.SyncFromHeight(0);
+            var federationWalletSyncManager = node.FullNode.NodeService<IFederationWalletSyncManager>();
+            federationWalletSyncManager.SyncFromHeight(0);
         }
 
         public static bool IsGeneralWalletSyncedToHeight(CoreNode node, int height)
         {
-            var generalWalletManager = node.FullNode.NodeService<IGeneralPurposeWalletManager>() as GeneralPurposeWalletManager;
+            var generalWalletManager = node.FullNode.NodeService<IFederationWalletManager>() as FederationWalletManager;
             return generalWalletManager.LastBlockHeight() >= height;
         }
 
         //todo: duplication
         public static void SaveGeneralWallet(CoreNode node, string walletName)
         {
-            var generalWalletManager = node.FullNode.NodeService<IGeneralPurposeWalletManager>() as GeneralPurposeWalletManager;
+            var generalWalletManager = node.FullNode.NodeService<IFederationWalletManager>() as FederationWalletManager;
             var wallet = generalWalletManager.GetWallet();
             generalWalletManager.SaveWallet();
         }

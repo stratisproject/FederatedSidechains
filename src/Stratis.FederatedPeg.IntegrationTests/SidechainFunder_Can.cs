@@ -7,11 +7,9 @@ using NBitcoin;
 using Stratis.Bitcoin.Features.Api;
 using Stratis.Bitcoin.Features.BlockStore;
 using Stratis.Bitcoin.Features.Consensus;
-using Stratis.Bitcoin.Features.GeneralPurposeWallet;
 using Stratis.Bitcoin.Features.MemoryPool;
 using Stratis.Bitcoin.Features.Miner;
 using Stratis.Bitcoin.Features.Miner.Interfaces;
-using Stratis.Bitcoin.Features.Notifications;
 using Stratis.Bitcoin.Features.RPC;
 using Stratis.Bitcoin.Features.Wallet;
 using Stratis.Bitcoin.Features.Wallet.Controllers;
@@ -23,13 +21,9 @@ using Stratis.FederatedPeg.Features.MainchainGeneratorServices;
 using Stratis.FederatedPeg.Features.SidechainGeneratorServices;
 using Stratis.FederatedPeg.IntegrationTests.Helpers;
 using Xunit;
-using FeeType = Stratis.Bitcoin.Features.Wallet.FeeType;
-using GpRecipient = Stratis.Bitcoin.Features.GeneralPurposeWallet.Recipient;
-using WtRecipient = Stratis.Bitcoin.Features.Wallet.Recipient;
-
-using GpTransactionBuildContext = Stratis.Bitcoin.Features.GeneralPurposeWallet.TransactionBuildContext;
 using WtTransactionBuildContext = Stratis.Bitcoin.Features.Wallet.TransactionBuildContext;
 using System;
+using Stratis.Bitcoin.Features.Notifications;
 using Stratis.Bitcoin.IntegrationTests.Common;
 using Stratis.Sidechains.Networks;
 
@@ -259,7 +253,7 @@ namespace Stratis.FederatedPeg.IntegrationTests
                             // multi-sigs.  In this case we will add the wallet to our FunderRole
                             // node and use the wallet to confirm the premine is generated into
                             // the multi-sig address.
-                            .UseGeneralPurposeWallet()
+                        //    .UseGeneralPurposeWallet()
                             .UseApi()
                             .AddRPC();
                     },
@@ -313,7 +307,7 @@ namespace Stratis.FederatedPeg.IntegrationTests
                 await IntegrationTestUtils.WaitLoop(() => IntegrationTestUtils.AreNodesSynced(sidechainNode_GeneratorRole, sidechainNode_Member1_Wallet));
 
                 // Create a wallet and add our multi-sig.
-                await ApiCalls.CreateGeneralPurposeWallet(sidechainNode_Member1_Wallet.GetApiPort(), "multisig_wallet", "password");
+                await ApiCalls.CreateFederationWallet(sidechainNode_Member1_Wallet.GetApiPort(), "multisig_wallet", "password");
              //   var account_member1 = fedFolder.ImportPrivateKeyToWallet(sidechainNode_Member1_Wallet, "multisig_wallet", "password", "member1", "pass1", 2, 3, ApexNetwork.RegTest);
 
                 // UCInit:  The actor navigates to an initialize sidechain feature. He enters the multi-sig
@@ -455,7 +449,7 @@ namespace Stratis.FederatedPeg.IntegrationTests
 
                 var transactionBuildContext = new WtTransactionBuildContext(
                         sendingWalletAccountReference,
-                        new List<WtRecipient>() { new WtRecipient() { Amount = new Money(3600, MoneyUnit.BTC), ScriptPubKey = BitcoinAddress.Create(multiSigAddress_Mainchain, Network.StratisRegTest).ScriptPubKey } },
+                        new List<Recipient>() { new Recipient() { Amount = new Money(3600, MoneyUnit.BTC), ScriptPubKey = BitcoinAddress.Create(multiSigAddress_Mainchain, Network.StratisRegTest).ScriptPubKey } },
                         "1234", addressSidechain)
                 {
                     MinConfirmations = 1,
@@ -494,7 +488,7 @@ namespace Stratis.FederatedPeg.IntegrationTests
                         .UseWallet()
                         .AddPowPosMining()
                         .AddFederationGateway()
-                        .UseGeneralPurposeWallet()
+                      //  .UseGeneralPurposeWallet()
                         .UseBlockNotification()
                         .UseApi()
                         .AddRPC();
@@ -519,7 +513,7 @@ namespace Stratis.FederatedPeg.IntegrationTests
                         .UseWallet()
                         .AddPowPosMining()
                         .AddFederationGateway()
-                        .UseGeneralPurposeWallet()
+                      //  .UseGeneralPurposeWallet()
                         .UseBlockNotification()
                         .UseApi()
                         .AddRPC();
@@ -544,7 +538,7 @@ namespace Stratis.FederatedPeg.IntegrationTests
                         .UseWallet()
                         .AddPowPosMining()
                         .AddFederationGateway()
-                        .UseGeneralPurposeWallet()
+                   //     .UseGeneralPurposeWallet()
                         .UseBlockNotification()
                         .UseApi()
                         .AddRPC();
@@ -572,7 +566,7 @@ namespace Stratis.FederatedPeg.IntegrationTests
                         .UseWallet()
                         .AddPowPosMining()
                         .AddFederationGateway()
-                        .UseGeneralPurposeWallet()
+                  //      .UseGeneralPurposeWallet()
                         .UseBlockNotification()
                         .UseApi()
                         .AddRPC();
@@ -600,7 +594,7 @@ namespace Stratis.FederatedPeg.IntegrationTests
                         .UseWallet()
                         .AddPowPosMining()
                         .AddFederationGateway()
-                        .UseGeneralPurposeWallet()
+                       // .UseGeneralPurposeWallet()
                         .UseBlockNotification()
                         .UseApi()
                         .AddRPC();
@@ -627,7 +621,7 @@ namespace Stratis.FederatedPeg.IntegrationTests
                         .UseWallet()
                         .AddPowPosMining()
                         .AddFederationGateway()
-                        .UseGeneralPurposeWallet()
+                    //    .UseGeneralPurposeWallet()
                         .UseBlockNotification()
                         .UseApi()
                         .AddRPC();
@@ -741,15 +735,15 @@ namespace Stratis.FederatedPeg.IntegrationTests
 
                 //create wallets on the sidechains
                 //sidechain_FederationGateway1
-                await ApiCalls.CreateGeneralPurposeWallet(sidechain_FederationGateway1.GetApiPort(), "multisig_wallet", "password");
+                await ApiCalls.CreateFederationWallet(sidechain_FederationGateway1.GetApiPort(), "multisig_wallet", "password");
                 //var account_fed_member1_sidechain = fedFolder.ImportPrivateKeyToWallet(sidechain_FederationGateway1, "multisig_wallet", "password", "member1", "pass1", 2, 3, ApexNetwork.RegTest);
 
                 //sidechain_FederationGateway2
-                await ApiCalls.CreateGeneralPurposeWallet(sidechain_FederationGateway2.GetApiPort(), "multisig_wallet", "password");
+                await ApiCalls.CreateFederationWallet(sidechain_FederationGateway2.GetApiPort(), "multisig_wallet", "password");
                 //var account_fed_member2_sidechain = fedFolder.ImportPrivateKeyToWallet(sidechain_FederationGateway2, "multisig_wallet", "password", "member2", "pass2", 2, 3, ApexNetwork.RegTest);
 
                 //sidechain_FederationGateway3
-                await ApiCalls.CreateGeneralPurposeWallet(sidechain_FederationGateway3.GetApiPort(), "multisig_wallet", "password");
+                await ApiCalls.CreateFederationWallet(sidechain_FederationGateway3.GetApiPort(), "multisig_wallet", "password");
                // var account_fed_member3_sidechain = fedFolder.ImportPrivateKeyToWallet(sidechain_FederationGateway3, "multisig_wallet", "password", "member3", "pass3", 2, 3, ApexNetwork.RegTest);
 
                 await Task.Delay(5000);
@@ -794,15 +788,15 @@ namespace Stratis.FederatedPeg.IntegrationTests
 
                 //create wallets on the mainchains
                 //mainchain_FederationGateway1
-                await ApiCalls.CreateGeneralPurposeWallet(mainchain_FederationGateway1.GetApiPort(), "multisig_wallet", "password");
+                await ApiCalls.CreateFederationWallet(mainchain_FederationGateway1.GetApiPort(), "multisig_wallet", "password");
              //   var account_fed_member1_mainchain = fedFolder.ImportPrivateKeyToWallet(mainchain_FederationGateway1, "multisig_wallet", "password", "member1", "pass1", 2, 3, Network.StratisRegTest);
 
                 //mainchain_FederationGateway2
-                await ApiCalls.CreateGeneralPurposeWallet(mainchain_FederationGateway2.GetApiPort(), "multisig_wallet", "password");
+                await ApiCalls.CreateFederationWallet(mainchain_FederationGateway2.GetApiPort(), "multisig_wallet", "password");
              //   var account_fed_member2_mainchain = fedFolder.ImportPrivateKeyToWallet(mainchain_FederationGateway2, "multisig_wallet", "password", "member2", "pass2", 2, 3, Network.StratisRegTest);
 
                 //mainchain_FederationGateway3
-                await ApiCalls.CreateGeneralPurposeWallet(mainchain_FederationGateway3.GetApiPort(), "multisig_wallet", "password");
+                await ApiCalls.CreateFederationWallet(mainchain_FederationGateway3.GetApiPort(), "multisig_wallet", "password");
            //     var account_fed_member3_mainchain = fedFolder.ImportPrivateKeyToWallet(mainchain_FederationGateway3, "multisig_wallet", "password", "member3", "pass3", 2, 3, Network.StratisRegTest);
 
                 //generate a block to include our transaction
@@ -862,7 +856,7 @@ namespace Stratis.FederatedPeg.IntegrationTests
 
                 transactionBuildContext = new WtTransactionBuildContext(
                     sendingWalletAccountReference,
-                    new List<WtRecipient>() { new WtRecipient() { Amount = new Money(2500, MoneyUnit.BTC), ScriptPubKey = BitcoinAddress.Create(multiSigAddress_Sidechain, ApexNetwork.RegTest).ScriptPubKey } },
+                    new List<Recipient>() { new Recipient() { Amount = new Money(2500, MoneyUnit.BTC), ScriptPubKey = BitcoinAddress.Create(multiSigAddress_Sidechain, ApexNetwork.RegTest).ScriptPubKey } },
                     "1234", addressMainchain)
                 {
                     MinConfirmations = 1,
@@ -955,7 +949,6 @@ namespace Stratis.FederatedPeg.IntegrationTests
                         .UseWallet()
                         .AddPowPosMining()
                         .AddFederationGateway()
-                        .UseGeneralPurposeWallet()
                         .UseBlockNotification()
                         .UseApi()
                         .AddRPC();

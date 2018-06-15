@@ -2,12 +2,11 @@
 using System.Linq;
 using System.Runtime.CompilerServices;
 using NBitcoin;
-using NBitcoin.DataEncoders;using Stratis.Bitcoin.Features.GeneralPurposeWallet;
-using Stratis.Bitcoin.Features.GeneralPurposeWallet.Interfaces;
-
 using Stratis.Bitcoin.Features.Wallet;
 using Stratis.Bitcoin.Tests.Common;using Stratis.Bitcoin.IntegrationTests.Common;
 using Stratis.Bitcoin.IntegrationTests.Common.EnvironmentMockUpHelpers;
+using Stratis.FederatedPeg.Features.FederationGateway.Interfaces;
+using Stratis.FederatedPeg.Features.FederationGateway.Wallet;
 
 namespace Stratis.FederatedPeg.IntegrationTests.Helpers
 {
@@ -65,7 +64,7 @@ namespace Stratis.FederatedPeg.IntegrationTests.Helpers
             string memberPassword, int m, int n, Network network)
         {
             // Use the GeneralWalletManager and get the API created wallet.
-            var generalWalletManager = node.FullNode.NodeService<IGeneralPurposeWalletManager>() as GeneralPurposeWalletManager;
+            var generalWalletManager = node.FullNode.NodeService<IFederationWalletManager>() as FederationWalletManager;
             var wallet = generalWalletManager.GetWallet();
 
             //Decrypt the private key
@@ -95,7 +94,7 @@ namespace Stratis.FederatedPeg.IntegrationTests.Helpers
 
         public void SaveGeneralWallet(CoreNode node, string walletName)
         {
-            var generalWalletManager = node.FullNode.NodeService<IGeneralPurposeWalletManager>() as GeneralPurposeWalletManager;
+            var generalWalletManager = node.FullNode.NodeService<IFederationWalletManager>() as FederationWalletManager;
             var wallet = generalWalletManager.GetWallet();
             generalWalletManager.SaveWallet();
         }

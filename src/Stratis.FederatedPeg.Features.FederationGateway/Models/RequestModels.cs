@@ -4,6 +4,7 @@ using System.Text;
 using NBitcoin;
 using NBitcoin.JsonConverters;
 using Newtonsoft.Json;
+using Stratis.Bitcoin.Features.Wallet.Models;
 
 namespace Stratis.FederatedPeg.Features.FederationGateway.Models
 {
@@ -16,17 +17,6 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.Models
             base(JsonConvert.SerializeObject(obj), Encoding.UTF8, "application/json")
         {
 
-        }
-    }
-
-    /// <summary>
-    /// Base of the RequestModel overrides the Request to convert to json.
-    /// </summary>
-    public class RequestModel
-    {
-        public override string ToString()
-        {
-            return JsonConvert.SerializeObject(this, Formatting.Indented);
         }
     }
 
@@ -56,5 +46,14 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.Models
         /// </summary>
         [Required(ErrorMessage = "Destination Address required.")]
         public string DestinationAddress { get; set; }
+    }
+
+    public class ImportMemberKeyRequest : RequestModel
+    {
+        [Required(ErrorMessage = "A mnemonic is required.")]
+        public string Mnemonic { get; set; }
+
+        [Required(ErrorMessage = "A password is required.")]
+        public string Password { get; set; }
     }
 }
