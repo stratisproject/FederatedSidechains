@@ -44,8 +44,6 @@ namespace Stratis.FederatedPeg.Features.FederationGateway
 
         private FederationGatewaySettings federationGatewaySettings;
 
-        private NodeSettings nodeSettings;
-
         private IFullNode fullNode;
 
         private ILoggerFactory loggerFactory;
@@ -67,7 +65,6 @@ namespace Stratis.FederatedPeg.Features.FederationGateway
             Signals signals,
             IConnectionManager connectionManager,
             FederationGatewaySettings federationGatewaySettings, 
-            NodeSettings nodeSettings, 
             IFullNode fullNode,
             IFederationWalletManager federationWalletManager,
             IFederationWalletSyncManager walletSyncManager,
@@ -81,7 +78,6 @@ namespace Stratis.FederatedPeg.Features.FederationGateway
             this.signals = signals;
             this.connectionManager = connectionManager;
             this.federationGatewaySettings = federationGatewaySettings;
-            this.nodeSettings = nodeSettings;
             this.fullNode = fullNode;
             this.chain = chain;
             this.federationWalletManager = federationWalletManager;
