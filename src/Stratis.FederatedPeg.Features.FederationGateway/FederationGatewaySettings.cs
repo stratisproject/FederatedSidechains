@@ -57,7 +57,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway
         public string PublicKey { get; set; }
 
         /// <summary>
-        /// A string representation of the PublicKey used for determining turns in the round robin.
+        /// Public keys of all the federation members
         /// </summary>
         public PubKey[] FederationPublicKeys { get; set; }
 
