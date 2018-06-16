@@ -9,7 +9,6 @@ namespace Stratis.FederatedPeg.Features.FederationGateway
         Created,
         Requesting,
         Requested,
-        RequestSending,
         Completed
     }
 
