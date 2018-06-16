@@ -15,8 +15,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Stratis.Bitcoin.IntegrationTests.Common;
-using Stratis.FederatedPeg.Features.FederationGateway.Interfaces;
-using Stratis.FederatedPeg.Features.FederationGateway.Wallet;
 
 namespace Stratis.FederatedSidechains.IntegrationTests
 {
@@ -28,7 +26,7 @@ namespace Stratis.FederatedSidechains.IntegrationTests
         public IList<FederationMemberKey> FederationMemberKeys { get; private set; }
         public IDictionary<FederationMemberKey, Mnemonic> FederationMembersMnemonics { get; private set; }
         public Script RedeemScript { get; private set; }
-        public IDictionary<NodeKey, FederationWallet> FederationWalletsByKey { get; }
+        public IDictionary<NodeKey, string> GpAccountsByKey { get; }
         public IDictionary<NodeKey, CoreNode> NodesByKey { get; }
 
         private readonly NodeBuilder nodeBuilder;
@@ -41,7 +39,7 @@ namespace Stratis.FederatedSidechains.IntegrationTests
             FederationMembersMnemonics = new Dictionary<FederationMemberKey, Mnemonic>();
             ChainMnemonics = new Dictionary<Chain, Mnemonic>();
             NodesByKey = new Dictionary<NodeKey, CoreNode>();
-            FederationWalletsByKey = new Dictionary<NodeKey, FederationWallet>();
+            GpAccountsByKey = new Dictionary<NodeKey, string>();
             Networks = new Dictionary<Chain, Network>
             {
                 {Chain.Mainchain, mainchainNetwork},
@@ -100,13 +98,12 @@ namespace Stratis.FederatedSidechains.IntegrationTests
                 {
                     n.ConfigParameters.Add("membername", key.AsFederationMemberKey().Name);
                     n.ConfigParameters.Add("apiport", key.SelfApiPort.ToString());
-                    n.ConfigParameters.Add("port", key.SelfProtocolPort.ToString());
                     n.ConfigParameters.Add("counterchainapiport", key.CounterChainApiPort.ToString());
                     n.ConfigParameters.Add("redeemscript", this.RedeemScript.ToString());
                     n.ConfigParameters.Add("federationips",
                         string.Join(",", FederationNodeKeys
                             .Where(k => k.Chain == key.Chain && k.Index != key.Index)
-                            .Select(k => $"127.0.0.1:{k.SelfProtocolPort}")
+                            .Select(k => $"127.0.0.1:{k.SelfApiPort}")
                         ));
                 });
                 TestHelper.BuildStartAndRegisterNode(nodeBuilder,
@@ -122,17 +119,19 @@ namespace Stratis.FederatedSidechains.IntegrationTests
                         .AddRPC()
                         .MockIBD(),
                     key, NodesByKey, Networks[key.Chain], addParametersAction);
+                //todo: check this is needed
+                //TestHelper.ConnectNodeToOtherNodesInTest(key, nodesByKey);
             }
         }
 
         private void BuildFederationWallets()
         {
-            foreach (var nodeKeyPair in NodesByKey)
+            foreach (var key in FederationNodeKeys)
             {
-                var walletManager = nodeKeyPair.Value.FullNode.NodeService<IFederationWalletManager>();
-                walletManager.Start();
-                var multisigWallet = walletManager.GetWallet();
-                FederationWalletsByKey.Add(nodeKeyPair.Key, multisigWallet);
+                //todo: change that when FederationWallets are ready again
+                //var generalWalletManager = nodesByKey[key].FullNode.NodeService<IFederationWalletManager>();
+                //generalWalletManager.CreateWallet(NamingConstants.MultisigPassword, NamingConstants.MultisigWallet)
+                GpAccountsByKey.Add(key, null);
             }
         }
 

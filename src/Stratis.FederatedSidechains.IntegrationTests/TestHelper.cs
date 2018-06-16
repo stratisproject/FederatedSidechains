@@ -44,14 +44,5 @@ namespace Stratis.FederatedSidechains.IntegrationTests
             var otherNodes = nodesByKey.Where(kvp => kvp.Key.Chain == key.Chain && kvp.Key.Name != key.Name).ToList();
             otherNodes.ForEach(o => thisNode.FullNode.ConnectionManager.AddNodeAddress(o.Value.Endpoint));
         }
-
-        public static void WaitForNodeToSync(params CoreNode[] nodes)
-        {
-            var firstNode = nodes.First();
-            TestHelper.WaitLoop(() => TestHelper.IsNodeSynced(firstNode));
-
-            nodes.Skip(1).ToList().ForEach(
-                n => TestHelper.WaitLoop(() => TestHelper.AreNodesSynced(firstNode, n)));
-        }
     }
 }

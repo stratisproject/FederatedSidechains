@@ -1,8 +1,0 @@
-{
-  "profiles": {
-    "Stratis.SidechainD": {
-      "commandName": "Project",
-      "commandLineArgs": "agentprefix=matt addnode=104.211.178.243 addnode=51.144.35.218 addnode=65.52.5.149 addnode=51.140.231.125 addnode=13.70.81.5"
-    }
-  }
-}

@@ -25,7 +25,6 @@ namespace Stratis.FederatedSidechains.IntegrationTests
         public Chain Chain;
         public NodeRole Role;
         public int Index;
-        public int SelfProtocolPort => (Chain == Chain.Mainchain ? 191 : 192) * 100 + Index;
         public int SelfApiPort => (Chain == Chain.Mainchain ? 101 : 102) * 100 + Index;
         public int CounterChainApiPort => (Chain == Chain.Mainchain ? 102 : 101) * 100 + Index;
 
