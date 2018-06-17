@@ -258,8 +258,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.Wallet
             var coins = new List<Coin>();
             foreach (var item in context.UnspentOutputs.OrderByDescending(a => a.Transaction.Amount))
             {
-                // TODO 
-                //coins.Add(ScriptCoin.Create(this.network, item.Transaction.Id, (uint)item.Transaction.Index, item.Transaction.Amount, item.Transaction.ScriptPubKey, item.Address.RedeemScript));
+                coins.Add(ScriptCoin.Create(this.network, item.Transaction.Id, (uint)item.Transaction.Index, item.Transaction.Amount, item.Transaction.ScriptPubKey, this.walletManager.GetWallet().MultiSigAddress.RedeemScript));
                 sum += item.Transaction.Amount;
                 index++;
 
