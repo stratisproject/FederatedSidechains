@@ -129,12 +129,8 @@ namespace Stratis.FederatedPeg.Features.FederationGateway
                 }
                 else
                 {
-                    this.logger.LogInformation($"RequestPartialTransactionPayload: SessionId           - {payload.SessionId}.");
-                    this.logger.LogInformation($"RequestPartialTransactionPayload: BossCard            - {payload.BossCard}.");
-                    this.logger.LogInformation($"RequestPartialTransactionPayload: PartialTransaction  - {payload.PartialTransaction}.");
-                    this.logger.LogInformation($"RequestPartialTransactionPayload: TemplateTransaction - {payload.TemplateTransaction}.");
-
                     //we got a partial back
+                    this.logger.LogInformation($"RequestPartialTransactionPayload: PartialTransaction received.");
                     this.counterChainSessionManager.ReceivePartial(payload.SessionId, payload.PartialTransaction, payload.BossCard);
                 }
             }

@@ -120,8 +120,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.CounterChain
         public void ReceivePartial(uint256 sessionId, Transaction partialTransaction, uint256 bossCard)
         {
             this.logger.LogTrace("()");
-            this.logger.LogInformation($"Receive Partial: {this.network.ToChain()}");
-            this.logger.LogInformation($"Receive Partial: BossCard - {bossCard}");
+            this.logger.LogInformation($"Receive Partial on {this.network.ToChain()} for BossCard - {bossCard}");
 
             string bc = bossCard.ToString();
             var counterChainSession = sessions[sessionId];
@@ -146,9 +145,8 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.CounterChain
             }
 
             this.logger.LogTrace("()");
-            this.logger.LogInformation("Combining and Broadcasting transaction.");
-            this.logger.LogInformation("Combine Partials");
-            this.logger.LogInformation(counterChainSession.ToString());
+            this.logger.LogInformation("Combine partials and broadcast transaction.");
+
             counterChainSession.PartialTransactions.ToList()
                 .ForEach(t => this.logger.LogInformation(t.ToString()));
 
@@ -157,6 +155,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.CounterChain
                 where t != null select t;
 
             var combinedTransaction = this.federationWalletManager.GetWallet().CombinePartialTransactions(partials.ToArray());
+            this.logger.LogInformation($"Combined transaction: {combinedTransaction}");
             this.broadcastManager.BroadcastTransactionAsync(combinedTransaction).GetAwaiter().GetResult();
             this.logger.LogTrace("(-)");
         }
@@ -220,7 +219,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.CounterChain
                 try
                 {
                     if (peer.Inbound) continue;
-                    this.logger.LogInformation("Broadcasting Partial Transaction Request: SendMessageAsync.");
+                    this.logger.LogInformation($"Broadcasting Partial Transaction Request to {peer.PeerEndPoint}.");
                     await peer.SendMessageAsync(requestPartialTransactionPayload).ConfigureAwait(false);
                 }
                 catch (OperationCanceledException)

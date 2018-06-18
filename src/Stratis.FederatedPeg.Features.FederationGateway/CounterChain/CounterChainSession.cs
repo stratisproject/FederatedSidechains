@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 using Microsoft.Extensions.Logging;
 using NBitcoin;
 
@@ -10,8 +11,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.CounterChain
         public uint256 SessionId { get; }
         public Money Amount { get; }
         public string Destination { get; }
-        public bool HasReachedQuorum => 
-            this.PartialTransactions.Count >= federationGatewaySettings.MultiSigM;
+        public bool HasReachedQuorum => this.PartialTransactions.Count >= federationGatewaySettings.MultiSigM;
         public bool HaveISigned { get; set; } = false;
         public FederationGatewaySettings federationGatewaySettings { get; }
 
@@ -52,7 +52,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.CounterChain
             }
             
             // Output parts info.
-            this.logger.LogDebug("New Partials");
+            this.logger.LogDebug("List of partials transactions");
             this.logger.LogDebug(" ---------");
             foreach (var p in PartialTransactions)
             {

@@ -137,7 +137,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway
                 switch (opReturnDataType)
                 {
                     case OpReturnDataType.Unknown:
-                        this.logger.LogInformation($"Received transaction with unknown OP_RETURN data: {stringResult}. Transaction hash: {transaction.GetHash()}.");
+                        this.logger.LogTrace($"Received transaction with unknown OP_RETURN data: {stringResult}. Transaction hash: {transaction.GetHash()}.");
                         continue;
                     case OpReturnDataType.Address:
                         this.logger.LogInformation($"Processing received transaction with address: {stringResult}. Transaction hash: {transaction.GetHash()}.");
@@ -170,11 +170,11 @@ namespace Stratis.FederatedPeg.Features.FederationGateway
             // If we are in IBD we do nothing.
             if (this.initialBlockDownloadState.IsInitialBlockDownload())
             {
-                this.logger.LogDebug($"MonitorChain ({this.network.ToChain()}) in IBD: blockNumber {blockNumber} not processed.");
+                this.logger.LogTrace($"MonitorChain ({this.network.ToChain()}) in IBD: blockNumber {blockNumber} not processed.");
                 return;
             }
 
-            this.logger.LogDebug($"Monitor Processing Block: {blockNumber} on {this.network.ToChain()}");
+            this.logger.LogTrace($"Monitor Processing Block: {blockNumber} on {this.network.ToChain()}");
 
             foreach (var transaction in block.Transactions)
                 this.ProcessTransaction(transaction, block, blockNumber);
