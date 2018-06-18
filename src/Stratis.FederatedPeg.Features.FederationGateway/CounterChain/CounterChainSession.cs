@@ -1,30 +1,21 @@
-using System.Linq;
+using System.Collections.Generic;
 using Microsoft.Extensions.Logging;
 using NBitcoin;
-using Stratis.FederatedPeg.Features.FederationGateway;
 
-public class CounterChainSession
+namespace Stratis.FederatedPeg.Features.FederationGateway.CounterChain
+{
+    public class CounterChainSession
     {
-        private readonly Transaction[] partialTransactions;
-
+        public List<Transaction> PartialTransactions { get; private set; }
         public uint256 SessionId { get; }
-
         public Money Amount { get; }
-
         public string Destination { get; }
-    
-        // todo: we can remove this if we just use a list for the partials
-        private readonly BossTable bossTable;
-
-        public bool HasReachedQuorum { get; private set; }
-
-        public Transaction[] PartialTransactions => this.partialTransactions;
-
-        private readonly ILogger logger;
-
+        public bool HasReachedQuorum => 
+            this.PartialTransactions.Count >= federationGatewaySettings.MultiSigM;
         public bool HaveISigned { get; set; } = false;
         public FederationGatewaySettings federationGatewaySettings { get; }
 
+        private readonly ILogger logger;
 
         public CounterChainSession(ILogger logger,
             FederationGatewaySettings federationGatewaySettings,
@@ -34,44 +25,41 @@ public class CounterChainSession
         {
             this.logger = logger;
             this.federationGatewaySettings = federationGatewaySettings;
-            this.partialTransactions = new Transaction[federationGatewaySettings.MultiSigN];
+            this.PartialTransactions = new List<Transaction>();
             this.SessionId = sessionId;
             this.Amount = amount;
             this.Destination = destination;
-            this.bossTable = new BossTableBuilder()
-                .Build(sessionId, 
-                    federationGatewaySettings.FederationPublicKeys.Select(k => k.ToString()));
         }
 
         internal bool AddPartial(Transaction partialTransaction, string bossCard)
         {
             this.logger.LogTrace("()");
-            this.logger.LogInformation("Adding Partial to CounterChainSession.");
+            if (partialTransaction == null)
+            {
+                this.logger.LogDebug("Skipped adding a null partial transaction");
+                return false;
+            }
+            
+            this.logger.LogDebug("Adding Partial to CounterChainSession.");
             
             // Insert the partial transaction in the session.
-            var positionInTable = bossTable.BossTableEntries.IndexOf(bossCard);
-            this.partialTransactions[positionInTable] = partialTransaction;
+            this.PartialTransactions.Add(partialTransaction);
             
             // Output parts info.
-            this.logger.LogInformation("New Partials");
-            this.logger.LogInformation(" ---------");
-            foreach (var p in partialTransactions)
+            this.logger.LogDebug("New Partials");
+            this.logger.LogDebug(" ---------");
+            foreach (var p in PartialTransactions)
             {
-                this.logger.LogInformation(p == null ? "null" : $"{p?.ToHex()}");
+                this.logger.LogDebug(p.ToHex());
             }
                 
             // Have we reached Quorum?
-            this.HasReachedQuorum = this.CountPartials() >= federationGatewaySettings.MultiSigM;
-            this.logger.LogInformation($"---------");
-            this.logger.LogInformation($"HasQuorum: {this.HasReachedQuorum}");
+            this.logger.LogDebug("---------");
+            this.logger.LogDebug(string.Format("HasQuorum: {0}", this.HasReachedQuorum));
             this.logger.LogTrace("(-)");
             
             // End output. 
             return this.HasReachedQuorum;
         }
-
-        private int CountPartials()
-        {
-            return partialTransactions.Count(t => t != null);
-        }
     }
+}
