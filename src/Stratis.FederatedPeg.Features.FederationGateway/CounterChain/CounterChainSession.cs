@@ -1,10 +1,11 @@
+using System.Linq;
 using Microsoft.Extensions.Logging;
 using NBitcoin;
 using Stratis.FederatedPeg.Features.FederationGateway;
 
 public class CounterChainSession
     {
-        private Transaction[] partialTransactions;
+        private readonly Transaction[] partialTransactions;
 
         public uint256 SessionId { get; }
 
@@ -13,52 +14,54 @@ public class CounterChainSession
         public string Destination { get; }
     
         // todo: we can remove this if we just use a list for the partials
-        private BossTable bossTable;
+        private readonly BossTable bossTable;
 
         public bool HasReachedQuorum { get; private set; }
 
         public Transaction[] PartialTransactions => this.partialTransactions;
 
-        private ILogger logger;
+        private readonly ILogger logger;
 
         public bool HaveISigned { get; set; } = false;
+        public FederationGatewaySettings federationGatewaySettings { get; }
 
-        public CounterChainSession(ILogger logger, int federationSize, uint256 sessionId, string[] addresses, Money amount, string destination)
+
+        public CounterChainSession(ILogger logger,
+            FederationGatewaySettings federationGatewaySettings,
+            uint256 sessionId,
+            Money amount, 
+            string destination)
         {
             this.logger = logger;
-            this.partialTransactions = new Transaction[federationSize];
+            this.federationGatewaySettings = federationGatewaySettings;
+            this.partialTransactions = new Transaction[federationGatewaySettings.MultiSigN];
             this.SessionId = sessionId;
             this.Amount = amount;
             this.Destination = destination;
-            this.bossTable = new BossTableBuilder().Build(sessionId, addresses);
+            this.bossTable = new BossTableBuilder()
+                .Build(sessionId, 
+                    federationGatewaySettings.FederationPublicKeys.Select(k => k.ToString()));
         }
 
         internal bool AddPartial(Transaction partialTransaction, string bossCard)
         {
             this.logger.LogTrace("()");
-            this.logger.LogInformation("Adding Partial to MonitorChainSession.");
+            this.logger.LogInformation("Adding Partial to CounterChainSession.");
             
             // Insert the partial transaction in the session.
-            int positionInTable = 0;
-            for (; positionInTable < 3; ++positionInTable )
-                if (bossCard == bossTable.BossTableEntries[positionInTable])
-                    break;
+            var positionInTable = bossTable.BossTableEntries.IndexOf(bossCard);
             this.partialTransactions[positionInTable] = partialTransaction;
-            
-            // Have we reached Quorum?
-            this.HasReachedQuorum = this.CountPartials() >= 2;
             
             // Output parts info.
             this.logger.LogInformation("New Partials");
             this.logger.LogInformation(" ---------");
             foreach (var p in partialTransactions)
             {
-                if (p == null)
-                    this.logger.LogInformation("null");
-                else
-                    this.logger.LogInformation($"{p?.ToHex()}");
+                this.logger.LogInformation(p == null ? "null" : $"{p?.ToHex()}");
             }
-
+                
+            // Have we reached Quorum?
+            this.HasReachedQuorum = this.CountPartials() >= federationGatewaySettings.MultiSigM;
             this.logger.LogInformation($"---------");
             this.logger.LogInformation($"HasQuorum: {this.HasReachedQuorum}");
             this.logger.LogTrace("(-)");
@@ -69,11 +72,6 @@ public class CounterChainSession
 
         private int CountPartials()
         {
-            int positionInTable = 0;
-            int count = 0;
-            for (; positionInTable < 3; ++positionInTable)
-                if (partialTransactions[positionInTable] != null)
-                    ++count;
-            return count;
+            return partialTransactions.Count(t => t != null);
         }
     }
