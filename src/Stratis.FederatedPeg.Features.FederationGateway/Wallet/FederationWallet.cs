@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.Serialization;
+using Microsoft.Extensions.Logging;
 using NBitcoin;
 using NBitcoin.JsonConverters;
 using Newtonsoft.Json;
@@ -16,6 +18,8 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.Wallet
     /// </summary>
     public class FederationWallet
     {
+        private ILogger logger;
+
         /// <summary>
         /// The seed for this wallet's multisig addresses, password encrypted.
         /// </summary>
@@ -67,6 +71,16 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.Wallet
         [JsonProperty(PropertyName = "multiSigAddress")]
         public MultiSigAddress MultiSigAddress { get; set; }
 
+        public FederationWallet()
+        {
+            //keep that for serialisation
+        }
+
+        public FederationWallet(ILoggerFactory loggerFactory)
+        {
+            this.logger = loggerFactory.CreateLogger(this.GetType().FullName);
+        }
+
         /// <summary>
         /// Gets a collection of transactions with spendable outputs.
         /// </summary>
@@ -117,12 +131,14 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.Wallet
 
         public Transaction SignPartialTransaction(Transaction partial, string password)
         {
+            logger.LogTrace("Signing partial transaction {0}", partial);
             // Need to get the same ScriptCoins used by the other signatories.
             // It is assumed that the funds are present in the MultiSigAddress
             // transactions.
 
             // Find the transaction(s) in the MultiSigAddress that have the
             // referenced inputs among their outputs.
+
 
             List<Transaction> fundingTransactions = new List<Transaction>();
 
@@ -139,39 +155,43 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.Wallet
                     }
                 }
             }
+            logger.LogTrace("found {0} funding transactions for partial transaction {1}", fundingTransactions.Count, partial.GetHash());
 
             // Then convert the outputs to Coins & make ScriptCoins out of them.
-
             List<ScriptCoin> scriptCoins = new List<ScriptCoin>();
 
             foreach (var tx in fundingTransactions)
             {
-                foreach (var coin in tx.Outputs.AsCoins())
-                {
-                    // Only care about outputs for our particular multisig
-                    if (coin.ScriptPubKey == this.MultiSigAddress.ScriptPubKey)
-                    {
-                        scriptCoins.Add(coin.ToScriptCoin(this.MultiSigAddress.RedeemScript));
-                    }
-                }
+                scriptCoins.AddRange(tx.Outputs.AsCoins()
+                    .Where(coin => coin.ScriptPubKey == this.MultiSigAddress.ScriptPubKey)
+                    .Select(coin => coin.ToScriptCoin(this.MultiSigAddress.RedeemScript)));
             }
+            logger.LogTrace("found {0} scriptCoins from funding transactions for partial transaction {1}", scriptCoins.Count, partial.GetHash());
+
 
             // Need to construct a transaction using a transaction builder with
             // the appropriate state
-
             TransactionBuilder builder = new TransactionBuilder(this.Network);
 
-            Transaction signed = builder
+            var privateKey = this.MultiSigAddress.GetPrivateKey(this.EncryptedSeed, password, this.Network);
+            //todo: remove that before release
+            logger.LogTrace("retrieved private key {0} from encrypted seed {1}", privateKey, EncryptedSeed);
+            Transaction signedPartialTransaction = builder
                 .AddCoins(scriptCoins)
-                .AddKeys(this.MultiSigAddress.GetPrivateKey(this.EncryptedSeed, password, this.Network))
+                .AddKeys(privateKey)
                 .SignTransaction(partial);
 
-            return signed;
+            logger.LogTrace("signed partial transaction {0}", partial);
+
+            return signedPartialTransaction;
         }
 
         public Transaction CombinePartialTransactions(Transaction[] partials)
         {
+            logger.LogTrace("Combining {0} partial transactions", partials.Length);
+
             Transaction firstPartial = partials[0];
+            logger.LogTrace("Retrieving inputs and outputs using first partial transaction {0} to find inputs", partials.Length);
 
             // Need to get the same ScriptCoins used by the other signatories.
             // It is assumed that the funds are present in the MultiSigAddress
@@ -194,6 +214,8 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.Wallet
                     }
                 }
             }
+            logger.LogTrace("found {0} funding transactions for partial transaction {1}", fundingTransactions.Count, firstPartial.GetHash());
+
 
             // Then convert the outputs to Coins & make ScriptCoins out of them.
 
@@ -201,25 +223,20 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.Wallet
 
             foreach (var tx in fundingTransactions)
             {
-                foreach (var coin in tx.Outputs.AsCoins())
-                {
-                    // Only care about outputs for our particular multisig
-                    if (coin.ScriptPubKey == this.MultiSigAddress.ScriptPubKey)
-                    {
-                        scriptCoins.Add(coin.ToScriptCoin(this.MultiSigAddress.RedeemScript));
-                    }
-                }
+                scriptCoins.AddRange(tx.Outputs.AsCoins()
+                    .Where(coin => coin.ScriptPubKey == this.MultiSigAddress.ScriptPubKey)
+                    .Select(coin => coin.ToScriptCoin(this.MultiSigAddress.RedeemScript)));
             }
-
+            logger.LogTrace("found {0} scriptCoins from funding transactions for partial transaction {1}", scriptCoins.Count, firstPartial.GetHash());
             // Need to construct a transaction using a transaction builder with
             // the appropriate state
 
             TransactionBuilder builder = new TransactionBuilder(this.Network);
 
-            Transaction combined =
-                builder
+            Transaction combined = builder
                     .AddCoins(scriptCoins)
                     .CombineSignatures(partials);
+            logger.LogTrace("built combined transaction {0} from {1} partials", combined, partials.Length);
 
             return combined;
         }
