@@ -39,7 +39,6 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.Controllers
         public FederationWalletController(
             ILoggerFactory loggerFactory,
             IFederationWalletManager walletManager,
-            IFederationWalletTransactionHandler walletTransactionHandler,
             IFederationWalletSyncManager walletSyncManager,
             IConnectionManager connectionManager,
             Network network,
