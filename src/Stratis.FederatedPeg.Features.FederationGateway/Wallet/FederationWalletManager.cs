@@ -781,7 +781,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.Wallet
             ExtKey extendedKey;
             try
             {
-                extendedKey = HdOperations.GetExtendedKey(mnemonic, password);
+                extendedKey = HdOperations.GetExtendedKey(mnemonic);
             }
             catch (NotSupportedException ex)
             {
