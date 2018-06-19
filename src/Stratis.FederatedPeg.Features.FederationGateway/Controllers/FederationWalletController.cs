@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Text;
+using DBreeze.Utils;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
 using Microsoft.Extensions.Logging;
@@ -203,7 +204,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.Controllers
                 var destination = BitcoinAddress.Create(request.DestinationAddress, this.network).ScriptPubKey;
                 var context = new Wallet.TransactionBuildContext(
                     new[] { new Wallet.Recipient { Amount = request.Amount, ScriptPubKey = destination } }.ToList(),
-                    request.Password, request.OpReturnData)
+                    request.Password, request.OpReturnData.ToBytes())
                 {
                     TransactionFee = string.IsNullOrEmpty(request.FeeAmount) ? null : Money.Parse(request.FeeAmount),
                     MinConfirmations = request.AllowUnconfirmed ? 0 : 1,

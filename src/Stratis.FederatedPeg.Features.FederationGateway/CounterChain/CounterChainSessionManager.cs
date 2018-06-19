@@ -183,7 +183,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.CounterChain
             // TODO: The password is currently hardcoded here
             var multiSigContext = new TransactionBuildContext(
                 (new[] { new Recipient.Recipient { Amount = amount, ScriptPubKey = destination } }).ToList(),
-                "password", sessionId.ToString())
+                "password", sessionId.ToBytes())
             {
                 TransactionFee = Money.Coins(0.01m),
                 MinConfirmations = 1,

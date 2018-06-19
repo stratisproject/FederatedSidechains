@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Security;
 using System.Text;
+using DBreeze.Utils;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
 using NBitcoin;
@@ -329,7 +330,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.Wallet
         {
             if (context.OpReturnData == null) return;
 
-            var opReturnScript = TxNullDataTemplate.Instance.GenerateScriptPubKey(Encoding.UTF8.GetBytes(context.OpReturnData));
+            var opReturnScript = TxNullDataTemplate.Instance.GenerateScriptPubKey(context.OpReturnData);
             context.TransactionBuilder.Send(opReturnScript, Money.Zero);
         }
     }
@@ -349,7 +350,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.Wallet
         /// </summary>
         /// <param name="recipients">The target recipients to send coins to.</param>
         /// <param name="walletPassword">The password that protects the member's seed.</param>
-        public TransactionBuildContext(List<Recipient> recipients, string walletPassword = "", string opReturnData = null)
+        public TransactionBuildContext(List<Recipient> recipients, string walletPassword = "", byte[] opReturnData = null)
         {
             Guard.NotNull(recipients, nameof(recipients));
          
@@ -454,7 +455,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.Wallet
         /// <summary>
         /// Optional data to be added as an extra OP_RETURN transaction output with Money.Zero value.
         /// </summary>
-        public string OpReturnData { get; set; }
+        public byte[] OpReturnData { get; set; }
 
         /// <summary>
         /// If not null, indicates the multisig address details that funds can be sourced from.
