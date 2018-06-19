@@ -93,65 +93,6 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.Wallet
             return context.Transaction;
         }
 
-        /// <inheritdoc />
-        public void FundTransaction(TransactionBuildContext context, Transaction transaction)
-        {
-            if (context.Recipients.Any())
-                throw new WalletException("Adding outputs is not allowed.");
-
-            // Turn the txout set into a Recipient array
-            context.Recipients.AddRange(transaction.Outputs
-                .Select(s => new Recipient
-                {
-                    ScriptPubKey = s.ScriptPubKey,
-                    Amount = s.Value,
-                    SubtractFeeFromAmount = false // default for now
-                }));
-
-            context.AllowOtherInputs = true;
-
-            foreach (var transactionInput in transaction.Inputs)
-                context.SelectedInputs.Add(transactionInput.PrevOut);
-
-            var newTransaction = this.BuildTransaction(context);
-
-            if (context.ChangeAddress != null)
-            {
-                // find the position of the change and move it over.
-                var index = 0;
-                foreach (var newTransactionOutput in newTransaction.Outputs)
-                {
-                    if (newTransactionOutput.ScriptPubKey == context.ChangeAddress.ScriptPubKey)
-                    {
-                        transaction.Outputs.Insert(index, newTransactionOutput);
-                    }
-
-                    index++;
-                }
-            }
-
-            // TODO: copy the new output amount size (this also includes spreading the fee over all outputs)
-
-            // copy all the inputs from the new transaction.
-            foreach (var newTransactionInput in newTransaction.Inputs)
-            {
-                if (!context.SelectedInputs.Contains(newTransactionInput.PrevOut))
-                {
-                    transaction.Inputs.Add(newTransactionInput);
-
-                    // TODO: build a mechanism to lock inputs
-                }
-            }
-        }
-
-        /// <inheritdoc />
-        public Money EstimateFee(Wallet.TransactionBuildContext context)
-        {
-            this.InitializeTransactionBuilder(context);
-
-            return context.TransactionFee;
-        }
-
         /// <summary>
         /// Initializes the context transaction builder from information in <see cref="TransactionBuildContext"/>.
         /// </summary>
