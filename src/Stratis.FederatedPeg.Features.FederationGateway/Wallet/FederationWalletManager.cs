@@ -34,6 +34,15 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.Wallet
     }
 
     /// <summary>
+    /// Credentials to the federation wallet.
+    /// </summary>
+    public class WalletSecret
+    {
+        /// <summary>The federation wallet's password, needed for getting the private key which is used for signing federation transactions.</summary>
+        public string WalletPassword { get; set; }
+    }
+
+    /// <summary>
     /// A manager providing operations on wallets.
     /// </summary>
     public class FederationWalletManager : IFederationWalletManager
@@ -42,7 +51,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.Wallet
         private const int WalletSavetimeIntervalInMinutes = 5;
 
         /// <summary>
-        /// A lock object that protects access to the <see cref="Wallet"/>.
+        /// A lock object that protects access to the <see cref="FederationWallet"/>.
         /// Any of the collections inside Wallet must be synchronized using this lock.
         /// </summary>
         private readonly object lockObject;
@@ -71,7 +80,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.Wallet
         /// <summary>Instance logger.</summary>
         private readonly ILogger logger;
 
-        /// <summary>An object capable of storing <see cref="Wallet"/>s to the file system.</summary>
+        /// <summary>An object capable of storing <see cref="FederationWallet"/>s to the file system.</summary>
         private readonly FileStorage<FederationWallet> fileStorage;
 
         /// <summary>The broadcast manager.</summary>
@@ -83,6 +92,11 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.Wallet
         public uint256 WalletTipHash { get; set; }
 
         public bool ContainsWallets => throw new NotImplementedException();
+
+        /// <summary>
+        /// Credentials for the wallet. Initially unpopulated on node startup, has to be provided by the user.
+        /// </summary>
+        public WalletSecret Secret { get; set; }
 
         /// <summary>
         /// The name of the watch-only wallet as saved in the file system.
@@ -160,6 +174,9 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.Wallet
                 this.Wallet = GenerateWallet();
                 this.SaveWallet();
             }
+
+            // Load data in memory for faster lookups.
+            this.LoadKeysLookupLock();
 
             // find the last chain block received by the wallet manager.
             this.WalletTipHash = this.LastReceivedBlockHash();
@@ -488,6 +505,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.Wallet
                 }
 
                 this.Wallet.MultiSigAddress.Transactions.Add(newTransaction);
+                this.AddInputKeysLookupLock(newTransaction);
             }
             else
             {
@@ -621,6 +639,33 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.Wallet
             this.logger.LogTrace("(-)");
         }
 
+        /// <summary>
+        /// Loads the keys and transactions we're tracking in memory for faster lookups.
+        /// </summary>
+        public void LoadKeysLookupLock()
+        {
+            lock (this.lockObject)
+            {
+                foreach (TransactionData transaction in this.Wallet.MultiSigAddress.Transactions)
+                {
+                    this.outpointLookup[new OutPoint(transaction.Id, transaction.Index)] = transaction;
+                }
+            }
+        }
+
+        /// <summary>
+        /// Add to the list of unspent outputs kept in memory for faster lookups.
+        /// </summary>
+        private void AddInputKeysLookupLock(TransactionData transactionData)
+        {
+            Guard.NotNull(transactionData, nameof(transactionData));
+
+            lock (this.lockObject)
+            {
+                this.outpointLookup[new OutPoint(transactionData.Id, transactionData.Index)] = transactionData;
+            }
+        }
+
         public void TransactionFoundInternal(Script script)
         {
             this.logger.LogTrace("()");
@@ -750,7 +795,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.Wallet
             ExtKey extendedKey;
             try
             {
-                extendedKey = HdOperations.GetExtendedKey(mnemonic, password);
+                extendedKey = HdOperations.GetExtendedKey(mnemonic);
             }
             catch (NotSupportedException ex)
             {
