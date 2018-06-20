@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Concurrent;
-using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
@@ -8,7 +7,6 @@ using NBitcoin;
 using Stratis.Bitcoin;
 using Stratis.Bitcoin.Configuration;
 using Stratis.Bitcoin.Connection;
-using Stratis.Bitcoin.Features.Wallet;
 using Stratis.Bitcoin.Features.Wallet.Interfaces;
 using Stratis.Bitcoin.Interfaces;
 using Stratis.Bitcoin.P2P.Peer;
@@ -138,7 +136,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.CounterChain
         // If we have reached the quorum we can combine and broadcast the transaction. 
         private void BroadcastTransaction(CounterChainSession counterChainSession)
         {
-            //TODO: we can remove this.
+            //TODO: can remove this?
             if (this.fullnode.State == FullNodeState.Disposed || this.fullnode.State == FullNodeState.Disposing)
             {
                 this.logger.LogInformation("Full node disposing during broadcast. Do nothing.");
@@ -168,8 +166,23 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.CounterChain
             this.logger.LogTrace("({0}:'{1}',{2}:'{3}',{4}:'{5}')", nameof(sessionId), sessionId, nameof(amount), amount, nameof(destinationAddress), destinationAddress);            
             this.logger.LogInformation("ProcessCounterChainSession: Session Registered.");
 
-            //Todo: check if this has already been done
-            //todo: then we just return the transctionId
+            // Check if this has already been done then we just return the transctionId
+            if (this.sessions.TryGetValue(sessionId, out var counterchainSession))
+            {
+                // This is the mechanism that tells the round robin not to continue and also
+                // notifies the monitorChain of the completed transactionId from the counterChain transaction.
+                if (counterchainSession.CounterChainTransactionId != uint256.Zero)
+                {
+                    // If we get here:
+                    // 1. One of the nodes became the boss and successfully broadcast a completed transaction.
+                    // 2. The monitor in this node received the block with the transaction (identified by the sessionId in the op_return).
+                    // 3. The monitor wrote the CounterChainTransactionId into the counterChainSession to indicate all was done.
+                    // This method then does not try to process the transaction and instead signals to the monitorChain that this
+                    // transaction already completed by passing back the transactionId.
+                    this.logger.LogInformation($"Counterchain Session: {sessionId} was already completed. Doing nothing.");
+                    return counterchainSession.CounterChainTransactionId;
+                }
+            }
 
             //create the partial transaction template
             var wallet = this.federationWalletManager.GetWallet();
@@ -296,6 +309,24 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.CounterChain
             //TODO: this should be locked. the sessions are 30 seconds apart but network conditions could cause a collision.
             this.logger.LogInformation($"has signed session {session.SessionId}.");
             session.HaveISigned = true;
+        }
+
+        public void AddCounterChainTransactionId(uint256 sessionId, uint256 transactionId)
+        {
+            if (!this.sessions.TryGetValue(sessionId, out var counterChainSession))
+            {
+                this.logger.LogInformation($"Session::AddCounterChainTransactionId: The session does not exist. Doing nothing.");
+                return;
+            }
+
+            if (counterChainSession.CounterChainTransactionId != uint256.Zero)
+            {
+                this.logger.LogInformation($"Session::AddCounterChainTransactionId: Attempting to write transactionId {transactionId} while session already has transactionId {counterChainSession.CounterChainTransactionId}. Fatal!");
+                return;
+            }
+
+            counterChainSession.CounterChainTransactionId = transactionId;
+            this.logger.LogInformation($"Session::AddCounterChainTransactionId: Session {sessionId} was completed with transactionId {transactionId}.");
         }
     }
 }
