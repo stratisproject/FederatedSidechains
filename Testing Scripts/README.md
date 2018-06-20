@@ -11,8 +11,8 @@ For more information on what every entity involved in the Federation do, consult
 
 0. Ideally, you need to have the latest version of the code.
 1. Open federation.ps1 and update the 5 values at the top so that they match your environment.
-  $root_datadir is where you want all the files relating to your federation will be downloaded.
-  $path_to_stratis_wallet_with_funds is the path to a Stratis Testnet wallet you can use to deposit funds into the sidechain.
+  `$root_datadir` is where you want all the files relating to your federation will be downloaded.
+  `$path_to_stratis_wallet_with_funds` is the path to a Stratis Testnet wallet you can use to deposit funds into the sidechain.
   The other ones are self-explanatory.
   The federation members' public keys, the multisig addresses, the ports are all set up so you don't have to do anything.
 2. The first time the script is runs it'll try to copy the data folder from the StratisTestnet you may have on your machine.  This will save you downloading the whole blockchain many times.  So make sure your local copy of Stratis Test is up-to-date.
