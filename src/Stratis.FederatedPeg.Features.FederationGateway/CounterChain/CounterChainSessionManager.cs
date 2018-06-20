@@ -54,7 +54,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.CounterChain
         // The sessions are stored here.
         private readonly ConcurrentDictionary<uint256, CounterChainSession> sessions = new ConcurrentDictionary<uint256, CounterChainSession>();
 
-        private readonly IPEndPointComparer ipEndPointComparer;
+        private readonly IPAddressComparer ipAddressComparer;
 
         // Get everything together before we get going.
         public CounterChainSessionManager(
@@ -86,7 +86,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.CounterChain
             this.federationWalletManager = federationWalletManager;
             this.federationWalletTransactionHandler = federationWalletTransactionHandler;
             this.federationGatewaySettings = federationGatewaySettings;
-            this.ipEndPointComparer = new IPEndPointComparer();
+            this.ipAddressComparer = new IPAddressComparer();
         }
 
         ///<inheritdoc/>
@@ -231,9 +231,10 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.CounterChain
             //now build the requests for the partials
             var requestPartialTransactionPayload = new RequestPartialTransactionPayload(sessionId, templateTransaction);
 
-            var federationNetworkPeers = this.connectionManager.ConnectedPeers
-                .Where(p => !p.Inbound &&
-                    federationGatewaySettings.FederationNodeIpEndPoints.Any(e => this.ipEndPointComparer.Equals(e, p.PeerEndPoint)));
+            // Only broadcast to the federation members.
+            var federationNetworkPeers =
+                this.connectionManager.ConnectedPeers
+                .Where(p => !p.Inbound && federationGatewaySettings.FederationNodeIpEndPoints.Any(e => this.ipAddressComparer.Equals(e.Address, p.PeerEndPoint.Address)));
             foreach (INetworkPeer peer in federationNetworkPeers)
             {
                 try
