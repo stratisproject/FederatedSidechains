@@ -123,11 +123,8 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.MonitorChain
                 crossChainTransactionInfo.Amount,
                 crossChainTransactionInfo.DestinationAddress,
                 crossChainTransactionInfo.BlockNumber,
-                this.network.ToChain(),
                 this.federationGatewaySettings.FederationPublicKeys.Select(f => f.ToHex()).ToArray(),
-                this.federationGatewaySettings.PublicKey,
-                this.federationGatewaySettings.MultiSigM,
-                this.federationGatewaySettings.MultiSigN
+                this.federationGatewaySettings.PublicKey
             );
 
             this.monitorSessions.TryAdd(monitorChainSession.SessionId, monitorChainSession);
