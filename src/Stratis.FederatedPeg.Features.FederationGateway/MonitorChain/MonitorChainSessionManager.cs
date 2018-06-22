@@ -195,16 +195,13 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.MonitorChain
 
                 var time = DateTime.Now;
 
-                this.logger.LogInformation($"RunSessionAsync() MyBossCard:{monitorChainSession.BossCard}");
-                this.logger.LogInformation($"At {time} AmITheBoss: {monitorChainSession.AmITheBoss(time)} WhoHoldsTheBossCard: {monitorChainSession.WhoHoldsTheBossCard(time)}");
-
                 this.logger.LogInformation($"Session status: {monitorChainSession.Status} with CounterChainTransactionId: {monitorChainSession.CounterChainTransactionId}.");
 
                 if (monitorChainSession.Status != SessionStatus.Completed)
                 {
                     this.logger.LogInformation($"RunSessionAsync() MyBossCard: {monitorChainSession.BossCard}");
                     this.logger.LogInformation($"At {time} AmITheBoss: {monitorChainSession.AmITheBoss(time)} WhoHoldsTheBossCard: {monitorChainSession.WhoHoldsTheBossCard(time)}");
-
+                    
                     // Session is not complete.
                     if (monitorChainSession.AmITheBoss(time)||monitorChainSession.Status == SessionStatus.Requested)
                     {
@@ -242,10 +239,10 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.MonitorChain
 
         private bool IsBeyondBlockSecurityDelay(MonitorChainSession monitorChainSession)
         {
-            this.logger.LogInformation("IsBeyondBlockSecurityDelay()");
-            this.logger.LogInformation($"IsBeyondBlockSecurityDelay() SessionBlock: {monitorChainSession.BlockNumber}");
-            this.logger.LogInformation($"IsBeyondBlockSecurityDelay() BlockDelay: {BlockSecurityDelay}");
-            this.logger.LogInformation($"IsBeyondBlockSecurityDelay() Height: {this.concurrentChain.Tip.Height}");
+            this.logger.LogInformation("()");
+            this.logger.LogInformation($"SessionBlock: {monitorChainSession.BlockNumber}");
+            this.logger.LogInformation($"BlockDelay: {BlockSecurityDelay}");
+            this.logger.LogInformation($"Height: {this.concurrentChain.Tip.Height}");
 
             return this.concurrentChain.Tip.Height >= (monitorChainSession.BlockNumber + BlockSecurityDelay);
         }
