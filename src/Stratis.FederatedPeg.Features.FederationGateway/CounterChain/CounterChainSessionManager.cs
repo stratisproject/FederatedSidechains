@@ -225,8 +225,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.CounterChain
 
             if (counterChainSession == null)
             {
-                this.logger.LogInformation("CounterChainSession is null, returning.");
-                return counterChainSession.CounterChainTransactionId;
+                throw new InvalidOperationException($"No CounterChainSession found in the counter chain for session id {sessionId}.");
             }
             this.MarkSessionAsSigned(counterChainSession);
             var partialTransaction = wallet.SignPartialTransaction(templateTransaction, this.federationWalletManager.Secret.WalletPassword);
