@@ -53,6 +53,10 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.MonitorChain
         // The time between sessions.
         private TimeSpan sessionRunInterval = new TimeSpan(hours: 0, minutes: 0, seconds: 30);
 
+        // The minimum transfer amount permissible.
+        // (Prevents spamming of network.)
+        private readonly Money MinimumTransferAmount = new Money(1.0m, MoneyUnit.BTC);
+
         // The logger.
         private readonly ILogger logger;
 
@@ -116,6 +120,13 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.MonitorChain
         public void CreateMonitorSession(CrossChainTransactionInfo crossChainTransactionInfo)
         {
             this.logger.LogTrace("({0}:'{1}',{2}:'{3}')", nameof(crossChainTransactionInfo.CrossChainTransactionId), crossChainTransactionInfo.CrossChainTransactionId, nameof(crossChainTransactionInfo.DestinationAddress), crossChainTransactionInfo.DestinationAddress);
+
+            // Ignore sessions below the MinimumTransferAmount
+            if (crossChainTransactionInfo.Amount < MinimumTransferAmount)
+            {
+                this.logger.LogInformation($"Session {crossChainTransactionInfo.TransactionHash} is less than the MinimumTransferAmount.  Ignoring. ");
+                return;
+            }
 
             var monitorChainSession = new MonitorChainSession(
                 DateTime.Now,
@@ -198,27 +209,43 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.MonitorChain
                 this.logger.LogInformation($"RunSessionAsync() MyBossCard:{monitorChainSession.BossCard}");
                 this.logger.LogInformation($"At {time} AmITheBoss: {monitorChainSession.AmITheBoss(time)} WhoHoldsTheBossCard: {monitorChainSession.WhoHoldsTheBossCard(time)}");
 
-                if (monitorChainSession.Status == SessionStatus.Created && monitorChainSession.AmITheBoss(time))
-                {
-                    monitorChainSession.Status = SessionStatus.Requesting;
+                this.logger.LogInformation($"Session status: {monitorChainSession.Status} with CounterChainTransactionId: {monitorChainSession.CounterChainTransactionId}.");
 
-                    this.logger.LogInformation($"RunSessionAsync() MyBossCard:{monitorChainSession.BossCard}");
+                if (monitorChainSession.Status != SessionStatus.Completed)
+                {
+                    this.logger.LogInformation($"RunSessionAsync() MyBossCard: {monitorChainSession.BossCard}");
                     this.logger.LogInformation($"At {time} AmITheBoss: {monitorChainSession.AmITheBoss(time)} WhoHoldsTheBossCard: {monitorChainSession.WhoHoldsTheBossCard(time)}");
 
-                    // We can keep sending this session until we get a result.
-                    var result = await ProcessSessionOnCounterChain(
-                        this.federationGatewaySettings.CounterChainApiPort,
-                        monitorChainSession.Amount,
-                        monitorChainSession.DestinationAddress,
-                        monitorChainSession.SessionId).ConfigureAwait(false);
-
-                    monitorChainSession.Status = SessionStatus.Requested;
-
-                    if (result != uint256.Zero)
+                    // Session is not complete.
+                    if (monitorChainSession.AmITheBoss(time)||monitorChainSession.Status == SessionStatus.Requested)
                     {
-                        monitorChainSession.Complete(result);
-                        this.logger.LogInformation($"RunSessionAsync() - Completing Session {result}.");
-                        //this.crossChainTransactionAuditor.AddCounterChainTransactionId(monitorChainSession.SessionId, result);
+                        if (monitorChainSession.Status == SessionStatus.Created)
+                            // Session was newly created and I'm the boss so I start the process.
+                            monitorChainSession.Status = SessionStatus.Requesting;
+
+                        // We call this for an incomplete session whenever we become the boss.
+                        // On the counterchain this will either start the process or just inform us
+                        // the the session completed already (and give us the CounterChainTransactionId).
+                        // We we were already the boss the status will bre Requested and we will Process
+                        // to get the CounterChainTransactionId.
+                        var result = await ProcessSessionOnCounterChain(
+                            this.federationGatewaySettings.CounterChainApiPort,
+                            monitorChainSession.Amount,
+                            monitorChainSession.DestinationAddress,
+                            monitorChainSession.SessionId).ConfigureAwait(false);
+
+                        if (monitorChainSession.Status == SessionStatus.Requesting)
+                            monitorChainSession.Status = SessionStatus.Requested;
+
+                        if (result != uint256.Zero)
+                        {
+                            monitorChainSession.Complete(result);
+                            this.logger.LogInformation($"RunSessionAsync() - Completing Session {result}.");
+                            this.crossChainTransactionAuditor.AddCounterChainTransactionId(monitorChainSession.SessionId, result);
+                            this.crossChainTransactionAuditor.Commit();
+                        }
+
+                        this.logger.LogInformation($"Status: {monitorChainSession.Status} with result: {result}.");
                     }
                 }
             }
@@ -277,3 +304,4 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.MonitorChain
         }
     }
 }
+
