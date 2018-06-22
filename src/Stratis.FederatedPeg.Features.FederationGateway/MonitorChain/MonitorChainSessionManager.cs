@@ -218,7 +218,14 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.MonitorChain
                 if (monitorChainSession.Status == SessionStatus.Requesting)
                     monitorChainSession.Status = SessionStatus.Requested;
 
-                if (result != uint256.Zero)
+                if (result == uint256.One)
+                {
+                    monitorChainSession.Complete(result);
+                    this.logger.LogInformation("Session {0} failed.", monitorChainSession.SessionId);
+                    this.crossChainTransactionAuditor.AddCounterChainTransactionId(monitorChainSession.SessionId, result);
+                    this.crossChainTransactionAuditor.Commit();
+                }
+                else if (result != uint256.Zero)
                 {
                     monitorChainSession.Complete(result);
                     this.logger.LogInformation("RunSessionAsync() - Completing Session {0}.", result);
@@ -263,6 +270,11 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.MonitorChain
                 {
                     var httpResponseMessage = await client.PostAsync(uri, request);
                     this.logger.LogInformation("Response: {0}", await httpResponseMessage.Content.ReadAsStringAsync());
+
+                    if (httpResponseMessage.StatusCode == System.Net.HttpStatusCode.NotFound)
+                    {
+                        return uint256.One;
+                    }
 
                     if (httpResponseMessage.StatusCode != System.Net.HttpStatusCode.OK)
                     {
