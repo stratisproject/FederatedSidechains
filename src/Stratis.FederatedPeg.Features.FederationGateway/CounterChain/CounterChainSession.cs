@@ -8,6 +8,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.CounterChain
     public class CounterChainSession
     {
         public List<Transaction> PartialTransactions { get; private set; }
+        public int BlockHeight { get; private set; }
         public uint256 SessionId { get; }
         public Money Amount { get; }
         public string Destination { get; }
@@ -24,7 +25,8 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.CounterChain
             FederationGatewaySettings federationGatewaySettings,
             uint256 sessionId,
             Money amount,
-            string destination)
+            string destination,
+            int blockHeight)
         {
             this.logger = logger;
             this.federationGatewaySettings = federationGatewaySettings;
@@ -32,6 +34,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.CounterChain
             this.SessionId = sessionId;
             this.Amount = amount;
             this.Destination = destination;
+            this.BlockHeight = blockHeight;
         }
 
         internal bool AddPartial(Transaction partialTransaction, string bossCard)
