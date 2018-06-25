@@ -37,7 +37,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.CounterChain
             this.BlockHeight = blockHeight;
         }
 
-        internal bool AddPartial(Transaction partialTransaction, string bossCard)
+        internal bool AddPartialAndCheckIfQuorumReached(Transaction partialTransaction, string bossCard)
         {
             this.logger.LogTrace("()");
             if (partialTransaction == null)

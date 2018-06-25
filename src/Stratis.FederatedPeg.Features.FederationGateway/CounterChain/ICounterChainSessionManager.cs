@@ -17,10 +17,10 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.CounterChain
         /// this registers the session data that tells us the trusted data we must use to verify we are signing
         /// a true transaction that has not been corrupted by a rouge or alien actor.
         /// </summary>
-        /// <param name="sessionId">The transaction hash of the source transaction from the monior chain is used as the sessionId.</param>
+        /// <param name="transactionId">The transaction hash of the source transaction from the monior chain is used as the sessionId.</param>
         /// <param name="amount">The amount of the transaction.</param>
         /// <param name="destinationAddress">The final destination address on this counterchain.</param>
-        void CreateSessionOnCounterChain(uint256 transactionId, Money amount, string detinationAddress);
+        void CreateSessionOnCounterChain(uint256 transactionId, Money amount, string destinationAddress);
 
         /// <summary>
         /// Do the work to process the transaction. In this method we start the process of requesting peer gateways to sign our transaction
@@ -39,7 +39,8 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.CounterChain
         /// <param name="sessionId">The session we are receiving.</param>
         /// <param name="partialTransaction">Inbound partial transaction.</param>
         /// <param name="bossCard">The insertion place in the partial transaction table we store in the session.</param>
-        void ReceivePartial(uint256 sessionId, Transaction partialTransaction, uint256 bossCard);
+        /// <param name="blockHeight">Height of the block associated with the bosscard</param>
+        void ReceivePartial(uint256 sessionId, Transaction partialTransaction, uint256 bossCard, int blockHeight);
 
         /// <summary>
         /// VerifySession ensures it is safe to sign any inbound partial transaction by performing a

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
@@ -54,8 +55,9 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.CounterChain
 
         // The sessions are stored here.
         private readonly ConcurrentDictionary<uint256, CounterChainSession> sessions = new ConcurrentDictionary<uint256, CounterChainSession>();
-
         private readonly IPAddressComparer ipAddressComparer;
+
+        private readonly object sessionsLock = new object();
 
         // Get everything together before we get going.
         public CounterChainSessionManager(
@@ -103,31 +105,30 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.CounterChain
         }
 
         // Add the session to its collection.
-        private CounterChainSession RegisterSession(uint256 transactionId, Money amount, string destination, int blockHeight)
+        private void RegisterSession(uint256 transactionId, Money amount, string destination, int blockHeight)
         {
             this.logger.LogTrace("({0}:'{1}',{2}:'{3}',{4}:'{5}',{6}:'{7}')", nameof(transactionId), transactionId, nameof(amount),
                 amount, nameof(destination), destination, nameof(blockHeight), blockHeight);
 
             var counterChainSession = new CounterChainSession(
-                this.logger, 
-                this.federationGatewaySettings, 
-                transactionId, 
+                this.logger,
+                this.federationGatewaySettings,
+                transactionId,
                 amount,
                 destination,
                 blockHeight);
             this.sessions.AddOrReplace(transactionId, counterChainSession);
-            return counterChainSession;
         }
 
         ///<inheritdoc/>
-        public void ReceivePartial(uint256 sessionId, Transaction partialTransaction, uint256 bossCard)
+        public void ReceivePartial(uint256 sessionId, Transaction partialTransaction, uint256 bossCard, int blockHeight)
         {
             this.logger.LogTrace("()");
             this.logger.LogInformation("Receive Partial on {0} for BossCard - {1}", this.network.ToChain(), bossCard);
 
-            string bc = bossCard.ToString();
+            string bossCardAsString = bossCard.ToString();
             var counterChainSession = sessions[sessionId];
-            bool hasQuorum = counterChainSession.AddPartial(partialTransaction, bc);
+            bool hasQuorum = counterChainSession.AddPartialAndCheckIfQuorumReached(partialTransaction, bossCardAsString);
 
             if (hasQuorum)
             {
@@ -167,99 +168,125 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.CounterChain
         public async Task<uint256> ProcessCounterChainSession(uint256 sessionId, Money amount, string destinationAddress, int blockHeight)
         {
             //todo this method is doing too much. factor some of this into private methods after we added the counterchainid.
-            this.logger.LogTrace("({0}:'{1}',{2}:'{3}',{4}:'{5}',{6}:'{7}')", nameof(sessionId), sessionId, nameof(amount), 
+            this.logger.LogTrace("({0}:'{1}',{2}:'{3}',{4}:'{5}',{6}:'{7}')", nameof(sessionId), sessionId, nameof(amount),
                 amount, nameof(destinationAddress), destinationAddress, nameof(blockHeight), blockHeight);
             this.logger.LogInformation("Session Registered.");
 
-            // Check if this has already been done then we just return the transactionId
-            if (this.sessions.TryGetValue(sessionId, out var counterchainSession))
+            lock (sessionsLock)
             {
-                // This is the mechanism that tells the round robin not to continue and also
-                // notifies the monitorChain of the completed transactionId from the counterChain transaction.
-                if (counterchainSession.CounterChainTransactionId != uint256.Zero)
+                // Check if this has already been done then we just return the transactionId
+                var tryGetValue = this.sessions.TryGetValue(sessionId, out var counterchainSession);
+                if (tryGetValue)
                 {
-                    // If we get here:
-                    // 1. One of the nodes became the boss and successfully broadcast a completed transaction.
-                    // 2. The monitor in this node received the block with the transaction (identified by the sessionId in the op_return).
-                    // 3. The monitor wrote the CounterChainTransactionId into the counterChainSession to indicate all was done.
-                    // This method then does not try to process the transaction and instead signals to the monitorChain that this
-                    // transaction already completed by passing back the transactionId.
-                    this.logger.LogInformation($"Counterchain Session: {sessionId} was already completed. Doing nothing.");
-                    return counterchainSession.CounterChainTransactionId;
+                    // This is the mechanism that tells the round robin not to continue and also
+                    // notifies the monitorChain of the completed transactionId from the counterChain transaction.
+                    if (counterchainSession.CounterChainTransactionId != uint256.Zero)
+                    {
+                        // If we get here:
+                        // 1. One of the nodes became the boss and successfully broadcast a completed transaction.
+                        // 2. The monitor in this node received the block with the transaction (identified by the sessionId in the op_return).
+                        // 3. The monitor wrote the CounterChainTransactionId into the counterChainSession to indicate all was done.
+                        // This method then does not try to process the transaction and instead signals to the monitorChain that this
+                        // transaction already completed by passing back the transactionId.
+                        this.logger.LogInformation(
+                            $"Counterchain Session: {sessionId} was already completed. Doing nothing.");
+                        return counterchainSession.CounterChainTransactionId;
+                    }
                 }
-            }
 
-            // Check if the password has been added. If not, no need to go further.
-            if (this.federationWalletManager.Secret == null || string.IsNullOrEmpty(this.federationWalletManager.Secret.WalletPassword))
-            {
-                string errorMessage = "The password needed for signing multisig transactions is missing.";
-                this.logger.LogError(errorMessage);
-                throw new WalletException(errorMessage);
-            }
 
-            //create the partial transaction template
-            var wallet = this.federationWalletManager.GetWallet();
-            var multiSigAddress = wallet.MultiSigAddress;
-
-            var destination = BitcoinAddress.Create(destinationAddress, this.network).ScriptPubKey;
-
-            // Encode the sessionId into a string.
-            this.logger.LogInformation("SessionId encoded bytes length = {0}.", sessionId.ToBytes().Length);
-
-            // We are the Boss so first I build the multisig transaction template.
-            var multiSigContext = new TransactionBuildContext(
-                (new[] { new Recipient.Recipient { Amount = amount, ScriptPubKey = destination } }).ToList(),
-                this.federationWalletManager.Secret.WalletPassword, sessionId.ToBytes())
-            {
-                TransactionFee = Money.Coins(0.01m),
-                MinConfirmations = 1,
-                Shuffle = true,
-                MultiSig = multiSigAddress,
-                IgnoreVerify = true,
-                Sign = false
-            };
-
-            this.logger.LogInformation("Building template Transaction.");
-            var templateTransaction = this.federationWalletTransactionHandler.BuildTransaction(multiSigContext);
-
-            //add my own partial
-            this.logger.LogInformation("Signing own partial.");
-            var counterChainSession = this.VerifySession(sessionId, templateTransaction);
-
-            if (counterChainSession == null)
-            {
-                var exists = this.sessions.TryGetValue(sessionId, out counterChainSession);
-                if (exists) return counterChainSession.CounterChainTransactionId;
-                throw new InvalidOperationException($"No CounterChainSession found in the counter chain for session id {sessionId}.");
-            }
-            this.MarkSessionAsSigned(counterChainSession);
-            var partialTransaction = wallet.SignPartialTransaction(templateTransaction, this.federationWalletManager.Secret.WalletPassword);
-
-            uint256 bossCard = BossTable.MakeBossTableEntry(blockHeight, this.federationGatewaySettings.PublicKey);
-            this.logger.LogInformation("My bossCard: {0}.", bossCard);
-            this.ReceivePartial(sessionId, partialTransaction, bossCard);
-
-            //now build the requests for the partials
-            var requestPartialTransactionPayload = new RequestPartialTransactionPayload(sessionId, templateTransaction, blockHeight);
-
-            // Only broadcast to the federation members.
-            var federationNetworkPeers =
-                this.connectionManager.ConnectedPeers
-                .Where(p => !p.Inbound && federationGatewaySettings.FederationNodeIpEndPoints.Any(e => this.ipAddressComparer.Equals(e.Address, p.PeerEndPoint.Address)));
-            foreach (INetworkPeer peer in federationNetworkPeers)
-            {
-                try
+                // Check if the password has been added. If not, no need to go further.
+                if (this.federationWalletManager.Secret == null ||
+                    string.IsNullOrEmpty(this.federationWalletManager.Secret.WalletPassword))
                 {
-                    this.logger.LogInformation("Broadcasting Partial Transaction Request to {0}.", peer.PeerEndPoint);
-                    await peer.SendMessageAsync(requestPartialTransactionPayload).ConfigureAwait(false);
+                    string errorMessage = "The password needed for signing multisig transactions is missing.";
+                    this.logger.LogError(errorMessage);
+                    throw new WalletException(errorMessage);
                 }
-                catch (OperationCanceledException)
+
+                //create the partial transaction template
+                var wallet = this.federationWalletManager.GetWallet();
+                var multiSigAddress = wallet.MultiSigAddress;
+
+                var destination = BitcoinAddress.Create(destinationAddress, this.network).ScriptPubKey;
+
+                // Encode the sessionId into a string.
+                this.logger.LogInformation("SessionId encoded bytes length = {0}.", sessionId.ToBytes().Length);
+
+                // We are the Boss so first I build the multisig transaction template.
+                var allSessionsOnThisBlock = sessions.Values.Where(s => s.BlockHeight == blockHeight).ToList();
+                var recipients = allSessionsOnThisBlock.Select(s =>
+                        new Recipient.Recipient
+                        {
+                            Amount = s.Amount,
+                            ScriptPubKey = BitcoinAddress.Create(s.Destination, this.network).ScriptPubKey
+                        }).ToArray();
+                var multiSigContext = new TransactionBuildContext(
+                    recipients.ToList(),
+                    this.federationWalletManager.Secret.WalletPassword, sessionId.ToBytes())
                 {
+                    TransactionFee = Money.Coins(0.01m),
+                    MinConfirmations = 1,
+                    Shuffle = true,
+                    MultiSig = multiSigAddress,
+                    IgnoreVerify = true,
+                    Sign = false
+                };
+
+                this.logger.LogInformation("Building template Transaction.");
+                var templateTransaction = this.federationWalletTransactionHandler.BuildTransaction(multiSigContext);
+
+                //add my own partial
+                this.logger.LogInformation("Signing own partial.");
+                var counterChainSession = this.VerifySession(sessionId, templateTransaction);
+
+                if (counterChainSession == null)
+                {
+                    var exists = this.sessions.TryGetValue(sessionId, out counterChainSession);
+                    if (exists) return counterChainSession.CounterChainTransactionId;
+                    throw new InvalidOperationException(
+                        $"No CounterChainSession found in the counter chain for session id {sessionId}.");
                 }
+
+                allSessionsOnThisBlock.ForEach(s => this.MarkSessionAsSigned(counterChainSession));
+                
+                var partialTransaction = wallet.SignPartialTransaction(templateTransaction,
+                    this.federationWalletManager.Secret.WalletPassword);
+
+                uint256 bossCard = BossTable.MakeBossTableEntry(blockHeight, this.federationGatewaySettings.PublicKey);
+                this.logger.LogInformation("My bossCard: {0}.", bossCard);
+                this.ReceivePartial(sessionId, partialTransaction, bossCard, blockHeight);
+
+                //now build the requests for the partials
+                var requestPartialTransactionPayload =
+                    new RequestPartialTransactionPayload(sessionId, templateTransaction, blockHeight);
+
+                // Only broadcast to the federation members.
+                var federationNetworkPeers =
+                    this.connectionManager.ConnectedPeers
+                        .Where(p => !p.Inbound && federationGatewaySettings.FederationNodeIpEndPoints.Any(e =>
+                                        this.ipAddressComparer.Equals(e.Address, p.PeerEndPoint.Address)));
+                foreach (INetworkPeer peer in federationNetworkPeers)
+                {
+                    try
+                    {
+                        this.logger.LogInformation("Broadcasting Partial Transaction Request to {0}.",
+                            peer.PeerEndPoint);
+                        peer.SendMessageAsync(requestPartialTransactionPayload).ConfigureAwait(false).GetAwaiter()
+                            .GetResult();
+                    }
+                    catch (Exception ex)
+                    {
+                        this.logger.LogError("Failed to send partial transaction payload to peer with endpoint {0}",
+                            peer?.PeerEndPoint);
+                        this.logger.LogError(ex.StackTrace);
+                    }
+                }
+
+                this.logger.LogTrace("(-)");
+                // We don't want to say this is complete yet.  We wait until we get the transaction back in a block.
+                return uint256.Zero;
             }
-            this.logger.LogTrace("(-)");
-            // We don't want to say this is complete yet.  We wait until we get the transaction back in a block.
-            return uint256.Zero;
         }
 
         ///<inheritdoc/>

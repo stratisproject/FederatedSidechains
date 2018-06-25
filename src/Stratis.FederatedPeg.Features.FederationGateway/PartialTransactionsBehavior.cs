@@ -144,7 +144,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway
                 {
                     //we got a partial back
                     this.logger.LogInformation("RequestPartialTransactionPayload: PartialTransaction received.");
-                    this.counterChainSessionManager.ReceivePartial(payload.SessionId, payload.PartialTransaction, payload.BossCard);
+                    this.counterChainSessionManager.ReceivePartial(payload.SessionId, payload.PartialTransaction, payload.BossCard, payload.BlockHeight);
                 }
             }
 
