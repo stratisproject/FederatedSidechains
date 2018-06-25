@@ -7,14 +7,14 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.CounterChain
 {
     public class CounterChainSession
     {
-        public List<Transaction> PartialTransactions { get; private set; }
-        public int BlockHeight { get; private set; }
+        public List<Transaction> PartialTransactions { get; }
+        public int BlockHeight { get; }
         public uint256 SessionId { get; }
         public Money Amount { get; }
         public string Destination { get; }
-        public bool HasReachedQuorum => this.PartialTransactions.Count >= federationGatewaySettings.MultiSigM;
+        public bool HasReachedQuorum => this.PartialTransactions.Count >= FederationGatewaySettings.MultiSigM;
         public bool HaveISigned { get; set; } = false;
-        public FederationGatewaySettings federationGatewaySettings { get; }
+        public FederationGatewaySettings FederationGatewaySettings { get; }
 
         private readonly ILogger logger;
 
@@ -29,7 +29,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.CounterChain
             int blockHeight)
         {
             this.logger = logger;
-            this.federationGatewaySettings = federationGatewaySettings;
+            this.FederationGatewaySettings = federationGatewaySettings;
             this.PartialTransactions = new List<Transaction>();
             this.SessionId = sessionId;
             this.Amount = amount;

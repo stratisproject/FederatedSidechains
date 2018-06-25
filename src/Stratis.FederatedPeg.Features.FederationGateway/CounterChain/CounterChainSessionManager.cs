@@ -105,7 +105,8 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.CounterChain
         // Add the session to its collection.
         private CounterChainSession RegisterSession(uint256 transactionId, Money amount, string destination, int blockHeight)
         {
-            this.logger.LogTrace("({0}:'{1}',{2}:'{3}',{4}:'{5}',{6}:'{7}')", nameof(transactionId), transactionId, nameof(amount), amount, nameof(destination), destination, nameof(blockHeight), blockHeight);
+            this.logger.LogTrace("({0}:'{1}',{2}:'{3}',{4}:'{5}',{6}:'{7}')", nameof(transactionId), transactionId, nameof(amount),
+                amount, nameof(destination), destination, nameof(blockHeight), blockHeight);
 
             var counterChainSession = new CounterChainSession(
                 this.logger, 
