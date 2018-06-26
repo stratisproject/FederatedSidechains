@@ -66,7 +66,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.MonitorChain
         private readonly FederationGatewaySettings federationGatewaySettings;
 
         // Our monitor sessions.
-        private readonly ConcurrentDictionary<uint256, MonitorChainSession> monitorSessions = new ConcurrentDictionary<uint256, MonitorChainSession>();
+        private readonly ConcurrentDictionary<int, MonitorChainSession> monitorSessions = new ConcurrentDictionary<int, MonitorChainSession>();
 
         // The IBD state.
         private readonly IInitialBlockDownloadState initialBlockDownloadState;
@@ -114,10 +114,13 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.MonitorChain
         {
             this.logger.LogTrace("({0}:'{1}')", nameof(blockHeight), blockHeight);
 
-            return new MonitorChainSession(blockHeight,
+            var monitorChainSession = new MonitorChainSession(blockHeight,
                 this.federationGatewaySettings.FederationPublicKeys.Select(f => f.ToHex()).ToArray(),
                 this.federationGatewaySettings.PublicKey
             );
+
+            this.monitorSessions.TryAdd(monitorChainSession.BlockNumber, monitorChainSession);
+            return monitorChainSession;
 
             //monitorChainSession.CrossChainTransactions.Add(crossChainTransactionInfo);
 
@@ -193,7 +196,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.MonitorChain
                 var time = DateTime.Now;
 
                 this.logger.LogInformation($"Session status: {0} with CounterChainTransactionId: {1}.", 
-                    monitorChainSession.Status, monitorChainSession.CounterChainTransactionId);
+                    monitorChainSession.Status.ToString(), monitorChainSession.CounterChainTransactionId);
                 
                 this.logger.LogInformation("RunSessionAsync() MyBossCard: {0}", monitorChainSession.BossCard);
                 this.logger.LogInformation("At {0} AmITheBoss: {1} WhoHoldsTheBossCard: {2}", 
@@ -211,7 +214,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.MonitorChain
                 // the the session completed already (and give us the CounterChainTransactionId).
                 // We we were already the boss the status will be Requested and we will Process
                 // to get the CounterChainTransactionId.
-                var result = await ProcessSessionOnCounterChain(this.federationGatewaySettings.CounterChainApiPort,monitorChainSession).ConfigureAwait(false);
+                var result = await ProcessSessionOnCounterChain(this.federationGatewaySettings.CounterChainApiPort, monitorChainSession).ConfigureAwait(false);
 
                 if (monitorChainSession.Status == SessionStatus.Requesting)
                     monitorChainSession.Status = SessionStatus.Requested;

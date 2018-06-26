@@ -101,6 +101,14 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.CounterChain
 
 
             var counterChainSession = new CounterChainSession(this.logger, this.federationGatewaySettings, blockHeight);
+            counterChainSession.CrossChainTransactions = counterChainTransactionInfos.Select(c => new CrossChainTransactionInfo
+            {
+                BlockNumber = blockHeight,
+                TransactionHash = c.TransactionHash,
+                DestinationAddress = c.DestinationAddress,
+                Amount = c.Amount
+            }).ToList();
+
             this.sessions.AddOrReplace(blockHeight, counterChainSession);
             return counterChainSession;
         }
@@ -184,7 +192,10 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.CounterChain
                     return counterchainSession.CounterChainTransactionId;
                 }
             }
-
+            else
+            {
+                throw new InvalidOperationException($"No CounterChainSession found in the counter chain for block height {blockHeight}.");
+            }
 
             // Check if the password has been added. If not, no need to go further.
             if (this.federationWalletManager.Secret == null || string.IsNullOrEmpty(this.federationWalletManager.Secret.WalletPassword))

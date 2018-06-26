@@ -13,7 +13,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.CounterChain
         public bool HaveISigned { get; set; } = false;
         public FederationGatewaySettings FederationGatewaySettings { get; }
 
-        public ICollection<CrossChainTransactionInfo> CrossChainTransactions { get; set; }
+        public IList<CrossChainTransactionInfo> CrossChainTransactions { get; set; }
 
         private readonly ILogger logger;
 
