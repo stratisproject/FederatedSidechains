@@ -83,6 +83,10 @@ namespace Stratis.FederatedPeg.Features.FederationGateway
 
         private readonly ICrossChainTransactionAuditor crossChainTransactionAuditor;
 
+        // The minimum transfer amount permissible.
+        // (Prevents spamming of network.)
+        private readonly Money MinimumTransferAmount = new Money(1.0m, MoneyUnit.BTC);
+
         public CrossChainTransactionMonitor(ILoggerFactory loggerFactory, 
             Network network,
             ConcurrentChain concurrentChain,
@@ -199,6 +203,13 @@ namespace Stratis.FederatedPeg.Features.FederationGateway
         private void ProcessAddress(uint256 transactionHash, string destinationAddress, Money amount, int blockNumber, uint256 blockHash)
         {
             this.logger.LogTrace("({0}:'{1}',{2}:'{3}',{4}:'{5}')", nameof(transactionHash), transactionHash, nameof(amount), amount, nameof(destinationAddress), destinationAddress, nameof(blockNumber), blockNumber, nameof(blockHash), blockHash);
+
+            // Ignore sessions below the MinimumTransferAmount
+            if (amount < MinimumTransferAmount)
+            {
+                this.logger.LogInformation($"The transaction {transactionHash} has less than the MinimumTransferAmount.  Ignoring. ");
+                return;
+            }
 
             // This looks like a deposit or withdrawal transaction. Record the info.
             var crossChainTransactionInfo = new CrossChainTransactionInfo
