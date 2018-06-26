@@ -306,9 +306,8 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.CounterChain
                 });
 
             var outputAddresses = partialTransactionTemplate.Outputs.Select(o => o.ScriptPubKey).Distinct().ToList();
-            var allAddressesMatch = (outputAddresses.Count == amountByAddress.Count()) 
-                                    && outputAddresses.All(o => amountByAddress.Count(a => a.Address == o) == 1);
-
+            var allAddressesMatch = (outputAddresses.Count == amountByAddress.Count() + 2)
+                                    && amountByAddress.All(a => outputAddresses.Contains(a.Address));
             if (!allAddressesMatch)
             {
                 this.logger.LogInformation("Session for block {0} found did not have matching addresses.", blockHeight);
