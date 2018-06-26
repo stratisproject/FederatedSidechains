@@ -162,8 +162,8 @@ namespace Stratis.FederatedPeg.Features.FederationGateway
 
             // Create a session to process the transaction.
             // Tell our Session Manager that we can start a new session.
-            MonitorChainSession monitorSession = this.monitorChainSessionManager.CreateMonitorSession(blockNumber);
-
+            MonitorChainSession monitorSession = new MonitorChainSession(blockNumber, this.federationGatewaySettings.FederationPublicKeys.Select(f => f.ToHex()).ToArray(), this.federationGatewaySettings.PublicKey);
+            
             foreach (var transaction in block.Transactions)
             {
                 // Look at each output in the transaction.
@@ -211,6 +211,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway
             if (monitorSession.CrossChainTransactions.Any())
             {
                 this.logger.LogInformation("AddCounterChainTransactionId: Found {0} transactions to process in block with height {1}.", monitorSession.CrossChainTransactions.Count, monitorSession.BlockNumber);
+                this.monitorChainSessionManager.RegisterMonitorSession(monitorSession);
                 this.monitorChainSessionManager.CreateSessionOnCounterChain(this.federationGatewaySettings.CounterChainApiPort, monitorSession);
             }
 

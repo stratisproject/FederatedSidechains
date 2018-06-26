@@ -110,18 +110,12 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.MonitorChain
 
         // Creates the Monitor session.
         // A session is added when the CrossChainTransactionMonitor identifies a transaction that needs to be completed cross chain.
-        public MonitorChainSession CreateMonitorSession(int blockHeight)
+        public void RegisterMonitorSession(MonitorChainSession monitorSession)
         {
-            this.logger.LogTrace("({0}:'{1}')", nameof(blockHeight), blockHeight);
-
-            var monitorChainSession = new MonitorChainSession(blockHeight,
-                this.federationGatewaySettings.FederationPublicKeys.Select(f => f.ToHex()).ToArray(),
-                this.federationGatewaySettings.PublicKey
-            );
-
-            this.monitorSessions.TryAdd(monitorChainSession.BlockNumber, monitorChainSession);
-            return monitorChainSession;
-
+            this.logger.LogTrace("({0}:'{1}')", nameof(monitorSession.BlockNumber), monitorSession.BlockNumber);
+            
+            this.monitorSessions.TryAdd(monitorSession.BlockNumber, monitorSession);
+            
             //monitorChainSession.CrossChainTransactions.Add(crossChainTransactionInfo);
 
             //this.monitorSessions.TryAdd(monitorChainSession.SessionId, monitorChainSession);
