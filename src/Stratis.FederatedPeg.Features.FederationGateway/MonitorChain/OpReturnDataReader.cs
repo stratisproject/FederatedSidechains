@@ -60,12 +60,12 @@ namespace Stratis.FederatedPeg.Features.FederationGateway
                 return address;
             }
 
-            string hash = GetHashFromOpReturn(logger, transaction);
-            if (hash != null)
-            {
-                opReturnDataType = OpReturnDataType.Hash;
-                return hash;
-            }
+            //string hash = GetHashFromOpReturn(logger, transaction);
+            //if (hash != null)
+            //{
+            //    opReturnDataType = OpReturnDataType.Hash;
+            //    return hash;
+            //}
 
             int blockHeight = GetBlockHeightFromOpReturn(logger, transaction);
             if (blockHeight != -1)
