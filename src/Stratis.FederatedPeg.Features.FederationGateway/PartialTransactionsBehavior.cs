@@ -112,6 +112,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway
                 this.logger.LogInformation("OnMessageReceivedAsync: {0}", this.network.ToChain());
                 this.logger.LogInformation("RequestPartialTransactionPayload: SessionId           - {0}.", payload.SessionId);
                 this.logger.LogInformation("RequestPartialTransactionPayload: BossCard            - {0}.", payload.BossCard);
+                this.logger.LogInformation("RequestPartialTransactionPayload: BlockHeight         - {0}.", payload.BlockHeight);
                 this.logger.LogInformation("RequestPartialTransactionPayload: PartialTransaction  - {0}.", payload.PartialTransaction);
                 this.logger.LogInformation("RequestPartialTransactionPayload: TemplateTransaction - {0}.", payload.TemplateTransaction);
 
