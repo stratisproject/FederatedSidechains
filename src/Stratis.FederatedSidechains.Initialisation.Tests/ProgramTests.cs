@@ -19,7 +19,7 @@ namespace Stratis.FederatedSidechains.Initialisation.Tests
         [Fact]
         public void RunWithArgsShouldPointsToFileInFirstArgument()
         {
-            var args = new [] { @"hello\world.json"};
+            var args = new [] { @"hello\worldz.json"};
             var expectedFileInfo = new FileInfo(args.First());
 
             var program = new Program();
