@@ -59,7 +59,7 @@ namespace Stratis.FederatedSidechains.IntegrationTests.FederationGateway
             nodeBuilder?.Dispose();
         }
 
-        [Fact(Skip = "one day this will work!")]
+        [Fact(Skip = "one day this will work!!")]
         public void PerformCrossChainTransfer()
         {
             Given(a_mainchain_node_with_funded_account);
