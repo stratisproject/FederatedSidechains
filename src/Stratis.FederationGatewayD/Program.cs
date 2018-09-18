@@ -43,8 +43,7 @@ namespace Stratis.FederationGatewayD
                 var network = isMainchainNode ? Network.StratisTest : ApexNetwork.Test; 
                 var nodeSettings = new NodeSettings(network, ProtocolVersion.ALT_PROTOCOL_VERSION, args: args);
 
-                var node = isMainchainNode
-                    ? new FullNodeBuilder()
+                var mainNode = new FullNodeBuilder()
                         .UseNodeSettings(nodeSettings)
                         .UseBlockStore()
                         .UsePosConsensus()
@@ -56,8 +55,9 @@ namespace Stratis.FederationGatewayD
                         .AddFederationGateway()
                         .UseApi()
                         .AddRPC()
-                        .Build()
-                    : new FullNodeBuilder()
+                        .Build();
+
+                var sideNode = new FullNodeBuilder()
                         .UseNodeSettings(nodeSettings)
                         .UseBlockStore()
                         .UsePowConsensus()
@@ -71,8 +71,7 @@ namespace Stratis.FederationGatewayD
                         .AddRPC()
                         .Build();
 
-                if (node != null)
-                    await node.RunAsync();
+                if (node != null) await node.RunAsync();
             }
             catch (Exception ex)
             {
