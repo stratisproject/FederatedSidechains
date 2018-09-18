@@ -239,7 +239,7 @@ namespace Stratis.FederatedSidechains.IntegrationTests.FederationGateway
             var receiverAddress = hdAccountsByKey[receiverNodeKey].GetFirstUnusedReceivingAddress();
             
             var accountReference = new WalletAccountReference(senderNodeKey.WalletName, NamingConstants.AccountZero);
-            var transactionBuildContext = new Bitcoin.Features.Wallet.TransactionBuildContext(
+            var transactionBuildContext = new TransactionBuildContext(
                 accountReference,
                 new List<Bitcoin.Features.Wallet.Recipient>()
                 {
