@@ -55,11 +55,11 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.CounterChain
         void MarkSessionAsSigned(CounterChainSession session);
 
         /// <summary>
-        /// The counterchain transaction completed successfully and was identified on the blockchain by the monitor.
-        /// Write the counterchain transationId back to the session.
+        /// The counter chain transaction completed successfully and was identified on the blockchain by the monitor.
+        /// Write the counter chain transaction Id back to the session.
         /// </summary>
         /// <param name="sessionId">The session that we will mark as completed.</param>
-        /// <param name="transactionId">The transactionId of the compeleted transaction.</param>
+        /// <param name="transactionId">The transactionId of the completed transaction.</param>
         void AddCounterChainTransactionId(int blockHeight, uint256 transactionId);
     }
 }
