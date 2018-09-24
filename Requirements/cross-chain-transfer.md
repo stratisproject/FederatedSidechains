@@ -1,3 +1,14 @@
 # Suggestion for Cross Chain transfers mechanism
 
-<div style="width: 640px; height: 480px; margin: 10px; position: relative;"><iframe allowfullscreen frameborder="0" style="width:640px; height:480px" src="https://www.lucidchart.com/documents/embeddedchart/34e24d78-47ff-4d03-86fc-4c474766b000" id="Hq7cWo_pAupf"></iframe></div>
+## 1) All federation members nodes online
+
+![A cross chain transfer is initiated](assets/cross-chain-transfers/happy-path-1.svg)
+![The cross chain transfer is triggered after MaxReorg](assets/cross-chain-transfers/happy-path-2.svg)
+![The cross chain transfer appears on targeted chain](assets/cross-chain-transfers/happy-path-3.svg)
+
+## 2) Preferred leader offline
+![A cross chain transfer is triggered while leader is offline](assets/cross-chain-transfers/leader-offline-1.svg)
+![The cross chain is handled one block later by next leader](assets/cross-chain-transfers/leader-offline-2.svg)
+
+## 2') Preferred leader comes back online
+![The leader comes back online](assets/cross-chain-transfers/leader-offline-3.svg)
