@@ -11,7 +11,7 @@ Some users of the chain A decide to transfer funds to the chain B. To achieve th
 ### The cross chain transfer is triggered after chain A's maximum reorg length
 
 As the maximum reorg length is passed, and the deposit transactions cannot be reverted, the federation starts to proceed with the transfer. A prefered leader for that transfer is elected deterministically based on the current heighty of chain A, but each node still performs the same operations independently. Each node transfers the details of the multisig deposits made on chain A (block height, target addresses and corresponding amounts to transfer), then persists those details in their database.  
-From that point, each nodes has enough information to create partially signed transactions and propagate them on the network. Each node will also persist the partially signed transactions they receive, but only the leader will be proceed to broadcasting a fully signed one.
+From that point, each nodes has enough information to create partially signed transactions and propagate them on the network. Each node will also persist the partially signed transactions they receive, but only the leader will proceed to broadcasting a fully signed one.
 
 ![The cross chain transfer is triggered after MaxReorg](../assets/cross-chain-transfers/happy-path-2.svg)
 
