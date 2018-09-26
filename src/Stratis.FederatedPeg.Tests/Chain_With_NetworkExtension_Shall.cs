@@ -32,18 +32,18 @@ namespace Stratis.FederatedPeg.Tests
         [Fact]
         public void correctly_identify_sidechain()
         {	
-            var network = ApexNetwork.RegTest;
-            var chain = network.ToChain();
+            var apexRegTest = new ApexRegTest();
+            var chain = apexRegTest.ToChain();
             chain.Should().Be(Chain.Sidechain);
             chain.Should().NotBe(Chain.Mainchain);
 
-            network = ApexNetwork.Test;
-            chain = network.ToChain();
+            var apexTest = new ApexTest();
+            chain = apexTest.ToChain();
             chain.Should().Be(Chain.Sidechain);
             chain.Should().NotBe(Chain.Mainchain);
 
-            network = ApexNetwork.Main;
-            chain = network.ToChain();
+            var apexMain = new ApexMain();
+            chain = apexMain.ToChain();
             chain.Should().Be(Chain.Sidechain);
             chain.Should().NotBe(Chain.Mainchain);
         }

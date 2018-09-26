@@ -21,6 +21,8 @@ namespace Stratis.Sidechains.Networks
             this.MinRelayTxFee = 0;
             this.CoinTicker = "TAPX";
 
+            var powLimit = new Target(new uint256("7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"));
+
             this.Checkpoints = new Dictionary<int, CheckpointInfo>();
             this.DNSSeeds = new List<DNSSeedData>();
             this.SeedNodes = new List<NetworkAddress>();
@@ -30,7 +32,7 @@ namespace Stratis.Sidechains.Networks
             // Create the genesis block.
             this.GenesisTime = 1528217336;
             this.GenesisNonce = 2;
-            this.GenesisBits = this.Consensus.PowLimit.ToCompact();
+            this.GenesisBits = powLimit.ToCompact();
             this.GenesisVersion = 1;
             this.GenesisReward = Money.Coins(50m);
             Block genesisBlock = CreateStratisGenesisBlock(consensusFactory, this.GenesisTime, this.GenesisNonce, this.GenesisBits, this.GenesisVersion, this.GenesisReward);
@@ -75,7 +77,7 @@ namespace Stratis.Sidechains.Networks
                 powTargetSpacing: TimeSpan.FromSeconds(10 * 60),
                 powAllowMinDifficultyBlocks: true,
                 powNoRetargeting: true,
-                powLimit: new Target(new uint256("7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff")),
+                powLimit: powLimit,
                 minimumChainWork: null,
                 isProofOfStake: true,
                 lastPowBlock: 12500,
@@ -86,9 +88,9 @@ namespace Stratis.Sidechains.Networks
             this.Base58Prefixes[(int)Base58Type.PUBKEY_ADDRESS] = new byte[] { 75 }; // X
             this.Base58Prefixes[(int)Base58Type.SCRIPT_ADDRESS] = new byte[] { 137 }; // x
 
-            this.Genesis = ApexNetwork.CreateGenesisBlock(this.Consensus.ConsensusFactory, this.GenesisTime, this.GenesisNonce, this.Consensus.PowLimit, this.GenesisVersion, this.GenesisReward);
-            Assert(this.Consensus.HashGenesisBlock.ToString() == "93b746cdca6cee508071af543c704c1c7ba3cb63b234cef81023d7ff7b700b52");
-            Assert(this.Genesis.Header.HashMerkleRoot == uint256.Parse("b4ee5b5155eea267f7be1fdffc1975f04b0e1d9717dc19696619577e8ffdc70e"));
+            this.Genesis = CreateStratisGenesisBlock(this.Consensus.ConsensusFactory, this.GenesisTime, this.GenesisNonce, this.Consensus.PowLimit, this.GenesisVersion, this.GenesisReward);
+            Assert(this.Consensus.HashGenesisBlock.ToString() == "32763f33408fef0211cd1b74b8da341ce915e82f20f780b41564915ef1e40f35");
+            Assert(this.Genesis.Header.HashMerkleRoot == uint256.Parse("d1d5e82ad63308accb698dfde401258b86ba8c7f7ab0b9876171f7f1c3996727"));
         }
     }
 }
