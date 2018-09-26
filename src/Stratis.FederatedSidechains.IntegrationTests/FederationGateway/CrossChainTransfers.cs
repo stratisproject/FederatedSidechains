@@ -229,7 +229,7 @@ namespace Stratis.FederatedSidechains.IntegrationTests.FederationGateway
         public HdAccount CreateAndRegisterHdAccount(CoreNode node, NodeKey nodeKey)
         {
             var walletManager = node.FullNode.WalletManager();
-            var mnemonic = walletManager.CreateWallet(nodeKey.Password, nodeKey.WalletName);
+            var mnemonic = walletManager.CreateWallet(nodeKey.Password, nodeKey.WalletName, nodeKey.Passphrase);
             var account = walletManager.GetAccounts(nodeKey.WalletName).First(n => n.Name == NamingConstants.AccountZero);
             hdAccountsByKey.Add(nodeKey, account);
             return account;
@@ -240,19 +240,19 @@ namespace Stratis.FederatedSidechains.IntegrationTests.FederationGateway
             var receiverAddress = hdAccountsByKey[receiverNodeKey].GetFirstUnusedReceivingAddress();
             
             var accountReference = new WalletAccountReference(senderNodeKey.WalletName, NamingConstants.AccountZero);
-            var transactionBuildContext = new TransactionBuildContext(
-                accountReference,
-                new List<Bitcoin.Features.Wallet.Recipient>()
-                {
-                    new Bitcoin.Features.Wallet.Recipient()
-                    {
-                        Amount = amount,
-                        ScriptPubKey = gatewayEnvironment.GetMultisigPubKey(Chain.Mainchain)
-                    }
-                },
-                walletPassword: senderNodeKey.Password,
-                opReturnData: receiverAddress.Address)
+            var transactionBuildContext = new TransactionBuildContext(network: this.nodesByKey[receiverNodeKey].FullNode.Network)
             {
+                AccountReference = accountReference,
+                Recipients = new List<Bitcoin.Features.Wallet.Recipient>()
+                {
+                     new Bitcoin.Features.Wallet.Recipient()
+                     {
+                         Amount = amount,
+                         ScriptPubKey = gatewayEnvironment.GetMultisigPubKey(Chain.Mainchain)
+                     }
+                },
+                WalletPassword = senderNodeKey.Password,
+                OpReturnData = receiverAddress.Address,
                 MinConfirmations = 1,
                 TransactionFee = new Money(0.001m, MoneyUnit.BTC),
                 Shuffle = true
