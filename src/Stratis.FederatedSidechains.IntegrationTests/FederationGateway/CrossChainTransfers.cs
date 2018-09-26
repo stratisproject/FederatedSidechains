@@ -16,6 +16,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using NBitcoin.Protocol;
+using Stratis.Bitcoin.Networks;
 using Stratis.Bitcoin.Tests.Common.TestFramework;
 using Xunit;
 using Xunit.Abstractions;
@@ -46,7 +47,7 @@ namespace Stratis.FederatedSidechains.IntegrationTests.FederationGateway
             nodesByKey = new Dictionary<NodeKey, CoreNode>();
             hdAccountsByKey = new Dictionary<NodeKey, HdAccount>();
             nodeBuilder = NodeBuilder.Create(this.CurrentTest.TestCase.TestMethod.Method.Name);
-            this.mainchainNetwork = Network.StratisRegTest;
+            this.mainchainNetwork = new StratisRegTest();
             this.sidechainNetwork = ApexNetwork.RegTest;
             sharedSteps = new SharedSteps();
         }
