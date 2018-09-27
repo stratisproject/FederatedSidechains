@@ -53,9 +53,9 @@ If not enough members are online as the minimum required to fulfill the multisig
 ### The leader comes back online
 
 When the leader comes back online, it will retrieve from its stores what was the last known block heights for which it had dealt with, and resync its store from there while synching up its nodes. Partial transactions will then be added to the store and updated (or potentially completed) depending on their status on the chain B.  
-The node will only be able to participate in cross chain transfers when it is fully synced again, and has access to the latest version of the utxos on each multisigs.  
+The node will only be able to participate in cross chain transfers when it is fully synced again, and has the correct view of the multisig utxos set.  
 
-A leader that is now synced and observes there are unprocessed previous transfers will start to create signatures of those transfers and broadcast them to the other federation members.
+A leader that is now synced and observes there are unprocessed previous transfers will start to create signatures for those transfers and broadcast them to the other federation members.
 
 ![The leader comes back online](../assets/cross-chain-transfers/leader-offline-3.svg)
 
@@ -68,7 +68,7 @@ There are two main reasons for building transactions deterministically.
 Assuming members are synced and have the same view of the multisig address (the collection of UTXOs) then using a predefined algorithem every member can generate the transfer transaction, sign with their key and broadcast to the other members (possibly its enought to only broadcast to the current leader).  
 It may be that in order to use a multisig UTXO the algorithem will require it to be burried under enough blocks, to avoid reorgs and that we can be sure that all member have the same view of the UTXO list.
 
-The selection of UTXO is as following:
+**The algorithem to select UTXOs:**
 - The oldest UTXO first
 - If a block has more then one UTXO then first one in the list is first
 - Outputs are sorted but destination address
@@ -80,12 +80,15 @@ A memebr that came online will, when is synced with chains, check all the unporc
 
 ![Building transactions](../assets/cross-chain-transfers/building-transaction.svg)
 
-## Problems in the design ## 
+**The algorithem to select the leader:**
 
-Things to consider:
+TODO:
+
+## Considerations ## 
 
 - What is the fee going to be on the transfer trx (to maintain determinizem)
 - What if a block is full of transfer transactions (too full for the other chain)
 - What if all members are offline how do we handle resync of federation members
 
+What can cause a member to generate a multisig that is different for the rest of the federation (break determinisem)
 
