@@ -1,5 +1,11 @@
 # Suggestion for Cross Chain transfers mechanism
 
+### Overview
+
+Coordinating transfer between two chains require a federation of members to work together in order to achive enough signatures to release funds from the federations multisig.  
+We propose a deterministic approach to generating such transactions and to select the leader that will coordinate the process of transfer.  
+We assume that the federation are able to connect to each other and broadcast messages between them.
+
 ## 1) All federation members nodes online
 
 ### A cross chain transfer is initiated
