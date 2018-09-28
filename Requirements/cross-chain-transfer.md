@@ -2,9 +2,9 @@
 
 ### Overview
 
-Coordinating transfer between two chains require a federation of members to work together in order to achive enough signatures to release funds from the federations multisig.  
-We propose a deterministic approach to generating such transactions and to select the leader that will coordinate the process of transfer.  
-We assume that the federation are able to connect to each other and broadcast messages between them.
+Coordinating transfer between two chains requires a federation of members to work together in order to achieve enough signatures to release funds from the federation's multisig.  
+We propose a deterministic approach to generating such transactions and to select the leader that will coordinate the process of transfers.  
+We assume that the federation members are able to connect to each other and broadcast messages between themselves.
 
 ## 1) All federation members nodes online
 
@@ -21,13 +21,13 @@ When the maximum reorg length is passed and the deposit transactions cannot be r
 Before the leader can handle the transactions in its current block she must first look into previous blocks and detect if there was any unprocessed transfer, it's important to note that a transfer cannot happen until all previous transfers have been processed successfully, this means a leader is also responsible for blocks belonging to other members in case they were offline.  
 
 Each node transfers the details of the multisig deposits made on chain A (block height, target addresses and corresponding amounts to transfer), then persists those details in its database.  
-From that point, each node has enough information to create partially signed transactions and propagate them to the other members of the federation. Each node will also persist the partially signed transactions they receive and collect signatures (this is in case they become the leader of an unprocessed transfer and can immedialy broadcast it), but only the leader will proceed to broadcasting a fully signed one.
+From that point, each node has enough information to create partially signed transactions and propagate them to the other members of the federation. Each node will also persist the partially signed transactions they receive and collect signatures (this is in case they become the leader of an unprocessed transfer and can immediately broadcast it), but only the leader will proceed to broadcasting a fully signed one.
 
 ![The cross chain transfer is triggered after MaxReorg](../assets/cross-chain-transfers/happy-path-2.svg)
 
 ### The cross chain transfer appears on targeted chain
 
-Once the leader has collected enough signatures, she can broadcast a fully signed transaction to the network and make it appear in the mempool of all the other nodes. This transaction will then be persisted in the next block of chain B network.  
+Once the leader has collected enough signatures, she can broadcast a fully signed transaction to the network and make it appear in the mempool of all the other nodes. This transaction will then be persisted in the next block of the chain B network.  
 After that, each federation member monitoring the chain B will match the transaction found on chain by its inputs, outputs (including the OP_RETURN), and update the status of the transfer.
 
 ![The cross chain transfer appears on targeted chain](../assets/cross-chain-transfers/happy-path-3.svg)
@@ -51,7 +51,7 @@ Similar to the previous case, deposit transactions to the federation's multisig 
 As time passes, a new block appears on chain A, and a new leader is elected (FM<sub>3</sub>). This new leader can now broadcast the transaction and we are back on the normal path (cf 1.).  
 
 As described earlier every new leader must first check for previously unprocessed transfer and process those first before attending to the transfers on current block, if a few leaders are offline this can create a backlog of transfers.  
-If a leader finds a previously unprocessed transfer and they dont have enough signatures to broadcst they must do nothing and wait for the other members to send over signatures.  
+If a leader finds a previously unprocessed transfer and they dont have enough signatures to broadcast they must do nothing and wait for the other members to send over signatures.  
 If not enough members are online to reach the minimum number of signature required by the multisig, then transfers will halt untill enough members come back online and broadcast signatures.
 
 ![The cross chain is handled one block later by next leader](../assets/cross-chain-transfers/leader-offline-2.svg)
@@ -69,9 +69,9 @@ A leader that is now synced and observing unprocessed previous transfers will st
 
 There are two main reasons for building transactions deterministically.
 1. To allow for each member to independently build the exact same transaction, and therefore ensure that the federation members will never need to sign a UTXO more than once. This is for security reasons.
-2. To simplify the processes of sharing signaturs (a none determininstic approach means a leader needs to create a session for the transfer and coordinate with peers to sign it).  
+2. To simplify the processes of sharing signatures (a non-deterministic approach means a leader needs to create a session for the transfer and coordinate with peers to sign it).  
 
-Assuming members are synced and have the same view of the multisig address (the collection of UTXOs) then using a predefined algorithem every member can generate the transfer transaction, sign with their key and broadcast to the other members (possibly its enought to only broadcast to the current leader).  
+Assuming members are synced and have the same view of the multisig address (the collection of UTXOs) then using a predefined algorithm every member can generate the transfer transaction, sign with their key and broadcast to the other members (possibly it's enough to only broadcast to the current leader).  
 It may be that in order to use a multisig UTXO the algorithem will require it to be burried under enough blocks, to avoid reorgs and ensure that all member have the same view of the UTXO list.
 
 **The algorithm to select UTXOs:**
