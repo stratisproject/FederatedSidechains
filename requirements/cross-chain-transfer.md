@@ -60,7 +60,8 @@ If not enough members are online to reach the minimum number of signatures requi
 
 ### The leader comes back online
 
-When the leader comes back online, they will retrieve from their store the last known block heights which they had processed transfers for, and resync their store from there while synching up the chain A & chain B nodes. Partial transactions will then be added to the store and updated (or potentially completed) depending on their status on the chain B.
+When the leader comes back online, they will retrieve from their store the last known block heights which they had processed transfers for, and resync their store from there while synching up the chain A & chain B nodes.  
+Partial transactions will then be added to the store and updated (or potentially completed) depending on their status on the chain B.  
 The node will only be able to participate in cross chain transfers when it is fully synced again, and has the correct view of the multisig utxos set.  
 
 A leader that is now synced and observing unprocessed previous transfers will start creating signatures for those transfers and broadcasting them to the other federation members.
