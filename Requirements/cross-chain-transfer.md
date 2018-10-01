@@ -101,9 +101,12 @@ The leader role will be assigned round-robin to each member in turn, following t
 
 ## Considerations ## 
 
-- What is the fee going to be on the transfer trx (to maintain determinism)
-- What if a block is full of transfer transactions (too full for the other chain)
-- What if all members are offline how do we handle resync of federation members
-
-What can cause a member to generate a multisig that is different for the rest of the federation (break determinism)
+- What is the fee going to be on the transfer trx (to maintain determinism)?
+- What if a block is full of transfer transactions (too full for the other chain)?
+- What if all members are offline how do we handle resync of federation members?
+- If a member comes online as the current leader, without having been present for a previous unprocessed block, they will need to get signatures from the other members for that previous block. This implies the need for some form of rebroadcast mechanism, presumably initiated by the current leader.
+- If the maturity of a UTXO has to be considered (i.e. due to the possibility of reorgs), then there is a bootstrapping issue when the network is first initialised. The premine is a single UTXO, and would have to be split in order for the chain to have adequate UTXO bandwidth. This splitting would have to be done on a continuous basis to preserve a pool of available UTXOs of appropriate sizes. These sizes are difficult to anticipate in advance as they would depend on the particular sidechain.
+- In general there is a UTXO bandwidth issue due to the ancestor transaction limit in a block. In other words, per UTXO per block, there are a finite number of transactions that could potentially be constructed from it, no matter what value the UTXO itself has.
+- The described design implies that deposits requested will be processed in batches in transfer transactions with multiple outputs. Thus the block hash of the originating block is stored in the OP_RETURN output of the transfer transaction. However, due to various scenarios where not all the transactions in a block can be processed (due to size or other reasons) this implies that multiple transfer transactions could have the same OP_RETURN contents.
+- What can cause a member to generate a multisig that is different for the rest of the federation (i.e. break determinism)?
 
