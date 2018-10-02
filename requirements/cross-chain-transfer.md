@@ -124,9 +124,8 @@ The leader role will be assigned round-robin to each member in turn, following t
 
 **Per Transactoin pros**
 
-- Consideration 2, 6, and 7 are dealt with  
+- Consideration 2 and 7 are dealt with  
     2 is unlikely to happen because we would have to create a single transaction too big for target block size.  
-    6 does not happen as a different UTXO is needed for each transaction in the block.  
     7 does not happen as each deposit to multisig can be tracked by its transaction hash.
-- As transactions are dealt with individually, when chains have different maximum size and frequency for producing blocks, it is not possible for a user to try and stop some transfers by bloating a given block with many small ones (enough to make the block too big for target chain). We also need to impose a minimum transfer value to prevent that from happening anyway.
+- As transactions are dealt with individually, when chains have different maximum size and frequency for producing blocks, it is not possible for a user to try and stop some transfers by bloating a given block with many small ones (enough to make the block too big for target chain). We also need to impose a minimum transfer fee to prevent that from happening anyway (simply imposing a high value is not enough as you can transfer to your own addresses and back).
 - Cf. Above, ability to refund transaction under a certain amount, but keeping a punishment fee for it.
