@@ -10,11 +10,11 @@ Various scenarios around these interactions between users and federation members
 
 ## 1) All federation members nodes online
 
-### A bunch of cross chain transfers are initiated
+### A number of cross chain transfers are initiated
 
 Some users of chain A decide to transfer funds to chain B. To achieve this, they each create a deposit to the multisig address of the federation on chain A. These deposit transactions are notated tx<sub>1</sub>, tx<sub>2</sub>, ... tx<sub>N</sub>. Now they will need to wait for their deposit transactions to be buried under enough blocks (corresponding to the chain's maximum reorg length parameter, if this is in use) before the transfer mechanism of the federation is triggered.
 
-![A bunch of cross chain transfers are initiated](../assets/cross-chain-transfers/happy-path-1.svg)
+![A number of cross chain transfers are initiated](../assets/cross-chain-transfers/happy-path-1.svg)
 
 ### The cross chain transfers are triggered after chain A's maximum reorg length
 
