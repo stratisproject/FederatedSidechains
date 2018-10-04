@@ -121,3 +121,4 @@ The leader role will be assigned round-robin to each member in turn, following t
     - To a certain extent, we can anticipate what are going to be the UTXOs needed to do upcoming transfers since we 'see' those transfers MaxReorg blocks before they actually get triggered. If time allows we will implement these optimisations, otherwise, it simply means that transfers will have to wait for UTXOs to mature again before happening.  
 
 5. In general, there is a UTXO bandwidth issue due to the ancestor transaction limit in a block. In other words, per UTXO per block, there are a finite number of transactions that could potentially be constructed from it, no matter what value the UTXO itself has.
+
