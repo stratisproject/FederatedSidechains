@@ -1,4 +1,4 @@
-# Suggestion for cross-chain transfers mechanism
+# Suggestions for cross-chain transfers mechanism
 
 ### Overview
 
