@@ -23,7 +23,7 @@ When the maximum reorg length is passed and the deposit transactions cannot be r
 Before the leader can process the transactions contained in the chain A latest mature block, they must first look into previous blocks and detect if there were any unprocessed transfers. It is important to note that a transfer cannot happen until all transfers from previous blocks have been processed successfully, this means a leader is also responsible for blocks belonging to other members in case they were offline.  
 
 Each node transfers the details of the deposit transactions made on chain A (block height, transaction id, target address and corresponding amount to transfer) to the chain B node, which then persists those details in its database.
-From that point, each chain B node has enough information to create partially signed transactions and propagate them to the other members of the federation. Each node will also persist the partially signed transactions they receive and collect signatures (this is in case they become the leader of an unprocessed transfer and can immediately broadcast it), but only the leader will proceed to broadcast a fully signed transaction.
+From that point, each chain B node has enough information to create partially signed transactions and propagate them to the other members of the federation. Each node will also persist the partially signed transactions they receive and collect signatures (this is in case they become the leader of an unprocessed transfer and can immediately broadcast it), but only the leader will proceed to broadcast a fully signed transaction.  
 
 ![The cross-chain transfers are triggered after MaxReorg](../assets/cross-chain-transfers/happy-path-2.svg)
 
