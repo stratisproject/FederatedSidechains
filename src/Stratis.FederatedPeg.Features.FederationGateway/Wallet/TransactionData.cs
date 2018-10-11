@@ -83,7 +83,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.Wallet
             // This method only returns a UTXO that has no spending output.
             // If a spending output exists (even if its not confirmed) this will return as zero balance.
             if (!this.IsSpendable()) return Money.Zero;
-            
+
             if (confirmedOnly && !this.IsConfirmed())
             {
                 return Money.Zero;

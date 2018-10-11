@@ -6,9 +6,11 @@ using Stratis.Bitcoin.P2P.Peer;
 using Stratis.Bitcoin.P2P.Protocol;
 using Stratis.Bitcoin.P2P.Protocol.Behaviors;
 using Stratis.Bitcoin.Utilities;
-using Stratis.FederatedPeg.Features.FederationGateway.CounterChain;
 using Stratis.FederatedPeg.Features.FederationGateway.Interfaces;
 using Stratis.FederatedPeg.Features.FederationGateway.NetworkHelpers;
+using Stratis.FederatedPeg.Features.FederationGateway.Payloads;
+using Stratis.FederatedPeg.Features.FederationGateway.SourceChain;
+using Stratis.FederatedPeg.Features.FederationGateway.TargetChain;
 
 //todo: this is pre-refactoring code
 //todo: ensure no duplicate or fake withdrawal or deposit transactions are possible (current work underway)
@@ -21,11 +23,11 @@ namespace Stratis.FederatedPeg.Features.FederationGateway
 
         private readonly ILogger logger;
 
-        private readonly ICrossChainTransactionMonitor crossChainTransactionMonitor;
+        private readonly ITransferSource crossChainTransactionMonitor;
 
         private readonly IFederationWalletManager federationWalletManager;
 
-        private readonly ICounterChainSessionManager counterChainSessionManager;
+        private readonly ITargetTransferManager counterChainSessionManager;
 
         private readonly Network network;
 
@@ -35,9 +37,9 @@ namespace Stratis.FederatedPeg.Features.FederationGateway
 
         public PartialTransactionsBehavior(
             ILoggerFactory loggerFactory,
-            ICrossChainTransactionMonitor crossChainTransactionMonitor,
+            ITransferSource crossChainTransactionMonitor,
             IFederationWalletManager federationWalletManager,
-            ICounterChainSessionManager counterChainSessionManager,
+            ITargetTransferManager counterChainSessionManager,
             Network network,
             FederationGatewaySettings federationGatewaySettings)
         {

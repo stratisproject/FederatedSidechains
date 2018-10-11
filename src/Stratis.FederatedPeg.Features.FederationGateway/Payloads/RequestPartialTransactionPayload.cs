@@ -1,7 +1,7 @@
 ﻿using NBitcoin;
 using Stratis.Bitcoin.P2P.Protocol.Payloads;
 
-namespace Stratis.FederatedPeg.Features.FederationGateway
+namespace Stratis.FederatedPeg.Features.FederationGateway.Payloads
 {
     [Payload("partial")]
     public class RequestPartialTransactionPayload : Payload
