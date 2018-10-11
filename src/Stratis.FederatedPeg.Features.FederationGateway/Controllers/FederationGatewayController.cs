@@ -9,9 +9,8 @@ using Microsoft.Extensions.Logging;
 using NBitcoin;
 using Stratis.Bitcoin.Utilities;
 using Stratis.Bitcoin.Utilities.JsonErrors;
-using Stratis.FederatedPeg.Features.FederationGateway.CounterChain;
 using Stratis.FederatedPeg.Features.FederationGateway.Models;
-using Stratis.FederatedPeg.Features.FederationGateway.MonitorChain;
+using Stratis.FederatedPeg.Features.FederationGateway.TargetChain;
 
 namespace Stratis.FederatedPeg.Features.FederationGateway.Controllers
 {
@@ -24,14 +23,14 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.Controllers
         /// <summary>Instance logger.</summary>
         private readonly ILogger logger;
 
-        private readonly ICounterChainSessionManager counterChainSessionManager;
+        private readonly ITargetTransferManager targetTransferManager;
 
         public FederationGatewayController(
             ILoggerFactory loggerFactory, 
-            ICounterChainSessionManager counterChainSessionManager)
+            ITargetTransferManager targetTransferManager)
         {
             this.logger = loggerFactory.CreateLogger(this.GetType().FullName);
-            this.counterChainSessionManager = counterChainSessionManager;
+            this.targetTransferManager = targetTransferManager;
         }
 
         /// <summary>
@@ -45,7 +44,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.Controllers
         /// <returns>An ActionResult.</returns>
         [Route("create-session-oncounterchain")]
         [HttpPost]
-        public IActionResult CreateSessionOnCounterChain([FromBody] CreateCounterChainSessionRequest createCounterChainSessionRequest)
+        public IActionResult CreateSessionOnCounterChain([FromBody] CreateTargetTransferRequest createCounterChainSessionRequest)
         {
             Guard.NotNull(createCounterChainSessionRequest, nameof(createCounterChainSessionRequest));
 
@@ -59,7 +58,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.Controllers
 
             try
             {
-                this.counterChainSessionManager.CreateSessionOnCounterChain(createCounterChainSessionRequest.BlockHeight, createCounterChainSessionRequest.CounterChainTransactionInfos);
+                this.targetTransferManager.CreateTransferOnTargetChain(createCounterChainSessionRequest.BlockHeight, createCounterChainSessionRequest.CounterChainTransactionInfos);
                 return this.Ok();
             }
             catch (Exception e)
@@ -77,7 +76,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.Controllers
         /// <returns>An ActionResult.</returns>
         [Route("process-session-oncounterchain")]
         [HttpPost]
-        public async Task<IActionResult> ProcessSessionOnCounterChain([FromBody] CreateCounterChainSessionRequest createCounterChainSessionRequest)
+        public async Task<IActionResult> ProcessSessionOnCounterChain([FromBody] CreateTargetTransferRequest createCounterChainSessionRequest)
         {
             Guard.NotNull(createCounterChainSessionRequest, nameof(createCounterChainSessionRequest));
 
@@ -91,7 +90,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.Controllers
 
             try
             {
-                var result = await this.counterChainSessionManager.ProcessCounterChainSession(createCounterChainSessionRequest.BlockHeight);
+                var result = await this.targetTransferManager.ProcessTransfers(createCounterChainSessionRequest.BlockHeight);
                 
                 return this.Json(result);
             }

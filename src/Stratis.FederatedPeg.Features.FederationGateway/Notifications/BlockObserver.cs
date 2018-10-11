@@ -4,6 +4,7 @@ using Stratis.Bitcoin.Primitives;
 using Stratis.Bitcoin.Signals;
 using Stratis.Bitcoin.Utilities;
 using Stratis.FederatedPeg.Features.FederationGateway.Interfaces;
+using Stratis.FederatedPeg.Features.FederationGateway.SourceChain;
 
 namespace Stratis.FederatedPeg.Features.FederationGateway.Notifications
 {
@@ -14,7 +15,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.Notifications
     internal class BlockObserver : SignalObserver<ChainedHeaderBlock>
     {
         // The monitor we pass the new blocks onto.
-        private readonly ICrossChainTransactionMonitor crossChainTransactionMonitor;
+        private readonly ITransferSource transferSource;
 
         private readonly IFederationWalletSyncManager walletSyncManager;
 
@@ -22,14 +23,14 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.Notifications
         /// Initialize the block observer with the wallet manager and the cross chain monitor.
         /// </summary>
         /// <param name="walletSyncManager">The wallet sync manager to pass new incoming blocks to.</param>
-        /// <param name="crossChainTransactionMonitor">The crosschain transaction monitor to pass new incoming blocks to.</param>
-        public BlockObserver(IFederationWalletSyncManager walletSyncManager, ICrossChainTransactionMonitor crossChainTransactionMonitor)
+        /// <param name="transferSource">The crosschain transaction monitor to pass new incoming blocks to.</param>
+        public BlockObserver(IFederationWalletSyncManager walletSyncManager, ITransferSource transferSource)
         {
             Guard.NotNull(walletSyncManager, nameof(walletSyncManager));
-            Guard.NotNull(crossChainTransactionMonitor, nameof(crossChainTransactionMonitor));
+            Guard.NotNull(transferSource, nameof(transferSource));
 
             this.walletSyncManager = walletSyncManager;
-            this.crossChainTransactionMonitor = crossChainTransactionMonitor;
+            this.transferSource = transferSource;
         }
 
         /// <summary>
@@ -38,7 +39,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.Notifications
         /// <param name="block">The new block.</param>
         protected override void OnNextCore(ChainedHeaderBlock chainedHeaderBlock)
         {
-            crossChainTransactionMonitor.ProcessBlock(chainedHeaderBlock.Block);
+            this.transferSource.ProcessBlock(chainedHeaderBlock.Block);
             walletSyncManager.ProcessBlock(chainedHeaderBlock.Block);
         }
     }
