@@ -34,7 +34,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.Controllers
         private readonly IConnectionManager connectionManager;
 
         private readonly ConcurrentChain chain;
-        
+
         private readonly ILogger logger;
 
         public FederationWalletController(
