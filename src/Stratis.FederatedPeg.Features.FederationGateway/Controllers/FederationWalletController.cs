@@ -23,7 +23,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.Controllers
     /// Controller providing operations on a wallet.
     /// </summary>
     [Route("api/[controller]")]
-    public class FederationWalletController : Controller
+    public class FederationWalletController : Controller, IFederationWalletController
     {
         private readonly IFederationWalletManager walletManager;
 
@@ -34,8 +34,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.Controllers
         private readonly IConnectionManager connectionManager;
 
         private readonly ConcurrentChain chain;
-
-        /// <summary>Instance logger.</summary>
+        
         private readonly ILogger logger;
 
         public FederationWalletController(
@@ -121,12 +120,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.Controllers
             }
         }
 
-        /// <summary>
-        /// Starts sending block to the wallet for synchronisation.
-        /// This is for demo and testing use only.
-        /// </summary>
-        /// <param name="model">The hash of the block from which to start syncing.</param>
-        /// <returns></returns>
+        ///<inheritdoc />
         [HttpPost]
         [Route("sync")]
         public IActionResult Sync([FromBody] HashModel model)
@@ -147,11 +141,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.Controllers
             return this.Ok();
         }
 
-        /// <summary>
-        /// Imports the federation member's mnemonic key.
-        /// </summary>
-        /// <param name="request">The object containing the parameters used to recover a wallet.</param>
-        /// <returns></returns>
+        ///<inheritdoc />
         [Route("import-key")]
         [HttpPost]
         public IActionResult ImportMemberKey([FromBody]ImportMemberKeyRequest request)
@@ -176,11 +166,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.Controllers
             }
         }
 
-        /// <summary>
-        /// Provide the federation wallet's credentials so that it can sign transactions.
-        /// </summary>
-        /// <param name="request">The password of the federation wallet.</param>
-        /// <returns>An <see cref="OkResult"/> object that produces a status code 200 HTTP response.</returns>
+        ///<inheritdoc />
         [Route("enablefederation")]
         [HttpPost]
         public IActionResult EnableFederation([FromBody]EnableFederationRequest request)
