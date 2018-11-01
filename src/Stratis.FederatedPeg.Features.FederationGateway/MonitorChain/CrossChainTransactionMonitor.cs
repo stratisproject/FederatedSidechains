@@ -1,11 +1,11 @@
 ﻿using System;
 using System.Linq;
 using Microsoft.Extensions.Logging;
-
 using NBitcoin;
 using Stratis.Bitcoin.Interfaces;
 using Stratis.Bitcoin.Utilities;
 using Stratis.FederatedPeg.Features.FederationGateway.CounterChain;
+using Stratis.FederatedPeg.Features.FederationGateway.Interfaces;
 using Stratis.FederatedPeg.Features.FederationGateway.MonitorChain;
 using Stratis.FederatedPeg.Features.FederationGateway.NetworkHelpers;
 
@@ -21,11 +21,10 @@ namespace Stratis.FederatedPeg.Features.FederationGateway
 
         private readonly ICounterChainSessionManager counterChainSessionManager;
 
-        // The redeem Script we are monitoring.
-        private Script script;
-        
-        private readonly FederationGatewaySettings federationGatewaySettings;
-        
+        private readonly Script monitoredMultisigScript;
+
+        private readonly IFederationGatewaySettings federationGatewaySettings;
+
         private readonly Network network;
 
         private readonly ConcurrentChain concurrentChain;
@@ -36,15 +35,19 @@ namespace Stratis.FederatedPeg.Features.FederationGateway
 
         // The minimum transfer amount permissible.
         // (Prevents spamming of network.)
-        private readonly Money MinimumTransferAmount = new Money(1.0m, MoneyUnit.BTC);
+        private readonly Money minimumTransferAmount;
 
-        public CrossChainTransactionMonitor(ILoggerFactory loggerFactory, 
+        private readonly IOpReturnDataReader opReturnDataReader;
+
+        public CrossChainTransactionMonitor(
+            ILoggerFactory loggerFactory,
             Network network,
             ConcurrentChain concurrentChain,
-            FederationGatewaySettings federationGatewaySettings,
+            IFederationGatewaySettings federationGatewaySettings,
             IMonitorChainSessionManager monitorChainSessionManager,
             ICounterChainSessionManager counterChainSessionManager,
             IInitialBlockDownloadState initialBlockDownloadState,
+            IOpReturnDataReader opReturnDataReader,
             ICrossChainTransactionAuditor crossChainTransactionAuditor = null)
         {
             Guard.NotNull(loggerFactory, nameof(loggerFactory));
@@ -54,16 +57,20 @@ namespace Stratis.FederatedPeg.Features.FederationGateway
             Guard.NotNull(federationGatewaySettings, nameof(federationGatewaySettings));
             Guard.NotNull(concurrentChain, nameof(concurrentChain));
             Guard.NotNull(initialBlockDownloadState, nameof(initialBlockDownloadState));
+            Guard.NotNull(opReturnDataReader, nameof(opReturnDataReader));
             Guard.NotNull(crossChainTransactionAuditor, nameof(crossChainTransactionAuditor));
-           
+
             this.logger = loggerFactory.CreateLogger(this.GetType().FullName);
             this.network = network;
             this.monitorChainSessionManager = monitorChainSessionManager;
+            this.counterChainSessionManager = counterChainSessionManager;
             this.federationGatewaySettings = federationGatewaySettings;
             this.concurrentChain = concurrentChain;
             this.initialBlockDownloadState = initialBlockDownloadState;
+            this.opReturnDataReader = opReturnDataReader;
             this.crossChainTransactionAuditor = crossChainTransactionAuditor;
-            this.counterChainSessionManager = counterChainSessionManager;
+            this.monitoredMultisigScript = this.federationGatewaySettings.MultiSigAddress.ScriptPubKey;
+            this.minimumTransferAmount = new Money(1.0m, MoneyUnit.BTC);
         }
 
         /// <inheritdoc />
@@ -74,17 +81,14 @@ namespace Stratis.FederatedPeg.Features.FederationGateway
         {
             this.crossChainTransactionAuditor.Dispose();
         }
-        
-        /// <inheritdoc/>>
-        public void Initialize(FederationGatewaySettings federationGatewaySettings)
-        {
-            // Read the relevant multisig address with help of the folder manager.
-            this.script = this.federationGatewaySettings.MultiSigAddress.ScriptPubKey;
 
+        /// <inheritdoc/>>
+        public void Initialize(IFederationGatewaySettings federationGatewaySettings)
+        {
             // Load the auditor if present.
             this.crossChainTransactionAuditor.Initialize();
         }
-        
+
         /// <inheritdoc/>>
         public void ProcessBlock(Block block)
         {
@@ -112,13 +116,13 @@ namespace Stratis.FederatedPeg.Features.FederationGateway
             // Create a session to process the transaction.
             // Tell our Session Manager that we can start a new session.
             MonitorChainSession monitorSession = new MonitorChainSession(blockNumber, this.federationGatewaySettings.FederationPublicKeys.Select(f => f.ToHex()).ToArray(), this.federationGatewaySettings.PublicKey);
-            
+
             foreach (var transaction in block.Transactions)
             {
                 foreach (var txOut in transaction.Outputs)
                 {
-                    if (txOut.ScriptPubKey != this.script) continue;
-                    var stringResult = OpReturnDataReader.GetStringFromOpReturn(this.logger, network, transaction, out var opReturnDataType);
+                    if (txOut.ScriptPubKey != this.monitoredMultisigScript) continue;
+                    var stringResult = this.opReturnDataReader.GetStringFromOpReturn(transaction, out var opReturnDataType);
 
                     switch (opReturnDataType)
                     {
@@ -155,7 +159,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway
 
             this.logger.LogInformation("AddCounterChainTransactionId: Found {0} transactions to process in block with height {1}.", monitorSession.CrossChainTransactions.Count, monitorSession.BlockNumber);
             this.monitorChainSessionManager.RegisterMonitorSession(monitorSession);
-            this.monitorChainSessionManager.CreateSessionOnCounterChain(this.federationGatewaySettings.CounterChainApiPort, monitorSession);
+            this.monitorChainSessionManager.CreateSessionOnCounterChain(this.federationGatewaySettings.SourceChainApiPort, monitorSession);
 
         }
 
@@ -163,7 +167,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway
         {
             this.logger.LogTrace("({0}:'{1}',{2}:'{3}',{4}:'{5}')", nameof(transactionHash), transactionHash, nameof(amount), amount, nameof(destinationAddress), destinationAddress, nameof(blockNumber), blockNumber, nameof(blockHash), blockHash);
 
-            if (amount < MinimumTransferAmount)
+            if (amount < this.minimumTransferAmount)
             {
                 this.logger.LogInformation($"The transaction {transactionHash} has less than the MinimumTransferAmount.  Ignoring. ");
                 return null;
@@ -177,7 +181,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway
                 BlockHash = blockHash,
                 TransactionHash = transactionHash
             };
-            
+
             this.logger.LogInformation("Crosschain Transaction Found on : {0}", this.network.ToChain());
             this.logger.LogInformation("CrosschainTransactionInfo: {0}", crossChainTransactionInfo);
             return crossChainTransactionInfo;
