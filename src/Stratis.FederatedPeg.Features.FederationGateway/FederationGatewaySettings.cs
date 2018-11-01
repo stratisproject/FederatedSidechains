@@ -20,6 +20,8 @@ namespace Stratis.FederatedPeg.Features.FederationGateway
 
         private const string FederationIpsParam = "federationips";
 
+        private const string MinimumDepositConfirmationsParam = "minimumdepositconfirmations";
+
         public FederationGatewaySettings(NodeSettings nodeSettings)
         {
             Guard.NotNull(nodeSettings, nameof(nodeSettings));
@@ -45,7 +47,10 @@ namespace Stratis.FederatedPeg.Features.FederationGateway
             }
 
             this.SourceChainApiPort = configReader.GetOrDefault(SourceChainApiPortParam, 0);
-            this.FederationNodeIpEndPoints = configReader.GetOrDefault<string>(FederationIpsParam, null)?.Split(',').Select(a => a.ToIPEndPoint(nodeSettings.Network.DefaultPort));
+            this.FederationNodeIpEndPoints = configReader.GetOrDefault<string>(FederationIpsParam, null)?.Split(',')
+                .Select(a => a.ToIPEndPoint(nodeSettings.Network.DefaultPort));
+
+            this.MinimumDepositConfirmations = nodeSettings.Network.Consensus.MaxReorgLength + 1;
         }
 
         /// <inheritdoc/>
@@ -71,5 +76,8 @@ namespace Stratis.FederatedPeg.Features.FederationGateway
 
         /// <inheritdoc/>
         public Script MultiSigRedeemScript { get; }
+
+        /// <inheritdoc />
+        public uint MinimumDepositConfirmations { get; }
     }
 }
