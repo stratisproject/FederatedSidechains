@@ -13,7 +13,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.Models
     public class MaturedBlockDepositsModel : RequestModel
     {
         [Required(ErrorMessage = "A list of deposits is required")]
-        public IList<IDeposit> Deposits { get; set; }
+        public IReadOnlyList<IDeposit> Deposits { get; set; }
 
         [Required(ErrorMessage = "A block is required")]
         public MaturedBlockModel Block { get; set; }

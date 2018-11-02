@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
+using NBitcoin;
 using Newtonsoft.Json;
 using Stratis.Bitcoin.Features.Wallet.Models;
 using Stratis.Bitcoin.Utilities.JsonConverters;
@@ -14,7 +15,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.Models
     {
         [Required(ErrorMessage = "A block hash is required")]
         [JsonConverter(typeof(UInt256JsonConverter))]
-        public uint BlockHash { get; set; }
+        public uint256 BlockHash { get; set; }
 
         [Required(ErrorMessage = "A block height is required")]
         public int BlockHeight { get; set; }

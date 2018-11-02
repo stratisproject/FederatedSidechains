@@ -1,6 +1,7 @@
 ﻿using NBitcoin;
 using Stratis.Bitcoin;
 using Stratis.Bitcoin.Builder;
+using Stratis.Bitcoin.Features.SignalR;
 using Stratis.Bitcoin.Features.Wallet.Interfaces;
 using Stratis.Bitcoin.Interfaces;
 using Stratis.Bitcoin.Primitives;
@@ -8,6 +9,7 @@ using Stratis.Bitcoin.Signals;
 using Stratis.Bitcoin.Utilities;
 using Stratis.FederatedPeg.Features.FederationGateway.Controllers;
 using Stratis.FederatedPeg.Features.FederationGateway.Interfaces;
+using Stratis.FederatedPeg.Features.FederationGateway.Models;
 
 namespace Stratis.FederatedPeg.Features.FederationGateway.Notifications
 {
@@ -17,12 +19,16 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.Notifications
     /// </summary>
     public class BlockObserver : SignalObserver<ChainedHeaderBlock>
     {
+        public const string MaturedBlockTopic = "MaturedBlock";
+
         // The monitor we pass the new blocks onto.
         private readonly ICrossChainTransactionMonitor crossChainTransactionMonitor;
 
         private readonly IFederationWalletSyncManager walletSyncManager;
 
         private readonly IDepositExtractor depositExtractor;
+
+        private readonly ISignalRService signalRService;
 
         private readonly IBlockStore blockStore;
 
@@ -40,11 +46,13 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.Notifications
         /// <param name="depositExtractor">The component used to extract the deposits from the blocks appearing on chain.</param>
         /// <param name="federationGatewaySettings">The settings used to run this federation node.</param>
         /// <param name="fullNode">Full node used to get rewind the chain.</param>
-        public BlockObserver(IFederationWalletSyncManager walletSyncManager, 
+        /// <param name="signalRService">SignalR service used to broadcast newly matured block information.</param>
+        public BlockObserver(IFederationWalletSyncManager walletSyncManager,
                              ICrossChainTransactionMonitor crossChainTransactionMonitor,
                              IDepositExtractor depositExtractor,
                              IFederationGatewaySettings federationGatewaySettings,
-                             IFullNode fullNode)
+                             IFullNode fullNode,
+                             ISignalRService signalRService)
         {
             Guard.NotNull(walletSyncManager, nameof(walletSyncManager));
             Guard.NotNull(crossChainTransactionMonitor, nameof(crossChainTransactionMonitor));
@@ -55,6 +63,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.Notifications
             this.walletSyncManager = walletSyncManager;
             this.crossChainTransactionMonitor = crossChainTransactionMonitor;
             this.depositExtractor = depositExtractor;
+            this.signalRService = signalRService;
             this.minimumDepositConfirmations = federationGatewaySettings.MinimumDepositConfirmations;
             this.chain = fullNode.NodeService<ConcurrentChain>();
         }
@@ -73,9 +82,19 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.Notifications
             var newlyMaturedBlock = GetNewlyMaturedBlock(chainedHeaderBlock);
             if (newlyMaturedBlock == null) return;
 
+            var maturedBlock = new MaturedBlockModel()
+            {
+                BlockHash = newlyMaturedBlock.HashBlock,
+                BlockHeight = newlyMaturedBlock.Height
+            };
+
             var deposits = this.depositExtractor.ExtractDepositsFromBlock(
                 newlyMaturedBlock.Block,
                 newlyMaturedBlock.Height);
+
+            var maturedBlockDeposits = new MaturedBlockDepositsModel() { Block = maturedBlock, Deposits = deposits };
+
+            this.signalRService.SendAsync(MaturedBlockTopic, maturedBlockDeposits.ToString());
         }
 
         private ChainedHeader GetNewlyMaturedBlock(ChainedHeaderBlock latestPublishedBlock)

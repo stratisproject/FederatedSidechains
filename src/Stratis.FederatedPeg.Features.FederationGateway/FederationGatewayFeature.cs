@@ -64,6 +64,8 @@ namespace Stratis.FederatedPeg.Features.FederationGateway
 
         private readonly ICounterChainSessionManager counterChainSessionManager;
 
+        private readonly ISignalRService signalRService;
+
         public FederationGatewayFeature(
             ILoggerFactory loggerFactory,
             ICrossChainTransactionMonitor crossChainTransactionMonitor,
@@ -78,7 +80,8 @@ namespace Stratis.FederatedPeg.Features.FederationGateway
             ConcurrentChain chain,
             IMonitorChainSessionManager monitorChainSessionManager,
             ICounterChainSessionManager counterChainSessionManager,
-            INodeStats nodeStats)
+            INodeStats nodeStats,
+            ISignalRService signalRService)
         {
             this.loggerFactory = loggerFactory;
             this.crossChainTransactionMonitor = crossChainTransactionMonitor;
@@ -93,6 +96,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway
             this.network = network;
 
             this.counterChainSessionManager = counterChainSessionManager;
+            this.signalRService = signalRService;
             this.monitorChainSessionManager = monitorChainSessionManager;
 
             // add our payload
@@ -107,7 +111,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway
         {
             // Subscribe to receiving blocks and transactions.
             this.blockSubscriberDisposable = this.signals.SubscribeForBlocksConnected(
-                new BlockObserver(this.walletSyncManager, this.crossChainTransactionMonitor, this.depositExtractor, this.federationGatewaySettings, this.fullNode));
+                new BlockObserver(this.walletSyncManager, this.crossChainTransactionMonitor, this.depositExtractor, this.federationGatewaySettings, this.fullNode, this.signalRService));
             this.transactionSubscriberDisposable = this.signals.SubscribeForTransactions(new Notifications.TransactionObserver(this.walletSyncManager));
 
             this.crossChainTransactionMonitor.Initialize(federationGatewaySettings);

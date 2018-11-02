@@ -6,6 +6,7 @@ using Microsoft.IdentityModel.Tokens;
 using NBitcoin;
 using NSubstitute;
 using Stratis.Bitcoin;
+using Stratis.Bitcoin.Features.SignalR;
 using Stratis.Bitcoin.Features.Wallet.Notifications;
 using Stratis.Bitcoin.Networks;
 using Stratis.Bitcoin.Primitives;
@@ -34,6 +35,8 @@ namespace Stratis.FederatedPeg.Tests
 
         private readonly uint minimumDepositConfirmations;
 
+        private readonly ISignalRService signalRService;
+
         public BlockObserverTests()
         {
             this.federationGatewaySettings = Substitute.For<IFederationGatewaySettings>();
@@ -45,13 +48,15 @@ namespace Stratis.FederatedPeg.Tests
             this.fullNode = Substitute.For<IFullNode>();
             this.chain = Substitute.ForPartsOf<ConcurrentChain>();
             this.fullNode.NodeService<ConcurrentChain>().Returns(this.chain);
+            this.signalRService = Substitute.For<ISignalRService>();
 
             this.blockObserver = new BlockObserver(
                 this.federationWalletSyncManager,
                 this.crossChainTransactionMonitor,
                 this.depositExtractor,
                 this.federationGatewaySettings,
-                this.fullNode);
+                this.fullNode,
+                this.signalRService);
         }
 
         [Fact]
@@ -67,6 +72,7 @@ namespace Stratis.FederatedPeg.Tests
             this.crossChainTransactionMonitor.Received(1).ProcessBlock(earlyBlock);
             this.federationWalletSyncManager.Received(1).ProcessBlock(earlyBlock);
             this.depositExtractor.ReceivedWithAnyArgs(0).ExtractDepositsFromBlock(null, 0);
+            this.signalRService.ReceivedWithAnyArgs(0).SendAsync(null, null);
         }
 
         [Fact]
@@ -86,6 +92,7 @@ namespace Stratis.FederatedPeg.Tests
             this.crossChainTransactionMonitor.Received(1).ProcessBlock(maturedBlock);
             this.federationWalletSyncManager.Received(1).ProcessBlock(maturedBlock);
             this.depositExtractor.Received(1).ExtractDepositsFromBlock(null, 0);
+            this.signalRService.Received(0).SendAsync(BlockObserver.MaturedBlockTopic, null);
         }
     }
 }
