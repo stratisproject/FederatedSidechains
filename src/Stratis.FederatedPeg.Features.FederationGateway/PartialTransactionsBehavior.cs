@@ -24,7 +24,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway
         private readonly ICrossChainTransactionMonitor crossChainTransactionMonitor;
 
         private readonly IFederationWalletManager federationWalletManager;
-
+        
         private readonly ICounterChainSessionManager counterChainSessionManager;
 
         private readonly Network network;

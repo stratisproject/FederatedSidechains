@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Linq;
 using System.Threading.Tasks;
-using NBitcoin;
 using NBitcoin.Protocol;
 using Stratis.Bitcoin.Builder;
 using Stratis.Bitcoin.Configuration;
@@ -12,6 +11,7 @@ using Stratis.Bitcoin.Features.MemoryPool;
 using Stratis.Bitcoin.Features.Miner;
 using Stratis.Bitcoin.Features.Notifications;
 using Stratis.Bitcoin.Features.RPC;
+using Stratis.Bitcoin.Features.SignalR;
 using Stratis.Bitcoin.Features.Wallet;
 using Stratis.Bitcoin.Networks;
 using Stratis.Bitcoin.Utilities;
@@ -34,7 +34,6 @@ namespace Stratis.FederationGatewayD
         {
             try
             {
-                
                 var isMainchainNode = args.FirstOrDefault(a => a.ToLower() == MainchainArgument) != null;
                 var isSidechainNode = args.FirstOrDefault(a => a.ToLower() == SidechainArgument) != null;
 
@@ -56,6 +55,7 @@ namespace Stratis.FederationGatewayD
                         .AddPowPosMining()
                         .AddFederationGateway()
                         .UseApi()
+                        .UseSignalR()
                         .AddRPC()
                         .Build()
                     : new FullNodeBuilder()
@@ -69,6 +69,7 @@ namespace Stratis.FederationGatewayD
                         .AddMining()
                         .AddFederationGateway()
                         .UseApi()
+                        .UseSignalR()
                         .AddRPC()
                         .Build();
 

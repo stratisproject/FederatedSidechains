@@ -12,6 +12,7 @@ using Stratis.Bitcoin.Builder.Feature;
 using Stratis.Bitcoin.Configuration.Logging;
 using Stratis.Bitcoin.Connection;
 using Stratis.Bitcoin.Features.Notifications;
+using Stratis.Bitcoin.Features.SignalR;
 using Stratis.Bitcoin.P2P.Protocol.Payloads;
 using Stratis.Bitcoin.Signals;
 using Stratis.Bitcoin.Utilities;
@@ -171,8 +172,10 @@ namespace Stratis.FederatedPeg.Features.FederationGateway
                 features
                     .AddFeature<FederationGatewayFeature>()
                     .DependOn<BlockNotificationFeature>()
+                    .DependOn<SignalRFeature>()
                     .FeatureServices(services =>
                     {
+                        services.AddSingleton<ISignalRService, SignalRService>();
                         services.AddSingleton<IFederationGatewayController, FederationGatewayController>();
                         services.AddSingleton<IFederationGatewaySettings, FederationGatewaySettings>();
                         services.AddSingleton<IOpReturnDataReader, OpReturnDataReader>();
