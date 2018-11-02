@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 using FluentAssertions;
+using Microsoft.Extensions.Logging;
 using Microsoft.IdentityModel.Tokens;
 using NBitcoin;
 using NSubstitute;
@@ -37,6 +38,10 @@ namespace Stratis.FederatedPeg.Tests
 
         private readonly ISignalRService signalRService;
 
+        private readonly ILoggerFactory loggerFactory;
+
+        private readonly ILogger logger;
+
         public BlockObserverTests()
         {
             this.federationGatewaySettings = Substitute.For<IFederationGatewaySettings>();
@@ -49,6 +54,8 @@ namespace Stratis.FederatedPeg.Tests
             this.chain = Substitute.ForPartsOf<ConcurrentChain>();
             this.fullNode.NodeService<ConcurrentChain>().Returns(this.chain);
             this.signalRService = Substitute.For<ISignalRService>();
+            this.loggerFactory = Substitute.For<ILoggerFactory>();
+            this.loggerFactory.CreateLogger(typeof(SignalRService).FullName).Returns(Substitute.For<ILogger>());
 
             this.blockObserver = new BlockObserver(
                 this.federationWalletSyncManager,
@@ -56,7 +63,8 @@ namespace Stratis.FederatedPeg.Tests
                 this.depositExtractor,
                 this.federationGatewaySettings,
                 this.fullNode,
-                this.signalRService);
+                this.signalRService,
+                this.loggerFactory);
         }
 
         [Fact]

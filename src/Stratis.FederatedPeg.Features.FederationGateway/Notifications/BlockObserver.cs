@@ -1,4 +1,7 @@
-﻿using NBitcoin;
+﻿using System;
+using System.Runtime.CompilerServices;
+using Microsoft.Extensions.Logging;
+using NBitcoin;
 using Stratis.Bitcoin;
 using Stratis.Bitcoin.Builder;
 using Stratis.Bitcoin.Features.SignalR;
@@ -38,6 +41,8 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.Notifications
 
         private readonly ConcurrentChain chain;
 
+        private readonly ILogger logger;
+
         /// <summary>
         /// Initialize the block observer with the wallet manager and the cross chain monitor.
         /// </summary>
@@ -52,13 +57,16 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.Notifications
                              IDepositExtractor depositExtractor,
                              IFederationGatewaySettings federationGatewaySettings,
                              IFullNode fullNode,
-                             ISignalRService signalRService)
+                             ISignalRService signalRService,
+                             ILoggerFactory loggerFactory)
         {
             Guard.NotNull(walletSyncManager, nameof(walletSyncManager));
             Guard.NotNull(crossChainTransactionMonitor, nameof(crossChainTransactionMonitor));
             Guard.NotNull(depositExtractor, nameof(depositExtractor));
             Guard.NotNull(federationGatewaySettings, nameof(federationGatewaySettings));
             Guard.NotNull(fullNode, nameof(fullNode));
+            Guard.NotNull(signalRService, nameof(signalRService));
+            Guard.NotNull(loggerFactory, nameof(loggerFactory));
 
             this.walletSyncManager = walletSyncManager;
             this.crossChainTransactionMonitor = crossChainTransactionMonitor;
@@ -66,6 +74,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.Notifications
             this.signalRService = signalRService;
             this.minimumDepositConfirmations = federationGatewaySettings.MinimumDepositConfirmations;
             this.chain = fullNode.NodeService<ConcurrentChain>();
+            this.logger = loggerFactory.CreateLogger(this.GetType().FullName);
         }
 
         /// <summary>
@@ -93,8 +102,14 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.Notifications
                 newlyMaturedBlock.Height);
 
             var maturedBlockDeposits = new MaturedBlockDepositsModel() { Block = maturedBlock, Deposits = deposits };
-
-            this.signalRService.SendAsync(MaturedBlockTopic, maturedBlockDeposits.ToString());
+            try
+            {
+                this.signalRService.SendAsync(MaturedBlockTopic, maturedBlockDeposits.ToString());
+            }
+            catch (Exception ex)
+            {
+                this.logger.LogWarning(ex, "Failed to broadcast new matured block information after noticing block {0}", chainedHeaderBlock);
+            }
         }
 
         private ChainedHeader GetNewlyMaturedBlock(ChainedHeaderBlock latestPublishedBlock)
