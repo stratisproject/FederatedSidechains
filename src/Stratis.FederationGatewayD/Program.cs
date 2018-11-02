@@ -34,12 +34,13 @@ namespace Stratis.FederationGatewayD
         {
             try
             {
-                
                 var isMainchainNode = args.FirstOrDefault(a => a.ToLower() == MainchainArgument) != null;
                 var isSidechainNode = args.FirstOrDefault(a => a.ToLower() == SidechainArgument) != null;
 
-                if (isSidechainNode == isMainchainNode) throw new ArgumentException(
-                    $"Gateway node needs to be started specifiying either a {SidechainArgument} or a {MainchainArgument} argument");
+                if (isSidechainNode == isMainchainNode)
+                {
+                    throw new ArgumentException($"Gateway node needs to be started specifiying either a {SidechainArgument} or a {MainchainArgument} argument");
+                }
 
                 var network = isMainchainNode ? new StratisTest() : ApexNetwork.Test; 
                 var nodeSettings = new NodeSettings(network, ProtocolVersion.ALT_PROTOCOL_VERSION, args: args);
