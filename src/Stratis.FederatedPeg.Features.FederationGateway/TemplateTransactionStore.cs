@@ -76,8 +76,6 @@ namespace Stratis.FederatedPeg.Features.FederationGateway
         /// <summary>Performs any needed initialisation for the database.</summary>
         public virtual Task InitializeAsync()
         {
-            this.logger.LogTrace("()");
-
             Task task = Task.Run(() =>
             {
                 this.logger.LogTrace("()");
@@ -87,7 +85,6 @@ namespace Stratis.FederatedPeg.Features.FederationGateway
                 this.logger.LogTrace("(-)");
             });
 
-            this.logger.LogTrace("(-)");
             return task;
         }
 
@@ -95,8 +92,6 @@ namespace Stratis.FederatedPeg.Features.FederationGateway
         public Task<TemplateTransaction> GetAsync(uint256 hash)
         {
             Guard.NotNull(hash, nameof(hash));
-
-            this.logger.LogTrace("({0}:'{1}')", nameof(hash), hash);
 
             Task<TemplateTransaction> task = Task.Run(() =>
             {
@@ -119,7 +114,6 @@ namespace Stratis.FederatedPeg.Features.FederationGateway
                 return res;
             });
 
-            this.logger.LogTrace("(-)");
             return task;
         }
 
@@ -127,8 +121,6 @@ namespace Stratis.FederatedPeg.Features.FederationGateway
         public Task PutAsync(TemplateTransaction templateTransaction)
         {
             Guard.NotNull(templateTransaction, nameof(templateTransaction));
-
-            this.logger.LogTrace("({0}:'{1}')", nameof(templateTransaction), templateTransaction);
 
             Task task = Task.Run(() =>
             {
@@ -144,7 +136,6 @@ namespace Stratis.FederatedPeg.Features.FederationGateway
                 this.logger.LogTrace("(-)");
             });
 
-            this.logger.LogTrace("(-)");
             return task;
         }
 
@@ -152,8 +143,6 @@ namespace Stratis.FederatedPeg.Features.FederationGateway
         public Task<bool> ExistAsync(uint256 hash)
         {
             Guard.NotNull(hash, nameof(hash));
-
-            this.logger.LogTrace("({0}:'{1}')", nameof(hash), hash);
 
             Task<bool> task = Task.Run(() =>
             {
@@ -175,14 +164,12 @@ namespace Stratis.FederatedPeg.Features.FederationGateway
                 return res;
             });
 
-            this.logger.LogTrace("(-)");
             return task;
         }
 
         /// <inheritdoc />
         public Task DeleteAsync(uint256 hash)
         {
-            this.logger.LogTrace("({0}:'{1}')", nameof(hash), hash);
             Guard.NotNull(hash, nameof(hash));
 
             Task task = Task.Run(() =>
@@ -201,14 +188,11 @@ namespace Stratis.FederatedPeg.Features.FederationGateway
                 this.logger.LogTrace("(-)");
             });
 
-            this.logger.LogTrace("(-)");
             return task;
         }
 
         protected virtual void OnInsertTemplateTransaction(DBreeze.Transactions.Transaction dbreezeTransaction, TemplateTransaction templateTransaction)
         {
-            this.logger.LogTrace("({0}:'{1}')", nameof(templateTransaction), templateTransaction);
-
             // If the template is already in store don't write it again.
             Row<byte[], TemplateTransaction> templateRow = dbreezeTransaction.Select<byte[], TemplateTransaction>(TemplateTransactionTableName, templateTransaction.Hash.ToBytes());
 
@@ -216,17 +200,11 @@ namespace Stratis.FederatedPeg.Features.FederationGateway
             {
                 dbreezeTransaction.Insert<byte[], TemplateTransaction>(TemplateTransactionTableName, templateTransaction.Hash.ToBytes(), templateTransaction);
             }
-
-            this.logger.LogTrace("(-)");
         }
 
         protected virtual void OnDeleteTemplateTransaction(DBreeze.Transactions.Transaction dbreezeTransaction, uint256 hash)
         {
-            this.logger.LogTrace("({0}:'{1}')", nameof(hash), hash);
-
             dbreezeTransaction.RemoveKey<byte[]>(TemplateTransactionTableName, hash.ToBytes());
-
-            this.logger.LogTrace("(-)");
         }
 
         /// <inheritdoc />
