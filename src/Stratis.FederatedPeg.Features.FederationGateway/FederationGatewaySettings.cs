@@ -20,8 +20,6 @@ namespace Stratis.FederatedPeg.Features.FederationGateway
 
         private const string FederationIpsParam = "federationips";
 
-        private const string MinimumDepositConfirmationsParam = "minimumdepositconfirmations";
-
         public FederationGatewaySettings(NodeSettings nodeSettings)
         {
             Guard.NotNull(nodeSettings, nameof(nodeSettings));
