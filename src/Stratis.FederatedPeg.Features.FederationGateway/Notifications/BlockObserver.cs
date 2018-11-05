@@ -23,6 +23,8 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.Notifications
 
         private readonly IDepositExtractor depositExtractor;
 
+        private readonly ILeaderProvider leaderProvider;
+
         private readonly IBlockStore blockStore;
 
         private readonly IFullNode fullNode;
@@ -42,18 +44,21 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.Notifications
         public BlockObserver(IFederationWalletSyncManager walletSyncManager, 
                              ICrossChainTransactionMonitor crossChainTransactionMonitor,
                              IDepositExtractor depositExtractor,
+                             ILeaderProvider leaderProvider,
                              IFederationGatewaySettings federationGatewaySettings,
                              IFullNode fullNode)
         {
             Guard.NotNull(walletSyncManager, nameof(walletSyncManager));
             Guard.NotNull(crossChainTransactionMonitor, nameof(crossChainTransactionMonitor));
             Guard.NotNull(depositExtractor, nameof(depositExtractor));
+            Guard.NotNull(leaderProvider, nameof(leaderProvider));
             Guard.NotNull(federationGatewaySettings, nameof(federationGatewaySettings));
             Guard.NotNull(fullNode, nameof(fullNode));
 
             this.walletSyncManager = walletSyncManager;
             this.crossChainTransactionMonitor = crossChainTransactionMonitor;
             this.depositExtractor = depositExtractor;
+            this.leaderProvider = leaderProvider;
             this.minimumDepositConfirmations = federationGatewaySettings.MinimumDepositConfirmations;
             this.chain = fullNode.NodeService<ConcurrentChain>();
         }
@@ -75,6 +80,8 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.Notifications
             var deposits = this.depositExtractor.ExtractDepositsFromBlock(
                 newlyMaturedBlock.Block,
                 newlyMaturedBlock.Height);
+
+            var leader = this.leaderProvider.Update(newlyMaturedBlock.Height);
         }
 
         private ChainedHeader GetNewlyMaturedBlock(ChainedHeaderBlock latestPublishedBlock)

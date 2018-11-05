@@ -26,6 +26,8 @@ namespace Stratis.FederatedPeg.Tests
 
         private readonly IDepositExtractor depositExtractor;
 
+        private readonly ILeaderProvider leaderProvider;
+
         private readonly IFederationGatewaySettings federationGatewaySettings;
 
         private readonly IFullNode fullNode;
@@ -41,6 +43,7 @@ namespace Stratis.FederatedPeg.Tests
 
             this.crossChainTransactionMonitor = Substitute.For<ICrossChainTransactionMonitor>();
             this.depositExtractor = Substitute.For<IDepositExtractor>();
+            this.leaderProvider = Substitute.For<ILeaderProvider>();
             this.federationWalletSyncManager = Substitute.For<IFederationWalletSyncManager>();
             this.fullNode = Substitute.For<IFullNode>();
             this.chain = Substitute.ForPartsOf<ConcurrentChain>();
@@ -50,6 +53,7 @@ namespace Stratis.FederatedPeg.Tests
                 this.federationWalletSyncManager,
                 this.crossChainTransactionMonitor,
                 this.depositExtractor,
+                this.leaderProvider,
                 this.federationGatewaySettings,
                 this.fullNode);
         }

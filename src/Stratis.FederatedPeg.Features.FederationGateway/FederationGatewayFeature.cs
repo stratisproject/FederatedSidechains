@@ -40,6 +40,8 @@ namespace Stratis.FederatedPeg.Features.FederationGateway
 
         private readonly IDepositExtractor depositExtractor;
 
+        private readonly ILeaderProvider leaderProvider;
+
         private IDisposable blockSubscriberDisposable;
 
         private IDisposable transactionSubscriberDisposable;
@@ -69,6 +71,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway
             ICrossChainTransactionMonitor crossChainTransactionMonitor,
             Signals signals,
             IDepositExtractor depositExtractor,
+            ILeaderProvider leaderProvider,
             IConnectionManager connectionManager,
             IFederationGatewaySettings federationGatewaySettings,
             IFullNode fullNode,
@@ -107,7 +110,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway
         {
             // Subscribe to receiving blocks and transactions.
             this.blockSubscriberDisposable = this.signals.SubscribeForBlocksConnected(
-                new BlockObserver(this.walletSyncManager, this.crossChainTransactionMonitor, this.depositExtractor, this.federationGatewaySettings, this.fullNode));
+                new BlockObserver(this.walletSyncManager, this.crossChainTransactionMonitor, this.depositExtractor, this.leaderProvider, this.federationGatewaySettings, this.fullNode));
             this.transactionSubscriberDisposable = this.signals.SubscribeForTransactions(new Notifications.TransactionObserver(this.walletSyncManager));
 
             this.crossChainTransactionMonitor.Initialize(federationGatewaySettings);
@@ -186,6 +189,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway
                         services.AddSingleton<IFederationWalletSyncManager, FederationWalletSyncManager>();
                         services.AddSingleton<IFederationWalletTransactionHandler, FederationWalletTransactionHandler>();
                         services.AddSingleton<IFederationWalletManager, FederationWalletManager>();
+                        services.AddSingleton<ILeaderProvider, LeaderProvider>();
                         services.AddSingleton<FederationWalletController>();
                     });
             });
