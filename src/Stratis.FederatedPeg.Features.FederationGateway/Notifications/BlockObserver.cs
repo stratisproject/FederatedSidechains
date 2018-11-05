@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Runtime.CompilerServices;
+using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using NBitcoin;
 using Stratis.Bitcoin;
@@ -75,7 +76,24 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.Notifications
             this.minimumDepositConfirmations = federationGatewaySettings.MinimumDepositConfirmations;
             this.chain = fullNode.NodeService<ConcurrentChain>();
             this.logger = loggerFactory.CreateLogger(this.GetType().FullName);
+
+            //StartFakePublishBlockLoop();
         }
+
+        //public async Task StartFakePublishBlockLoop()
+        //{
+        //    var fakeBlock = new Block();
+        //    var fakeChainedHeaderBlock = new ChainedHeaderBlock(fakeBlock, new ChainedHeader(new BlockHeader(), uint256.Zero, 200));
+
+        //    var deposits = this.depositExtractor.ExtractDepositsFromBlock(fakeBlock, 200);
+        //    var maturedBlockDeposits = new MaturedBlockDepositsModel() { Block = new MaturedBlockModel(){ BlockHash = fakeBlock.GetHash(), BlockHeight = 200 }, Deposits = deposits };
+
+        //    while (true)
+        //    {
+        //        await Task.Delay(5000);
+        //        this.signalRService.SendAsync(MaturedBlockTopic, maturedBlockDeposits.ToString());
+        //    }
+        //}
 
         /// <summary>
         /// When a block is received it is passed to the monitor.

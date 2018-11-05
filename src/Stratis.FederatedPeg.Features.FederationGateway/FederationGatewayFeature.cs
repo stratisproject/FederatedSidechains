@@ -21,6 +21,7 @@ using Stratis.FederatedPeg.Features.FederationGateway.CounterChain;
 using Stratis.FederatedPeg.Features.FederationGateway.Interfaces;
 using Stratis.FederatedPeg.Features.FederationGateway.MonitorChain;
 using Stratis.FederatedPeg.Features.FederationGateway.SourceChain;
+using Stratis.FederatedPeg.Features.FederationGateway.TargetChain;
 using Stratis.FederatedPeg.Features.FederationGateway.Wallet;
 using BlockObserver = Stratis.FederatedPeg.Features.FederationGateway.Notifications.BlockObserver;
 
@@ -66,6 +67,8 @@ namespace Stratis.FederatedPeg.Features.FederationGateway
 
         private readonly ISignalRService signalRService;
 
+        private MaturedBlockClient maturedBlockReceiver;
+
         public FederationGatewayFeature(
             ILoggerFactory loggerFactory,
             ICrossChainTransactionMonitor crossChainTransactionMonitor,
@@ -109,6 +112,8 @@ namespace Stratis.FederatedPeg.Features.FederationGateway
 
         public override async Task InitializeAsync()
         {
+            this.maturedBlockReceiver = new MaturedBlockClient(this.signalRService, this.loggerFactory);
+
             // Subscribe to receiving blocks and transactions.
             this.blockSubscriberDisposable = this.signals.SubscribeForBlocksConnected(
                 new BlockObserver(this.walletSyncManager, this.crossChainTransactionMonitor, this.depositExtractor, this.federationGatewaySettings, this.fullNode, this.signalRService, this.loggerFactory));
@@ -136,6 +141,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway
             this.transactionSubscriberDisposable.Dispose();
             this.crossChainTransactionMonitor.Dispose();
             this.monitorChainSessionManager.Dispose();
+            this.maturedBlockReceiver?.Dispose();
         }
 
         public void AddInlineStats(StringBuilder benchLogs)
@@ -179,7 +185,6 @@ namespace Stratis.FederatedPeg.Features.FederationGateway
                     .DependOn<SignalRFeature>()
                     .FeatureServices(services =>
                     {
-                        services.AddSingleton<ISignalRService, SignalRService>();
                         services.AddSingleton<IFederationGatewayController, FederationGatewayController>();
                         services.AddSingleton<IFederationGatewaySettings, FederationGatewaySettings>();
                         services.AddSingleton<IOpReturnDataReader, OpReturnDataReader>();

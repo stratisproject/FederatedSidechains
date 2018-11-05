@@ -45,6 +45,7 @@ namespace Stratis.Bitcoin.Features.SignalR
                     .FeatureServices(services =>
                         {
                             services.AddSingleton(fullNodeBuilder);
+                            services.AddSingleton<SignalRSettings>();
                             services.AddSingleton<ISignalRService, SignalRService>();
                         });
             });

@@ -15,7 +15,7 @@ namespace Stratis.Bitcoin.Tests.SignalR
         {
             var loggerFactory = Substitute.For<ILoggerFactory>();
             loggerFactory.CreateLogger(typeof(SignalRService).FullName).Returns(Substitute.For<ILogger>());
-            this.signalRService = new SignalRService(loggerFactory);
+            this.signalRService = new SignalRService(SignalRSettings.Defaults, loggerFactory);
         }
 
         [Fact]
