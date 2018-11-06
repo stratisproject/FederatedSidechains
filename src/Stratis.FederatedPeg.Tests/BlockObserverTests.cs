@@ -1,15 +1,8 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-using FluentAssertions;
-using Microsoft.Extensions.Logging;
-using Microsoft.IdentityModel.Tokens;
+﻿using Microsoft.Extensions.Logging;
 using NBitcoin;
 using NSubstitute;
 using Stratis.Bitcoin;
 using Stratis.Bitcoin.Features.SignalR;
-using Stratis.Bitcoin.Features.Wallet.Notifications;
-using Stratis.Bitcoin.Networks;
 using Stratis.Bitcoin.Primitives;
 using Stratis.FederatedPeg.Features.FederationGateway;
 using Stratis.FederatedPeg.Features.FederationGateway.Interfaces;
