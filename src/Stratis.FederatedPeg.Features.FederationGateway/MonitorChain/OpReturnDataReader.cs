@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using Microsoft.Extensions.Logging;
@@ -128,11 +129,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway
         ///<inheritdoc />
         public string TryGetTargetAddressFromOpReturn(Transaction transaction)
         {
-            var opReturnAddresses = transaction.Outputs
-                .Select(o => o.ScriptPubKey)
-                .Where(s => s.IsUnspendable)
-                .Select(s => s.ToBytes())
-                .Select(RemoveOpReturnOperator)
+            var opReturnAddresses = SelectBytesContentFromOpReturn(transaction)
                 .Select(this.TryConvertValidOpReturnDataToAddress)
                 .Where(s => s != null)
                 .Distinct(StringComparer.InvariantCultureIgnoreCase).ToList();
@@ -141,6 +138,29 @@ namespace Stratis.FederatedPeg.Features.FederationGateway
                 transaction.GetHash(), string.Join(",", opReturnAddresses));
 
             return opReturnAddresses.Count != 1 ? null : opReturnAddresses[0];
+        }
+
+        /// <inheritdoc />
+        public string TryGetTransactionIdFromOpReturn(Transaction transaction)
+        {
+            var transactionId = SelectBytesContentFromOpReturn(transaction)
+                .Select(this.TryConvertValidOpReturnDataToHash)
+                .Where(s => s != null)
+                .Distinct(StringComparer.InvariantCultureIgnoreCase).ToList();
+
+            this.logger.LogDebug("TransactionId found in OP_RETURN(s) of transaction {0}: [{1}]",
+                transaction.GetHash(), string.Join(",", transactionId));
+
+            return transactionId.Count != 1 ? null : transactionId[0];
+        }
+
+        private static IEnumerable<byte[]> SelectBytesContentFromOpReturn(Transaction transaction)
+        {
+            return transaction.Outputs
+                .Select(o => o.ScriptPubKey)
+                .Where(s => s.IsUnspendable)
+                .Select(s => s.ToBytes())
+                .Select(RemoveOpReturnOperator);
         }
     }
 }

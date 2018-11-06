@@ -2,7 +2,7 @@
 using Newtonsoft.Json;
 using Stratis.FederatedPeg.Features.FederationGateway.Interfaces;
 
-namespace Stratis.FederatedPeg.Features.FederationGateway
+namespace Stratis.FederatedPeg.Features.FederationGateway.SourceChain
 {
     public class Deposit : IDeposit
     {
