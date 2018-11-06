@@ -42,7 +42,6 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.Notifications
         public BlockObserver(IFederationWalletSyncManager walletSyncManager,
                              ICrossChainTransactionMonitor crossChainTransactionMonitor,
                              IDepositExtractor depositExtractor,
-                             ILeaderProvider leaderProvider,
                              IFederationGatewaySettings federationGatewaySettings,
                              IFullNode fullNode,
                              IMaturedBlockSender maturedBlockSender)
@@ -50,7 +49,6 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.Notifications
             Guard.NotNull(walletSyncManager, nameof(walletSyncManager));
             Guard.NotNull(crossChainTransactionMonitor, nameof(crossChainTransactionMonitor));
             Guard.NotNull(depositExtractor, nameof(depositExtractor));
-            Guard.NotNull(leaderProvider, nameof(leaderProvider));
             Guard.NotNull(federationGatewaySettings, nameof(federationGatewaySettings));
             Guard.NotNull(fullNode, nameof(fullNode));
             Guard.NotNull(fullNode, nameof(maturedBlockSender));

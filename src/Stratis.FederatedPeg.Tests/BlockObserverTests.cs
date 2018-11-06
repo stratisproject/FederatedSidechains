@@ -49,7 +49,6 @@ namespace Stratis.FederatedPeg.Tests
                 this.federationWalletSyncManager,
                 this.crossChainTransactionMonitor,
                 this.depositExtractor,
-                this.leaderProvider,
                 this.federationGatewaySettings,
                 this.fullNode,
                 this.maturedBlockSender);

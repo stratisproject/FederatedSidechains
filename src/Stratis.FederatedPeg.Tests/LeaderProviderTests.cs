@@ -4,6 +4,7 @@ using FluentAssertions;
 using NBitcoin;
 using NSubstitute;
 using Stratis.FederatedPeg.Features.FederationGateway;
+using Stratis.FederatedPeg.Features.FederationGateway.Models;
 using Xunit;
 
 namespace Stratis.FederatedPeg.Tests
@@ -30,7 +31,8 @@ namespace Stratis.FederatedPeg.Tests
 
             for (int blockHeight = 0; blockHeight < 10; blockHeight++)
             {
-                output.Add(this.leaderProvider.Update(blockHeight));
+                this.leaderProvider.Update(new BlockTipModel(string.Empty, blockHeight));
+                output.Add(this.leaderProvider.CurrentLeader);
             }
 
             this.leaderPubkeys = this.leaderPubkeys.OrderBy(k => k).ToList();

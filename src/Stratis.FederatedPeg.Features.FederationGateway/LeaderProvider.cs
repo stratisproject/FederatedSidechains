@@ -1,6 +1,9 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
+using NBitcoin;
+using Stratis.Bitcoin.Utilities;
 using Stratis.FederatedPeg.Features.FederationGateway.Interfaces;
+using Stratis.FederatedPeg.Features.FederationGateway.Models;
 
 namespace Stratis.FederatedPeg.Features.FederationGateway
 {
@@ -20,27 +23,23 @@ namespace Stratis.FederatedPeg.Features.FederationGateway
         /// </summary>
         private readonly List<string> orderedFederationPublicKeys;
 
-        /// <summary>
-        /// A lock object that protects access when determining the next federated leader.  Locks <see cref="orderedFederationPublicKeys"/>
-        /// </summary>
-        private readonly object lockObject;
+        private NBitcoin.PubKey currentLeader;
 
         public LeaderProvider(IFederationGatewaySettings federationGatewaySettings)
         {
-            this.lockObject = new object();
-
             this.orderedFederationPublicKeys = federationGatewaySettings.FederationPublicKeys.
                 Select(k => k.ToString()).
                 OrderBy(j => j).
                 ToList();
         }
 
-        public NBitcoin.PubKey Update(int height)
+        public PubKey CurrentLeader => this.currentLeader;
+
+        public void Update(BlockTipModel blockTipModel)
         {
-            lock (this.lockObject)
-            {
-                return new NBitcoin.PubKey(this.orderedFederationPublicKeys[height % this.orderedFederationPublicKeys.Count]);
-            }
+            Guard.NotNull(blockTipModel, nameof(blockTipModel));
+
+            this.currentLeader = new PubKey(this.orderedFederationPublicKeys[blockTipModel.Height % this.orderedFederationPublicKeys.Count]);
         }
     }
 }
