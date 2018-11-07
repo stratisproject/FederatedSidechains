@@ -2,6 +2,7 @@
 using Microsoft.Extensions.Logging;
 using Stratis.FederatedPeg.Features.FederationGateway.Controllers;
 using Stratis.FederatedPeg.Features.FederationGateway.Interfaces;
+using Stratis.FederatedPeg.Features.FederationGateway.Models;
 
 namespace Stratis.FederatedPeg.Features.FederationGateway.SourceChain
 {
@@ -14,7 +15,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.SourceChain
 
         public async Task SendBlockTipAsync(IBlockTip blockTip)
         {
-            await this.SendAsync(blockTip, FederationGatewayController.ReceiveCurrentBlockTipRoute).ConfigureAwait(false);
+            await this.SendAsync((BlockTipModel)blockTip, FederationGatewayController.ReceiveCurrentBlockTipRoute).ConfigureAwait(false);
         }
     }
 }

@@ -2,6 +2,7 @@
 using Microsoft.Extensions.Logging;
 using Stratis.FederatedPeg.Features.FederationGateway.Controllers;
 using Stratis.FederatedPeg.Features.FederationGateway.Interfaces;
+using Stratis.FederatedPeg.Features.FederationGateway.Models;
 
 namespace Stratis.FederatedPeg.Features.FederationGateway.SourceChain
 {
@@ -15,7 +16,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.SourceChain
         /// <inheritdoc />
         public async Task SendMaturedBlockDepositsAsync(IMaturedBlockDeposits maturedBlockDeposits)
         {
-            await this.SendAsync(maturedBlockDeposits, FederationGatewayController.ReceiveMaturedBlockRoute).ConfigureAwait(false);
+            await this.SendAsync((MaturedBlockDepositsModel)maturedBlockDeposits, FederationGatewayController.ReceiveMaturedBlockRoute).ConfigureAwait(false);
         }
     }
 }
