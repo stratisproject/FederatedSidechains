@@ -22,6 +22,8 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.Notifications
 
         private readonly IDepositExtractor depositExtractor;
 
+        private readonly IMaturedBlockSender maturedBlockSender;
+
         private readonly IBlockStore blockStore;
 
         private readonly IFullNode fullNode;
@@ -56,6 +58,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.Notifications
             this.walletSyncManager = walletSyncManager;
             this.crossChainTransactionMonitor = crossChainTransactionMonitor;
             this.depositExtractor = depositExtractor;
+            this.maturedBlockSender = maturedBlockSender;
             this.minimumDepositConfirmations = federationGatewaySettings.MinimumDepositConfirmations;
             this.chain = fullNode.NodeService<ConcurrentChain>();
         }
@@ -74,9 +77,19 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.Notifications
             var newlyMaturedBlock = GetNewlyMaturedBlock(chainedHeaderBlock);
             if (newlyMaturedBlock == null) return;
 
-            var deposits = this.depositExtractor.ExtractDepositsFromBlock(
-                newlyMaturedBlock.Block,
-                newlyMaturedBlock.Height);
+            var maturedBlockDeposits = ExtractMaturedBlockDeposits(newlyMaturedBlock);
+            this.maturedBlockSender.SendMaturedBlockDepositsAsync(maturedBlockDeposits).ConfigureAwait(false);
+        }
+
+        private MaturedBlockDepositsModel ExtractMaturedBlockDeposits(ChainedHeader newlyMaturedBlock)
+        {
+            var maturedBlock =
+                new MaturedBlockModel() { BlockHash = newlyMaturedBlock.HashBlock, BlockHeight = newlyMaturedBlock.Height };
+
+            var deposits = this.depositExtractor.ExtractDepositsFromBlock(newlyMaturedBlock.Block, newlyMaturedBlock.Height);
+
+            var maturedBlockDeposits = new MaturedBlockDepositsModel(maturedBlock, deposits);
+            return maturedBlockDeposits;
         }
 
         private ChainedHeader GetNewlyMaturedBlock(ChainedHeaderBlock latestPublishedBlock)
