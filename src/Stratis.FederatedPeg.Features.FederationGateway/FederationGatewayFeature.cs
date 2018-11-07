@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Linq;
+using System.Net.Http.Headers;
 using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
@@ -20,7 +21,6 @@ using Stratis.FederatedPeg.Features.FederationGateway.Controllers;
 using Stratis.FederatedPeg.Features.FederationGateway.CounterChain;
 using Stratis.FederatedPeg.Features.FederationGateway.Interfaces;
 using Stratis.FederatedPeg.Features.FederationGateway.MonitorChain;
-using Stratis.FederatedPeg.Features.FederationGateway.Notifications;
 using Stratis.FederatedPeg.Features.FederationGateway.SourceChain;
 using Stratis.FederatedPeg.Features.FederationGateway.TargetChain;
 using Stratis.FederatedPeg.Features.FederationGateway.Wallet;
@@ -177,7 +177,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway
         public static IFullNodeBuilder AddFederationGateway(this IFullNodeBuilder fullNodeBuilder)
         {
             LoggingConfiguration.RegisterFeatureNamespace<FederationGatewayFeature>("federationgateway");
-
+            
             fullNodeBuilder.ConfigureFeature(features =>
             {
                 features
@@ -185,7 +185,11 @@ namespace Stratis.FederatedPeg.Features.FederationGateway
                     .DependOn<BlockNotificationFeature>()
                     .FeatureServices(services =>
                     {
-                        services.AddSingleton<IHttpClient, JsonHttpClient>();
+                        services.AddHttpClient("jsonClient",
+                            client => {
+                                    client.DefaultRequestHeaders.Accept.Clear();
+                                    client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+                            });
                         services.AddSingleton<IMaturedBlockReceiver, MaturedBlockReceiver>();
                         services.AddSingleton<IMaturedBlockSender, RestMaturedBlockSender>();
                         services.AddSingleton<IFederationGatewaySettings, FederationGatewaySettings>();
