@@ -31,6 +31,8 @@ namespace Stratis.FederatedPeg.Tests
 
         private IMaturedBlockSender maturedBlockSender;
 
+        private IBlockTipSender blockTipSender;
+
         public BlockObserverTests()
         {
             this.federationGatewaySettings = Substitute.For<IFederationGatewaySettings>();
@@ -42,6 +44,7 @@ namespace Stratis.FederatedPeg.Tests
             this.federationWalletSyncManager = Substitute.For<IFederationWalletSyncManager>();
             this.fullNode = Substitute.For<IFullNode>();
             this.maturedBlockSender = Substitute.For<IMaturedBlockSender>();
+            this.blockTipSender = Substitute.For<IBlockTipSender>();
             this.chain = Substitute.ForPartsOf<ConcurrentChain>();
             this.fullNode.NodeService<ConcurrentChain>().Returns(this.chain);
 
@@ -51,7 +54,8 @@ namespace Stratis.FederatedPeg.Tests
                 this.depositExtractor,
                 this.federationGatewaySettings,
                 this.fullNode,
-                this.maturedBlockSender);
+                this.maturedBlockSender,
+                this.blockTipSender);
         }
 
         [Fact]
@@ -73,21 +77,38 @@ namespace Stratis.FederatedPeg.Tests
         [Fact]
         public void BlockObserver_Should_Try_To_Extract_Deposits_After_MinimumDepositConfirmations()
         {
+            var blockBuilder = this.ChainHeaderBlockBuilder();
+
+            this.blockObserver.OnNext(blockBuilder.chainedHeaderBlock);
+
+            this.crossChainTransactionMonitor.Received(1).ProcessBlock(blockBuilder.block);
+            this.federationWalletSyncManager.Received(1).ProcessBlock(blockBuilder.block);
+            this.depositExtractor.Received(1).ExtractDepositsFromBlock(null, 0);
+            this.maturedBlockSender.ReceivedWithAnyArgs(1).SendMaturedBlockDepositsAsync(null);
+        }
+
+        [Fact]
+        public void BlockObserver_Should_Send_Block_Tip()
+        {
+            ChainedHeaderBlock chainedHeaderBlock = this.ChainHeaderBlockBuilder().chainedHeaderBlock;
+
+            this.blockObserver.OnNext(chainedHeaderBlock);
+
+            this.blockTipSender.ReceivedWithAnyArgs(1).SendBlockTipAsync(null);
+        }
+
+        private(ChainedHeaderBlock chainedHeaderBlock, Block block) ChainHeaderBlockBuilder()
+        {
             var confirmations = (int)this.minimumDepositConfirmations;
 
             var blockHeader = new BlockHeader();
             var chainedHeader = new ChainedHeader(blockHeader, uint256.Zero, confirmations);
             this.chain.GetBlock(0).Returns(chainedHeader);
 
-            var maturedBlock = new Block();
-            var maturedChainHeaderBlock = new ChainedHeaderBlock(maturedBlock, chainedHeader);
+            var block = new Block();
+            var chainedHeaderBlock = new ChainedHeaderBlock(block, chainedHeader);
 
-            blockObserver.OnNext(maturedChainHeaderBlock);
-
-            this.crossChainTransactionMonitor.Received(1).ProcessBlock(maturedBlock);
-            this.federationWalletSyncManager.Received(1).ProcessBlock(maturedBlock);
-            this.depositExtractor.Received(1).ExtractDepositsFromBlock(null, 0);
-            this.maturedBlockSender.ReceivedWithAnyArgs(1).SendMaturedBlockDepositsAsync(null);
+            return (chainedHeaderBlock, block);
         }
     }
 }
