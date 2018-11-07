@@ -145,7 +145,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.Controllers
 
             try
             {
-                this.leaderProvider.Update(new BlockTipModel(blockTip.Hash, blockTip.Height));
+                this.leaderProvider.Update(new BlockTipModel(uint256.Parse(blockTip.Hash), blockTip.Height));
 
                 return this.Ok();
             }

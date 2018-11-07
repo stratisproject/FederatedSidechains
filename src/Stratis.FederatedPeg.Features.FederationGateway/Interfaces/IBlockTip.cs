@@ -1,10 +1,11 @@
-﻿using Stratis.Bitcoin.Utilities;
+﻿using NBitcoin;
+using Stratis.Bitcoin.Utilities;
 
 namespace Stratis.FederatedPeg.Features.FederationGateway.Interfaces
 {
     public interface IBlockTip
     {
-        string Hash { get; }
+        uint256 Hash { get; }
 
         int Height { get; }
     }

@@ -31,7 +31,7 @@ namespace Stratis.FederatedPeg.Tests
 
             for (int blockHeight = 0; blockHeight < 10; blockHeight++)
             {
-                this.leaderProvider.Update(new BlockTipModel(string.Empty, blockHeight));
+                this.leaderProvider.Update(new BlockTipModel(new uint256(), blockHeight));
                 output[blockHeight] = this.leaderProvider.CurrentLeader;
             }
 
