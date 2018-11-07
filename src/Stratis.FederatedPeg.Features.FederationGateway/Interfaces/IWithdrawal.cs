@@ -26,6 +26,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.Interfaces
         /// <summary>
         /// The amount of fund transferred (in target currency).
         /// </summary>
+        [JsonConverter(typeof(MoneyJsonConverter))]
         Money Amount { get; }
 
         /// <summary>

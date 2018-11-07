@@ -2,16 +2,12 @@
 using System.Collections.Generic;
 using System.Net;
 using System.Net.Http;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
-using NBitcoin;
 using NSubstitute;
 using NSubstitute.ExceptionExtensions;
 using Stratis.FederatedPeg.Features.FederationGateway;
-using Stratis.FederatedPeg.Features.FederationGateway.Interfaces;
-using Stratis.FederatedPeg.Features.FederationGateway.Models;
 using Stratis.FederatedPeg.Features.FederationGateway.SourceChain;
 using Xunit;
 
@@ -44,7 +40,7 @@ namespace Stratis.FederatedPeg.Tests
         {
             PrepareWorkingHttpClient();
 
-            var maturedBlockDeposits = PrepareMaturedBlockDeposits();
+            var maturedBlockDeposits = MaturedBlockDepositModelTests.PrepareMaturedBlockDeposits();
 
             var restSender = new RestMaturedBlockSender(this.loggerFactory, this.federationSettings, this.httpClientFactory);
 
@@ -68,7 +64,7 @@ namespace Stratis.FederatedPeg.Tests
         {
             PrepareFailingHttpClient();
 
-            var maturedBlockDeposits = PrepareMaturedBlockDeposits();
+            var maturedBlockDeposits = MaturedBlockDepositModelTests.PrepareMaturedBlockDeposits();
 
             var restSender = new RestMaturedBlockSender(this.loggerFactory, this.federationSettings, this.httpClientFactory);
 
@@ -85,20 +81,6 @@ namespace Stratis.FederatedPeg.Tests
 
             this.httpClientFactory = Substitute.For<IHttpClientFactory>();
             this.httpClientFactory.CreateClient(Arg.Any<string>()).Returns(this.httpClient);
-        }
-
-        private static MaturedBlockDepositsModel PrepareMaturedBlockDeposits()
-        {
-            var blockHash = new uint256("82ae5390db507fc0f14325daa21cf55df08b9e14498b81f549dbd06eb72ab71e");
-            var blockHeight = 9876;
-            var depositId = new uint256("921ea22ac2db52669b4dde99fa0c432a1b04b47393b5dbe0027ad90a28b5e5cf");
-            var depositAmount = Money.Coins(13);
-            var targetAddress = "somewhereontheblockchain";
-
-            var maturedBlockDeposits = new MaturedBlockDepositsModel(
-                new MaturedBlockModel() { BlockHash = blockHash, BlockHeight = blockHeight },
-                new List<IDeposit>() { new Deposit(depositId, depositAmount, targetAddress, blockHeight, blockHash) });
-            return maturedBlockDeposits;
         }
 
         /// <inheritdoc />

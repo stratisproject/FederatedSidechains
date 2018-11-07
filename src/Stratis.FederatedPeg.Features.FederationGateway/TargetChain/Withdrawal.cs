@@ -1,4 +1,6 @@
 ﻿using NBitcoin;
+using Newtonsoft.Json;
+using Stratis.Bitcoin.Utilities.JsonConverters;
 using Stratis.FederatedPeg.Features.FederationGateway.Interfaces;
 
 namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
@@ -32,5 +34,10 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
 
         /// <inheritdoc />
         public uint256 BlockHash { get; }
+
+        public override string ToString()
+        {
+            return JsonConvert.SerializeObject(this, Formatting.Indented);
+        }
     }
 }
