@@ -5,7 +5,7 @@ using Stratis.FederatedPeg.Features.FederationGateway.Interfaces;
 namespace Stratis.FederatedPeg.Features.FederationGateway.Models
 {
     /// <summary>
-    /// ADD SUMMARY
+    /// Block tip Hash and Height model.
     /// </summary>
     public class BlockTipModel : RequestModel, IBlockTip
     {
@@ -15,10 +15,8 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.Models
             this.Height = height;
         }
 
-        [Required(ErrorMessage = "Block Hash is required")]
         public string Hash { get; }
 
-        [Required(ErrorMessage = "Block Height is required")]
         public int Height { get; }
     }
 }

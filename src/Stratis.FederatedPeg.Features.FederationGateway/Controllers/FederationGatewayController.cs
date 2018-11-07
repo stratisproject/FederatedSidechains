@@ -127,11 +127,33 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.Controllers
             }
         }
 
+        /// <summary>
+        /// Receives the current block tip to be used for updating the federated leader in a round robin fashion.
+        /// </summary>
+        /// <param name="blockTip"><see cref="BlockTipModelRequest"/>Block tip Hash and Height received.</param>
+        /// <returns><see cref="IActionResult"/>OK on success.</returns>
         [Route(ReceiveCurrentBlockTipRoute)]
         [HttpPost]
-        public void ReceiveCurrentBlockTip([FromBody] BlockTipModel blockTip)
+        public IActionResult ReceiveCurrentBlockTip([FromBody] BlockTipModelRequest blockTip)
         {
-            this.leaderProvider.Update(blockTip);
+            Guard.NotNull(blockTip, nameof(blockTip));
+
+            if (!this.ModelState.IsValid)
+            {
+                return BuildErrorResponse(this.ModelState);
+            }
+
+            try
+            {
+                this.leaderProvider.Update(new BlockTipModel(blockTip.Hash, blockTip.Height));
+
+                return this.Ok();
+            }
+            catch (Exception e)
+            {
+                this.logger.LogError("Exception thrown calling /api/FederationGateway/{0}: {1}.", ReceiveCurrentBlockTipRoute, e.Message);
+                return ErrorHelpers.BuildErrorResponse(HttpStatusCode.BadRequest, $"Could not select the next federated leader: {e.Message}", e.ToString());
+            }
         }
 
         /// <summary>
