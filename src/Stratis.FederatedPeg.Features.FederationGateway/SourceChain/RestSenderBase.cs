@@ -13,18 +13,19 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.SourceChain
 
         private readonly int targetApiPort;
 
-        private readonly Uri publicationUri;
+        private Uri publicationUri;    
 
-        public RestSenderBase(ILoggerFactory loggerFactory, IFederationGatewaySettings settings, string route)
+        public RestSenderBase(ILoggerFactory loggerFactory, IFederationGatewaySettings settings)
         {
             this.logger = loggerFactory.CreateLogger(this.GetType().FullName);
             this.targetApiPort = settings.CounterChainApiPort;
-            this.publicationUri = new Uri(
-                $"http://localhost:{this.targetApiPort}/api/FederationGateway/{route}");
         }
 
-        protected async Task SendAsync<T>(T model)
+        protected async Task SendAsync<T>(T model, string route)
         {
+            this.publicationUri = new Uri(
+                $"http://localhost:{this.targetApiPort}/api/FederationGateway/{route}");
+
             using (var client = new HttpClient())
             {
                 client.DefaultRequestHeaders.Accept.Clear();

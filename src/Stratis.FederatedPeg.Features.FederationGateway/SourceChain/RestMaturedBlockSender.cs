@@ -7,15 +7,15 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.SourceChain
 {
     public class RestMaturedBlockSender : RestSenderBase, IMaturedBlockSender
     {
-        public RestMaturedBlockSender(ILoggerFactory loggerFactory, IFederationGatewaySettings settings, string route)
-            : base(loggerFactory, settings, FederationGatewayController.ReceiveMaturedBlockRoute)
+        public RestMaturedBlockSender(ILoggerFactory loggerFactory, IFederationGatewaySettings settings)
+            : base(loggerFactory, settings)
         {
         }
 
         /// <inheritdoc />
         public async Task SendMaturedBlockDepositsAsync(IMaturedBlockDeposits maturedBlockDeposits)
         {
-            await this.SendAsync(maturedBlockDeposits).ConfigureAwait(false);
+            await this.SendAsync(maturedBlockDeposits, FederationGatewayController.ReceiveMaturedBlockRoute).ConfigureAwait(false);
         }
     }
 }
