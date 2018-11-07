@@ -20,6 +20,7 @@ using Stratis.FederatedPeg.Features.FederationGateway.Controllers;
 using Stratis.FederatedPeg.Features.FederationGateway.CounterChain;
 using Stratis.FederatedPeg.Features.FederationGateway.Interfaces;
 using Stratis.FederatedPeg.Features.FederationGateway.MonitorChain;
+using Stratis.FederatedPeg.Features.FederationGateway.Notifications;
 using Stratis.FederatedPeg.Features.FederationGateway.SourceChain;
 using Stratis.FederatedPeg.Features.FederationGateway.TargetChain;
 using Stratis.FederatedPeg.Features.FederationGateway.Wallet;
@@ -184,6 +185,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway
                     .DependOn<BlockNotificationFeature>()
                     .FeatureServices(services =>
                     {
+                        services.AddSingleton<IHttpClient, JsonHttpClient>();
                         services.AddSingleton<IMaturedBlockReceiver, MaturedBlockReceiver>();
                         services.AddSingleton<IMaturedBlockSender, RestMaturedBlockSender>();
                         services.AddSingleton<IFederationGatewaySettings, FederationGatewaySettings>();
