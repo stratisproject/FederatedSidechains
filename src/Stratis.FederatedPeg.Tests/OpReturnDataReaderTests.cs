@@ -184,5 +184,66 @@ namespace Stratis.FederatedPeg.Tests
 
             opReturnString.Should().BeNull();
         }
+
+        [Fact]
+        public void TryGetTransactionIdFromOpReturn_Can_NOT_Read_Random_Strings()
+        {
+            var opReturnBytes = Encoding.UTF8.GetBytes("neither hash, nor address");
+            var transaction = this.transactionBuilder.BuildOpReturnTransaction(this.addressHelper.SourceChainAddress, opReturnBytes);
+
+            var opReturnString = this.opReturnDataReader.TryGetTransactionIdFromOpReturn(transaction);
+
+            opReturnString.Should().BeNull();
+        }
+
+        [Fact]
+        public void TryGetTransactionIdFromOpReturn_Can_NOT_Read_Two_Valid_uint256_OpReturns()
+        {
+            var opReturnTransactionHash1 = this.transactionBuilder.BuildTransaction(this.addressHelper.SourceChainAddress).GetHash();
+            var opReturnBytes1 = opReturnTransactionHash1.ToBytes();
+
+            var opReturnTransactionHash2 = this.transactionBuilder.BuildTransaction(this.addressHelper.GetNewSourceChainAddress()).GetHash();
+            var opReturnBytes2 = opReturnTransactionHash2.ToBytes();
+
+            opReturnBytes2.Should().NotBeEquivalentTo(opReturnBytes1, "otherwise there is no ambiguity");
+
+            var transaction = this.transactionBuilder.BuildOpReturnTransaction(this.addressHelper.SourceChainAddress, opReturnBytes1);
+            transaction.AddOutput(Money.Zero, new Script(OpcodeType.OP_RETURN, Op.GetPushOp(opReturnBytes2)));
+
+            var opReturnString = this.opReturnDataReader.TryGetTransactionIdFromOpReturn(transaction);
+
+            opReturnString.Should().BeNull();
+        }
+
+        [Fact]
+        public void TryGetTransactionIdFromOpReturn_Can_Read_many_OpReturns_with_only_one_valid_uint256()
+        {
+            var opReturnTransactionHash1 = this.transactionBuilder.BuildTransaction(this.addressHelper.SourceChainAddress).GetHash();
+            var opReturnBytes1 = opReturnTransactionHash1.ToBytes();
+
+            var opReturnBytes2 = Encoding.UTF8.GetBytes("neither hash, nor address");
+
+            var transaction = this.transactionBuilder.BuildOpReturnTransaction(this.addressHelper.SourceChainAddress, opReturnBytes1);
+            transaction.AddOutput(Money.Zero, new Script(OpcodeType.OP_RETURN, Op.GetPushOp(opReturnBytes2)));
+
+            var opReturnString = this.opReturnDataReader.TryGetTransactionIdFromOpReturn(transaction);
+
+            opReturnString.Should().NotBeNull();
+            opReturnString.Should().Be(new uint256(opReturnBytes1).ToString());
+        }
+
+        [Fact]
+        public void TryGetTransactionIdFromOpReturn_Can_Read_single_OpReturn_with_valid_uint256()
+        {
+            var opReturnTransactionHash = this.transactionBuilder.BuildTransaction(this.addressHelper.SourceChainAddress).GetHash();
+            var opReturnBytes = opReturnTransactionHash.ToBytes();
+
+            var transaction = this.transactionBuilder.BuildOpReturnTransaction(this.addressHelper.SourceChainAddress, opReturnBytes);
+
+            var opReturnString = this.opReturnDataReader.TryGetTransactionIdFromOpReturn(transaction);
+
+            opReturnString.Should().NotBeNull();
+            opReturnString.Should().Be(new uint256(opReturnBytes).ToString());
+        }
     }
 }

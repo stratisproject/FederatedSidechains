@@ -34,7 +34,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
             var withdrawals = new List<IWithdrawal>();
             foreach (var transaction in block.Transactions)
             {
-                if(transaction.Outputs.Count(o => o.ScriptPubKey != this.withdrawalScript) != 1) continue;
+                if (transaction.Outputs.Count(o => o.ScriptPubKey != this.withdrawalScript) != 1) continue;
 
                 var targetAddressOutput = transaction.Outputs.Single(o => o.ScriptPubKey != this.withdrawalScript);
 
