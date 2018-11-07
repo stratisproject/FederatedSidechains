@@ -27,12 +27,12 @@ namespace Stratis.FederatedPeg.Tests
         [Fact]
         public void UpdatingBlockHeightCarriesOutLeaderPubKeysRoundRobin()
         {
-            var output = new List<PubKey>();
+            var output = new PubKey[10];
 
             for (int blockHeight = 0; blockHeight < 10; blockHeight++)
             {
                 this.leaderProvider.Update(new BlockTipModel(string.Empty, blockHeight));
-                output.Add(this.leaderProvider.CurrentLeader);
+                output[blockHeight] = this.leaderProvider.CurrentLeader;
             }
 
             this.leaderPubkeys = this.leaderPubkeys.OrderBy(k => k).ToList();
@@ -56,17 +56,7 @@ namespace Stratis.FederatedPeg.Tests
                 "034b191e3b3107b71d1373e840c5bf23098b55a355ca959b968993f5dec699fc38"
             };
 
-            PubKey[] keys = new PubKey[this.leaderPubkeys.Count];
-
-            int index = 0;
-
-            foreach (var key in this.leaderPubkeys.OrderBy(k => k))
-            {
-                keys[index] = new PubKey(key);
-                index++;
-            }
-
-            return keys;
+            return this.leaderPubkeys.Select(s => new PubKey(s)).OrderBy(z => z.ToString()).ToArray();
         }
     }
 }

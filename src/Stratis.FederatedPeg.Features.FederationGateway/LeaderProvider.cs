@@ -8,7 +8,7 @@ using Stratis.FederatedPeg.Features.FederationGateway.Models;
 namespace Stratis.FederatedPeg.Features.FederationGateway
 {
     /// <summary>
-    /// This class determines which federated member to select as the next leader based on a change in block hieght.
+    /// This class determines which federated member to select as the next leader based on a change in block height.
     /// <para>
     /// Each federated member is selected in a round robin fashion.
     /// </para>
@@ -21,16 +21,17 @@ namespace Stratis.FederatedPeg.Features.FederationGateway
         /// <summary>
         /// Ordered list of federated members' public keys.
         /// </summary>
-        private readonly List<string> orderedFederationPublicKeys;
+        private readonly IReadOnlyList<string> orderedFederationPublicKeys;
 
-        private NBitcoin.PubKey currentLeader;
+        private PubKey currentLeader;
 
         public LeaderProvider(IFederationGatewaySettings federationGatewaySettings)
         {
             this.orderedFederationPublicKeys = federationGatewaySettings.FederationPublicKeys.
                 Select(k => k.ToString()).
                 OrderBy(j => j).
-                ToList();
+                ToList().
+                AsReadOnly();
         }
 
         public PubKey CurrentLeader => this.currentLeader;
