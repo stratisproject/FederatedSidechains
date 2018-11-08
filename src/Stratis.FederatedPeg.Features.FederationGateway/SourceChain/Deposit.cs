@@ -1,6 +1,5 @@
 ﻿using NBitcoin;
 using Newtonsoft.Json;
-using Stratis.Bitcoin.Utilities.JsonConverters;
 using Stratis.FederatedPeg.Features.FederationGateway.Interfaces;
 
 namespace Stratis.FederatedPeg.Features.FederationGateway.SourceChain
