@@ -42,7 +42,7 @@ namespace Stratis.FederatedPeg.Tests
 
             var transaction = this.transactionBuilder.BuildOpReturnTransaction(this.addressHelper.SourceChainAddress, opReturnBytes);
 
-            var opReturnString = this.opReturnDataReader.GetStringFromOpReturn(transaction, out OpReturnDataType opReturnDataType);
+            var opReturnString = this.opReturnDataReader.GetString(transaction, out OpReturnDataType opReturnDataType);
 
             opReturnDataType.Should().Be(OpReturnDataType.Address);
             opReturnString.Should().Be(opReturnAddress.ToString());
@@ -56,7 +56,7 @@ namespace Stratis.FederatedPeg.Tests
             var opReturnBytes = Encoding.UTF8.GetBytes(opReturnAddress.ToString());
             var transaction = this.transactionBuilder.BuildOpReturnTransaction(this.addressHelper.SourceChainAddress, opReturnBytes);
 
-            var addressFromOpReturn = this.opReturnDataReader.TryGetTargetAddressFromOpReturn(transaction);
+            var addressFromOpReturn = this.opReturnDataReader.TryGetTargetAddress(transaction);
 
             addressFromOpReturn.Should().Be(opReturnAddress.ToString());
         }
@@ -69,7 +69,7 @@ namespace Stratis.FederatedPeg.Tests
 
             var transaction = this.transactionBuilder.BuildOpReturnTransaction(this.addressHelper.SourceChainAddress, opReturnBytes);
 
-            var opReturnString = this.opReturnDataReader.GetStringFromOpReturn(transaction, out OpReturnDataType opReturnDataType);
+            var opReturnString = this.opReturnDataReader.GetString(transaction, out OpReturnDataType opReturnDataType);
 
             opReturnDataType.Should().Be(OpReturnDataType.Unknown);
             opReturnString.Should().BeNull();
@@ -83,7 +83,7 @@ namespace Stratis.FederatedPeg.Tests
 
             var transaction = this.transactionBuilder.BuildOpReturnTransaction(this.addressHelper.SourceChainAddress, opReturnBytes);
 
-            var opReturnString = this.opReturnDataReader.TryGetTargetAddressFromOpReturn(transaction);
+            var opReturnString = this.opReturnDataReader.TryGetTargetAddress(transaction);
 
             opReturnString.Should().BeNull();
         }
@@ -96,7 +96,7 @@ namespace Stratis.FederatedPeg.Tests
 
             var transaction = this.transactionBuilder.BuildOpReturnTransaction(this.addressHelper.SourceChainAddress, opReturnBytes);
 
-            var opReturnString = this.opReturnDataReader.GetStringFromOpReturn(transaction, out OpReturnDataType opReturnDataType);
+            var opReturnString = this.opReturnDataReader.GetString(transaction, out OpReturnDataType opReturnDataType);
 
             opReturnDataType.Should().Be(OpReturnDataType.Hash);
             var expectedString = new uint256(opReturnBytes).ToString();
@@ -115,7 +115,7 @@ namespace Stratis.FederatedPeg.Tests
             var opReturnBytes2 = Encoding.UTF8.GetBytes(opReturnAddress2.ToString());
             transaction.AddOutput(Money.Zero, new Script(OpcodeType.OP_RETURN, Op.GetPushOp(opReturnBytes2)));
 
-            var opReturnString = this.opReturnDataReader.GetStringFromOpReturn(transaction, out OpReturnDataType opReturnDataType);
+            var opReturnString = this.opReturnDataReader.GetString(transaction, out OpReturnDataType opReturnDataType);
 
             opReturnDataType.Should().Be(OpReturnDataType.Unknown);
             opReturnString.Should().BeNull();
@@ -135,7 +135,7 @@ namespace Stratis.FederatedPeg.Tests
             var opReturnBytes2 = Encoding.UTF8.GetBytes(opReturnAddress2.ToString());
             transaction.AddOutput(Money.Zero, new Script(OpcodeType.OP_RETURN, Op.GetPushOp(opReturnBytes2)));
 
-            var addressFromOpReturn = this.opReturnDataReader.TryGetTargetAddressFromOpReturn(transaction);
+            var addressFromOpReturn = this.opReturnDataReader.TryGetTargetAddress(transaction);
             addressFromOpReturn.Should().BeNull();
         }
 
@@ -158,7 +158,7 @@ namespace Stratis.FederatedPeg.Tests
             var randomMessageBytes = Encoding.UTF8.GetBytes("neither hash, nor address");
             transaction.AddOutput(Money.Zero, new Script(OpcodeType.OP_RETURN, Op.GetPushOp(randomMessageBytes)));
 
-            var addressFromOpReturn = this.opReturnDataReader.TryGetTargetAddressFromOpReturn(transaction);
+            var addressFromOpReturn = this.opReturnDataReader.TryGetTargetAddress(transaction);
             addressFromOpReturn.Should().Be(this.addressHelper.TargetChainAddress.ToString());
         }
 
@@ -168,7 +168,7 @@ namespace Stratis.FederatedPeg.Tests
             var opReturnBytes = Encoding.UTF8.GetBytes("neither hash, nor address");
             var transaction = this.transactionBuilder.BuildOpReturnTransaction(this.addressHelper.SourceChainAddress, opReturnBytes);
 
-            var opReturnString = this.opReturnDataReader.GetStringFromOpReturn(transaction, out OpReturnDataType opReturnDataType);
+            var opReturnString = this.opReturnDataReader.GetString(transaction, out OpReturnDataType opReturnDataType);
 
             opReturnDataType.Should().Be(OpReturnDataType.Unknown);
             opReturnString.Should().BeNull();
@@ -180,7 +180,7 @@ namespace Stratis.FederatedPeg.Tests
             var opReturnBytes = Encoding.UTF8.GetBytes("neither hash, nor address");
             var transaction = this.transactionBuilder.BuildOpReturnTransaction(this.addressHelper.SourceChainAddress, opReturnBytes);
 
-            var opReturnString = this.opReturnDataReader.TryGetTargetAddressFromOpReturn(transaction);
+            var opReturnString = this.opReturnDataReader.TryGetTargetAddress(transaction);
 
             opReturnString.Should().BeNull();
         }
@@ -191,7 +191,7 @@ namespace Stratis.FederatedPeg.Tests
             var opReturnBytes = Encoding.UTF8.GetBytes("neither hash, nor address");
             var transaction = this.transactionBuilder.BuildOpReturnTransaction(this.addressHelper.SourceChainAddress, opReturnBytes);
 
-            var opReturnString = this.opReturnDataReader.TryGetTransactionIdFromOpReturn(transaction);
+            var opReturnString = this.opReturnDataReader.TryGetTransactionId(transaction);
 
             opReturnString.Should().BeNull();
         }
@@ -210,7 +210,7 @@ namespace Stratis.FederatedPeg.Tests
             var transaction = this.transactionBuilder.BuildOpReturnTransaction(this.addressHelper.SourceChainAddress, opReturnBytes1);
             transaction.AddOutput(Money.Zero, new Script(OpcodeType.OP_RETURN, Op.GetPushOp(opReturnBytes2)));
 
-            var opReturnString = this.opReturnDataReader.TryGetTransactionIdFromOpReturn(transaction);
+            var opReturnString = this.opReturnDataReader.TryGetTransactionId(transaction);
 
             opReturnString.Should().BeNull();
         }
@@ -226,7 +226,7 @@ namespace Stratis.FederatedPeg.Tests
             var transaction = this.transactionBuilder.BuildOpReturnTransaction(this.addressHelper.SourceChainAddress, opReturnBytes1);
             transaction.AddOutput(Money.Zero, new Script(OpcodeType.OP_RETURN, Op.GetPushOp(opReturnBytes2)));
 
-            var opReturnString = this.opReturnDataReader.TryGetTransactionIdFromOpReturn(transaction);
+            var opReturnString = this.opReturnDataReader.TryGetTransactionId(transaction);
 
             opReturnString.Should().NotBeNull();
             opReturnString.Should().Be(new uint256(opReturnBytes1).ToString());
@@ -240,7 +240,7 @@ namespace Stratis.FederatedPeg.Tests
 
             var transaction = this.transactionBuilder.BuildOpReturnTransaction(this.addressHelper.SourceChainAddress, opReturnBytes);
 
-            var opReturnString = this.opReturnDataReader.TryGetTransactionIdFromOpReturn(transaction);
+            var opReturnString = this.opReturnDataReader.TryGetTransactionId(transaction);
 
             opReturnString.Should().NotBeNull();
             opReturnString.Should().Be(new uint256(opReturnBytes).ToString());

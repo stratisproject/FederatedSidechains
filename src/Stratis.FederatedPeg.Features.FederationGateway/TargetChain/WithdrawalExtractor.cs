@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using Microsoft.Extensions.Logging;
 using NBitcoin;
@@ -34,27 +35,31 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
             var withdrawals = new List<IWithdrawal>();
             foreach (var transaction in block.Transactions)
             {
-                if (transaction.Outputs.Count(o => o.ScriptPubKey != this.withdrawalScript) != 1) continue;
-
-                var targetAddressOutput = transaction.Outputs.Single(o => o.ScriptPubKey != this.withdrawalScript);
+                if (transaction.Outputs.Count(this.IsTargetAddressCandidate) != 1) continue;
 
                 var withdrawalFromMultisig = transaction.Inputs.Where(input =>
                     input.ScriptSig == this.withdrawalScript).ToList();
 
                 if (!withdrawalFromMultisig.Any()) continue;
 
-                var depositId = this.opReturnDataReader.TryGetTransactionIdFromOpReturn(transaction);
+                var depositId = this.opReturnDataReader.TryGetTransactionId(transaction);
                 if (string.IsNullOrWhiteSpace(depositId)) continue;
 
                 this.logger.LogInformation("Processing received transaction with source deposit id: {0}. Transaction hash: {1}.",
                     depositId, transaction.GetHash());
 
+                var targetAddressOutput = transaction.Outputs.Single(this.IsTargetAddressCandidate);
                 var withdrawal = new Withdrawal(uint256.Parse(depositId), transaction.GetHash(), targetAddressOutput.Value,
                     targetAddressOutput.ScriptPubKey.GetScriptAddress(this.network).ToString(), blockHeight, block.GetHash());
                 withdrawals.Add(withdrawal);
             }
 
             return withdrawals.AsReadOnly();
+        }
+
+        private bool IsTargetAddressCandidate(TxOut output)
+        {
+            return output.ScriptPubKey != this.withdrawalScript && !output.ScriptPubKey.IsUnspendable;
         }
     }
 }
