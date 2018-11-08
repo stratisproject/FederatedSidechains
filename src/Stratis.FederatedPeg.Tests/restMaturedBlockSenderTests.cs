@@ -69,7 +69,7 @@ namespace Stratis.FederatedPeg.Tests
             var restSender = new RestMaturedBlockSender(this.loggerFactory, this.federationSettings, this.httpClientFactory);
 
             await restSender.SendMaturedBlockDepositsAsync(maturedBlockDeposits);
-            this.logger.Received(1).Log<object>(LogLevel.Error, 0, Arg.Any<object>(), Arg.Any<Exception>(), Arg.Any<Func<object, Exception, string>>());
+            this.logger.Received(1).Log<object>(LogLevel.Error, 0, Arg.Any<object>(), Arg.Is<Exception>(e => e != null), Arg.Any<Func<object, Exception, string>>());
         }
 
         private void PrepareFailingHttpClient()
