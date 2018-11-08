@@ -95,7 +95,7 @@ It may be that in order to use a multisig UTXO the algorithm will require it to 
 
 **The structure of the outputs of the transaction:**
 
-- The first output returns change (if any) back to the multisig, and appears after the value transfer output.
+- The first output returns change (if any) back to the multisig.
 - The second output is the one corresponding to the actual transfer of coins. It transfers the amount found on chain A deposits (val<sub>1</sub> or val<sub>2</sub> on the diagrams) to the corresponding chain B address (i.e. the scriptPubKey) found in the OP_RETURN of the chain A deposits made to the multisig (add<sub>1</sub> or add<sub>2</sub> on the diagram) 
 - An OP_RETURN output containing the transaction id of the deposit to the federation's multisig on the originating chain (id<sub>1</sub> or id<sub>2</sub> on the diagram).
 
