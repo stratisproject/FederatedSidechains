@@ -55,6 +55,8 @@ namespace Stratis.FederatedPeg.Features.FederationGateway
 
         private readonly ILeaderProvider leaderProvider;
 
+        private readonly IMaturedBlockDepositsProcessor maturedBlockDepositsProvider;
+
         private IDisposable blockSubscriberDisposable;
 
         private IDisposable transactionSubscriberDisposable;
@@ -88,6 +90,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway
             Signals signals,
             IDepositExtractor depositExtractor,
             ILeaderProvider leaderProvider,
+            IMaturedBlockDepositsProcessor maturedBlockDepositsProvider,
             IConnectionManager connectionManager,
             IFederationGatewaySettings federationGatewaySettings,
             IFullNode fullNode,
@@ -106,6 +109,8 @@ namespace Stratis.FederatedPeg.Features.FederationGateway
             this.blockTipSender = blockTipSender;
             this.signals = signals;
             this.depositExtractor = depositExtractor;
+            this.leaderProvider = leaderProvider;
+            this.maturedBlockDepositsProvider = maturedBlockDepositsProvider;
             this.connectionManager = connectionManager;
             this.federationGatewaySettings = federationGatewaySettings;
             this.fullNode = fullNode;
@@ -132,11 +137,10 @@ namespace Stratis.FederatedPeg.Features.FederationGateway
                 new BlockObserver(
                     this.walletSyncManager,
                     this.crossChainTransactionMonitor,
-                    this.depositExtractor,
-                    this.federationGatewaySettings,
                     this.fullNode,
                     this.maturedBlockSender,
-                    this.blockTipSender));
+                    this.blockTipSender,
+                    this.maturedBlockDepositsProvider));
 
             this.transactionSubscriberDisposable = this.signals.SubscribeForTransactions(new TransactionObserver(this.walletSyncManager));
 
@@ -225,6 +229,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway
                         services.AddSingleton<IFederationWalletTransactionHandler, FederationWalletTransactionHandler>();
                         services.AddSingleton<IFederationWalletManager, FederationWalletManager>();
                         services.AddSingleton<ILeaderProvider, LeaderProvider>();
+                        services.AddSingleton<IMaturedBlockDepositsProcessor, MaturedBlockDepositsProcessor>();
                         services.AddSingleton<FederationWalletController>();
                     });
             });

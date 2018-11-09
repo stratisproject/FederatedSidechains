@@ -1,11 +1,13 @@
-﻿using NBitcoin;
+﻿using System.Collections.Generic;
+using NBitcoin;
 using NSubstitute;
 using Stratis.Bitcoin;
 using Stratis.Bitcoin.Primitives;
 using Stratis.FederatedPeg.Features.FederationGateway;
 using Stratis.FederatedPeg.Features.FederationGateway.Interfaces;
-using BlockObserver = Stratis.FederatedPeg.Features.FederationGateway.Notifications.BlockObserver;
 using Xunit;
+using Stratis.FederatedPeg.Features.FederationGateway.Models;
+using BlockObserver = Stratis.FederatedPeg.Features.FederationGateway.Notifications.BlockObserver;
 
 namespace Stratis.FederatedPeg.Tests
 {
@@ -16,8 +18,6 @@ namespace Stratis.FederatedPeg.Tests
         private readonly IFederationWalletSyncManager federationWalletSyncManager;
 
         private readonly ICrossChainTransactionMonitor crossChainTransactionMonitor;
-
-        private readonly IDepositExtractor depositExtractor;
 
         private readonly ILeaderProvider leaderProvider;
 
@@ -33,29 +33,29 @@ namespace Stratis.FederatedPeg.Tests
 
         private IBlockTipSender blockTipSender;
 
+        private IMaturedBlockDepositsProcessor maturedBlockDepositsProcessor;
+
         public BlockObserverTests()
         {
             this.federationGatewaySettings = Substitute.For<IFederationGatewaySettings>();
             this.federationGatewaySettings.MinimumDepositConfirmations.Returns(this.minimumDepositConfirmations);
 
             this.crossChainTransactionMonitor = Substitute.For<ICrossChainTransactionMonitor>();
-            this.depositExtractor = Substitute.For<IDepositExtractor>();
-            this.leaderProvider = Substitute.For<ILeaderProvider>();
             this.federationWalletSyncManager = Substitute.For<IFederationWalletSyncManager>();
             this.fullNode = Substitute.For<IFullNode>();
             this.maturedBlockSender = Substitute.For<IMaturedBlockSender>();
             this.blockTipSender = Substitute.For<IBlockTipSender>();
+            this.maturedBlockDepositsProcessor = Substitute.For<IMaturedBlockDepositsProcessor>();
             this.chain = Substitute.ForPartsOf<ConcurrentChain>();
             this.fullNode.NodeService<ConcurrentChain>().Returns(this.chain);
 
             this.blockObserver = new BlockObserver(
                 this.federationWalletSyncManager,
                 this.crossChainTransactionMonitor,
-                this.depositExtractor,
-                this.federationGatewaySettings,
                 this.fullNode,
                 this.maturedBlockSender,
-                this.blockTipSender);
+                this.blockTipSender,
+                this.maturedBlockDepositsProcessor);
         }
 
         [Fact]
@@ -66,11 +66,12 @@ namespace Stratis.FederatedPeg.Tests
             var earlyBlock = new Block();
             var earlyChainHeaderBlock = new ChainedHeaderBlock(earlyBlock, new ChainedHeader(new BlockHeader(), uint256.Zero, confirmations));
 
-            blockObserver.OnNext(earlyChainHeaderBlock);
+
+            this.blockObserver.OnNext(earlyChainHeaderBlock);
 
             this.crossChainTransactionMonitor.Received(1).ProcessBlock(earlyBlock);
             this.federationWalletSyncManager.Received(1).ProcessBlock(earlyBlock);
-            this.depositExtractor.ReceivedWithAnyArgs(0).ExtractDepositsFromBlock(null, 0);
+            this.maturedBlockDepositsProcessor.Received(0).ExtractMaturedBlockDeposits(null);
             this.maturedBlockSender.ReceivedWithAnyArgs(0).SendMaturedBlockDepositsAsync(null);
         }
 
@@ -79,11 +80,15 @@ namespace Stratis.FederatedPeg.Tests
         {
             var blockBuilder = this.ChainHeaderBlockBuilder();
 
+            IReadOnlyList<IDeposit> deposits = Substitute.For<IReadOnlyList<IDeposit>>();
+            var maturedBlockDepositsModel = new MaturedBlockDepositsModel(new MaturedBlockModel(), deposits);
+            this.maturedBlockDepositsProcessor.ExtractMaturedBlockDeposits(blockBuilder.chainedHeaderBlock).Returns(maturedBlockDepositsModel);
+
             this.blockObserver.OnNext(blockBuilder.chainedHeaderBlock);
 
             this.crossChainTransactionMonitor.Received(1).ProcessBlock(blockBuilder.block);
             this.federationWalletSyncManager.Received(1).ProcessBlock(blockBuilder.block);
-            this.depositExtractor.Received(1).ExtractDepositsFromBlock(null, 0);
+            this.maturedBlockDepositsProcessor.Received(1).ExtractMaturedBlockDeposits(blockBuilder.chainedHeaderBlock);
             this.maturedBlockSender.ReceivedWithAnyArgs(1).SendMaturedBlockDepositsAsync(null);
         }
 

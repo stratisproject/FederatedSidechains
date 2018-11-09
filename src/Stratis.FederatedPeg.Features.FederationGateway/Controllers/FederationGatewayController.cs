@@ -16,16 +16,21 @@ using Stratis.FederatedPeg.Features.FederationGateway.Models;
 
 namespace Stratis.FederatedPeg.Features.FederationGateway.Controllers
 {
+    public static class FederationGatewayRouteEndPoint
+    {
+        public const string ReceiveMaturedBlock = "receive-matured-block";
+        public const string ReceiveCurrentBlockTip = "receive-current-block-tip";
+        public const string ReSyncMaturedBlockDeposits = "resync_matured_block_depoits";
+        public const string CreateSessionOnCounterChain = "create-session-oncounterchain";
+        public const string ProcessSessionOnCounterChain = "process-session-oncounterchain";
+    }
+
     /// <summary>
     /// API used to communicate across to the counter chain.
     /// </summary>
     [Route("api/[controller]")]
     public class FederationGatewayController : Controller
     {
-        public const string ReceiveMaturedBlockRoute = "receive-matured-block";
-
-        public const string ReceiveCurrentBlockTipRoute = "receive-current-block-tip";
-
         /// <summary>Instance logger.</summary>
         private readonly ILogger logger;
 
@@ -47,7 +52,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.Controllers
             this.leaderProvider = leaderProvider;
         }
 
-        [Route(ReceiveMaturedBlockRoute)]
+        [Route(FederationGatewayRouteEndPoint.ReceiveMaturedBlock)]
         [HttpPost]
         public void ReceiveMaturedBlock([FromBody] MaturedBlockDepositsModel maturedBlockDeposits)
         {
@@ -63,7 +68,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.Controllers
         /// </summary>
         /// <param name="createCounterChainSessionRequest">Used to pass the SessionId, Amount and Destination address to the counter chain.</param>
         /// <returns>An ActionResult.</returns>
-        [Route("create-session-oncounterchain")]
+        [Route(FederationGatewayRouteEndPoint.CreateSessionOnCounterChain)]
         [HttpPost]
         public IActionResult CreateSessionOnCounterChain([FromBody] CreateCounterChainSessionRequest createCounterChainSessionRequest)
         {
@@ -84,7 +89,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.Controllers
             }
             catch (Exception e)
             {
-                this.logger.LogError("Exception thrown calling /api/FederationGateway/create-session-oncounterchain: {0}.", e.Message);
+                this.logger.LogError("Exception thrown calling /api/FederationGateway/{0}: {1}.", FederationGatewayRouteEndPoint.CreateSessionOnCounterChain, e.Message);
                 return ErrorHelpers.BuildErrorResponse(HttpStatusCode.BadRequest, $"Could not create session on counter chain: {e.Message}", e.ToString());
             }
         }
@@ -95,7 +100,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.Controllers
         /// counterchain nodes will know about the session already and can verify the transaction against their session info.)
         /// <param name="createCounterChainSessionRequest">Used to pass the SessionId, Amount and Destination address to the counter chain.</param>
         /// <returns>An ActionResult.</returns>
-        [Route("process-session-oncounterchain")]
+        [Route(FederationGatewayRouteEndPoint.ProcessSessionOnCounterChain)]
         [HttpPost]
         public async Task<IActionResult> ProcessSessionOnCounterChain([FromBody] CreateCounterChainSessionRequest createCounterChainSessionRequest)
         {
@@ -117,12 +122,12 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.Controllers
             }
             catch (InvalidOperationException e)
             {
-                this.logger.LogError("Exception thrown calling /api/FederationGateway/process-session-oncounterchain: {0}.", e.Message);
+                this.logger.LogError("Exception thrown calling /api/FederationGateway/{0}: {1}.", FederationGatewayRouteEndPoint.ProcessSessionOnCounterChain, e.Message);
                 return ErrorHelpers.BuildErrorResponse(HttpStatusCode.NotFound, $"Could not create partial transaction session: {e.Message}", e.ToString());
             }
             catch (Exception e)
             {
-                this.logger.LogError("Exception thrown calling /api/FederationGateway/process-session-oncounterchain: {0}.", e.Message);
+                this.logger.LogError("Exception thrown calling /api/FederationGateway/{0}: {1}.", FederationGatewayRouteEndPoint.ProcessSessionOnCounterChain, e.Message);
                 return ErrorHelpers.BuildErrorResponse(HttpStatusCode.BadRequest, $"Could not create partial transaction session: {e.Message}", e.ToString());
             }
         }
@@ -132,7 +137,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.Controllers
         /// </summary>
         /// <param name="blockTip"><see cref="BlockTipModelRequest"/>Block tip Hash and Height received.</param>
         /// <returns><see cref="IActionResult"/>OK on success.</returns>
-        [Route(ReceiveCurrentBlockTipRoute)]
+        [Route(FederationGatewayRouteEndPoint.ReceiveCurrentBlockTip)]
         [HttpPost]
         public IActionResult ReceiveCurrentBlockTip([FromBody] BlockTipModelRequest blockTip)
         {
@@ -151,8 +156,38 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.Controllers
             }
             catch (Exception e)
             {
-                this.logger.LogError("Exception thrown calling /api/FederationGateway/{0}: {1}.", ReceiveCurrentBlockTipRoute, e.Message);
+                this.logger.LogError("Exception thrown calling /api/FederationGateway/{0}: {1}.", FederationGatewayRouteEndPoint.ReceiveCurrentBlockTip, e.Message);
                 return ErrorHelpers.BuildErrorResponse(HttpStatusCode.BadRequest, $"Could not select the next federated leader: {e.Message}", e.ToString());
+            }
+        }
+
+        /// <summary>
+        /// Trigger a re-sync of missing matured blocks deposits.
+        /// </summary>
+        /// <param name="maturedBlockTip"><see cref="MaturedBlockModel"/>Last known Block tip Hash and Height.</param>
+        /// <returns><see cref="IActionResult"/>OK on success.</returns>
+        [Route(FederationGatewayRouteEndPoint.ReSyncMaturedBlockDeposits)]
+        [HttpPost]
+        public IActionResult ResyncMaturedBlockDeposits([FromBody] MaturedBlockModel maturedBlockTip)
+        {
+            Guard.NotNull(maturedBlockTip, nameof(maturedBlockTip));
+
+            if (!this.ModelState.IsValid)
+            {
+                return BuildErrorResponse(this.ModelState);
+            }
+
+            try
+            {
+                //TODO - Add logic to process mature block deposits for each missing block.                
+
+
+                return this.Ok();
+            }
+            catch (Exception e)
+            {
+                this.logger.LogError("Exception thrown calling /api/FederationGateway/{0}: {1}.", FederationGatewayRouteEndPoint.ReSyncMaturedBlockDeposits, e.Message);
+                return ErrorHelpers.BuildErrorResponse(HttpStatusCode.BadRequest, $"Could not re-sync matured block deposits: {e.Message}", e.ToString());
             }
         }
 
