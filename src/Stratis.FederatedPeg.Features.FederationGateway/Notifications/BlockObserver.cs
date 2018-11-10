@@ -1,4 +1,5 @@
-﻿using NBitcoin;
+﻿using System.Linq;
+using NBitcoin;
 using Stratis.Bitcoin;
 using Stratis.Bitcoin.Primitives;
 using Stratis.Bitcoin.Signals;
@@ -21,7 +22,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.Notifications
 
         private readonly IMaturedBlockSender maturedBlockSender;
 
-        private readonly IMaturedBlockDepositsProcessor maturedBlockDepositsProcessor;
+        private readonly IDepositExtractor depositExtractor;
 
         private readonly IBlockTipSender blockTipSender;
 
@@ -32,29 +33,25 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.Notifications
         /// </summary>
         /// <param name="walletSyncManager">The wallet sync manager to pass new incoming blocks to.</param>
         /// <param name="crossChainTransactionMonitor">The cross-chain transaction monitor to pass new incoming blocks to.</param>
-        /// <param name="maturedBlockDepositsProcessor">TODO.</param>
-        /// <param name="fullNode">Full node used to get rewind the chain.</param>
+        /// <param name="depositExtractor">The component used to extract the deposits from the blocks appearing on chain.</param>
         /// <param name="maturedBlockSender">Service responsible for publishing newly matured blocks.</param>
         /// /// <param name="blockTipSender">Service responsible for publishing the block tip.</param>
         public BlockObserver(IFederationWalletSyncManager walletSyncManager,
                              ICrossChainTransactionMonitor crossChainTransactionMonitor,
-                             IFullNode fullNode,
+                             IDepositExtractor depositExtractor,
                              IMaturedBlockSender maturedBlockSender,
-                             IBlockTipSender blockTipSender,
-                             IMaturedBlockDepositsProcessor maturedBlockDepositsProcessor)
+                             IBlockTipSender blockTipSender)
         {
             Guard.NotNull(walletSyncManager, nameof(walletSyncManager));
             Guard.NotNull(crossChainTransactionMonitor, nameof(crossChainTransactionMonitor));
-            Guard.NotNull(fullNode, nameof(fullNode));
             Guard.NotNull(maturedBlockSender, nameof(maturedBlockSender));
             Guard.NotNull(blockTipSender, nameof(blockTipSender));
-            Guard.NotNull(maturedBlockDepositsProcessor, nameof(maturedBlockDepositsProcessor));
+            Guard.NotNull(depositExtractor, nameof(depositExtractor));
 
             this.walletSyncManager = walletSyncManager;
             this.crossChainTransactionMonitor = crossChainTransactionMonitor;
             this.maturedBlockSender = maturedBlockSender;
-            this.maturedBlockDepositsProcessor = maturedBlockDepositsProcessor;
-            this.chain = fullNode.NodeService<ConcurrentChain>();
+            this.depositExtractor = depositExtractor;
             this.blockTipSender = blockTipSender;
         }
 
@@ -65,25 +62,20 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.Notifications
         protected override void OnNextCore(ChainedHeaderBlock chainedHeaderBlock)
         {
             this.crossChainTransactionMonitor.ProcessBlock(chainedHeaderBlock.Block);
+
             this.walletSyncManager.ProcessBlock(chainedHeaderBlock.Block);
+
+            this.blockTipSender.SendBlockTipAsync(
+                new BlockTipModel(chainedHeaderBlock.ChainedHeader.HashBlock, chainedHeaderBlock.ChainedHeader.Height));
 
             // todo: persist the last seen block height in database
             // todo: save these deposits in local database
 
-            MaturedBlockDepositsModel maturedBlockDeposits = 
-                this.maturedBlockDepositsProcessor.ExtractMaturedBlockDeposits(chainedHeaderBlock);
+            var maturedBlockDeposits = this.depositExtractor.ExtractMaturedBlockDeposits(chainedHeaderBlock);
 
-            if (maturedBlockDeposits != null)
-            {
-                this.maturedBlockSender.SendMaturedBlockDepositsAsync(maturedBlockDeposits).ConfigureAwait(false);
-            }
+            if (maturedBlockDeposits == null) return;
 
-            this.blockTipSender.SendBlockTipAsync(this.ExtractBlockTip(chainedHeaderBlock.ChainedHeader));
-        }
-
-        private BlockTipModel ExtractBlockTip(ChainedHeader chainedHeader)
-        {
-            return new BlockTipModel(chainedHeader.HashBlock, chainedHeader.Height);
+            this.maturedBlockSender.SendMaturedBlockDepositsAsync(maturedBlockDeposits).ConfigureAwait(false);
         }
     }
 }

@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using NBitcoin;
+using Stratis.Bitcoin.Primitives;
 
 namespace Stratis.FederatedPeg.Features.FederationGateway.Interfaces
 {
@@ -11,5 +12,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.Interfaces
     public interface IDepositExtractor
     {
         IReadOnlyList<IDeposit> ExtractDepositsFromBlock(Block block, int blockHeight);
+
+        IMaturedBlockDeposits ExtractMaturedBlockDeposits(ChainedHeaderBlock latestPublishedBlock);
     }
 }

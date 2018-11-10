@@ -2,7 +2,10 @@
 using System.Linq;
 using Microsoft.Extensions.Logging;
 using NBitcoin;
+using Stratis.Bitcoin;
+using Stratis.Bitcoin.Primitives;
 using Stratis.FederatedPeg.Features.FederationGateway.Interfaces;
+using Stratis.FederatedPeg.Features.FederationGateway.Models;
 
 namespace Stratis.FederatedPeg.Features.FederationGateway.SourceChain
 {
@@ -14,14 +17,21 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.SourceChain
 
         private readonly Script depositScript;
 
+        private readonly ConcurrentChain chain;
+
+        private readonly uint minimumDepositConfirmations;
+
         public DepositExtractor(
             ILoggerFactory loggerFactory,
             IFederationGatewaySettings federationGatewaySettings,
-            IOpReturnDataReader opReturnDataReader)
+            IOpReturnDataReader opReturnDataReader,
+            IFullNode fullNode)
         {
             this.logger = loggerFactory.CreateLogger(this.GetType().FullName);
             this.depositScript = federationGatewaySettings.MultiSigRedeemScript;
             this.opReturnDataReader = opReturnDataReader;
+            this.minimumDepositConfirmations = federationGatewaySettings.MinimumDepositConfirmations;
+            this.chain = fullNode.NodeService<ConcurrentChain>();
         }
 
         /// <inheritdoc />
@@ -47,6 +57,37 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.SourceChain
             }
 
             return deposits.AsReadOnly();
+        }
+
+        public IMaturedBlockDeposits ExtractMaturedBlockDeposits(ChainedHeaderBlock latestPublishedBlock)
+        {
+            ChainedHeader newlyMaturedBlock = this.GetNewlyMaturedBlock(latestPublishedBlock);
+
+            if (newlyMaturedBlock == null) return null;
+
+            var maturedBlock = new MaturedBlockModel()
+            {
+                BlockHash = newlyMaturedBlock.HashBlock,
+                BlockHeight = newlyMaturedBlock.Height
+            };
+
+            IReadOnlyList<IDeposit> deposits =
+                this.ExtractDepositsFromBlock(newlyMaturedBlock.Block, newlyMaturedBlock.Height);
+
+            var maturedBlockDeposits = new MaturedBlockDepositsModel(maturedBlock, deposits);
+
+            return maturedBlockDeposits;
+        }
+
+        private ChainedHeader GetNewlyMaturedBlock(ChainedHeaderBlock latestPublishedBlock)
+        {
+            var newMaturedHeight = latestPublishedBlock.ChainedHeader.Height - (int)this.minimumDepositConfirmations;
+
+            if (newMaturedHeight < 0) return null;
+
+            ChainedHeader newMaturedBlock = this.chain.GetBlock(newMaturedHeight);
+
+            return newMaturedBlock;
         }
     }
 }
