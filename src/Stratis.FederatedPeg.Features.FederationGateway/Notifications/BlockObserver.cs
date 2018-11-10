@@ -1,6 +1,4 @@
-﻿using System.Linq;
-using NBitcoin;
-using Stratis.Bitcoin;
+﻿using NBitcoin;
 using Stratis.Bitcoin.Primitives;
 using Stratis.Bitcoin.Signals;
 using Stratis.Bitcoin.Utilities;
@@ -35,7 +33,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.Notifications
         /// <param name="crossChainTransactionMonitor">The cross-chain transaction monitor to pass new incoming blocks to.</param>
         /// <param name="depositExtractor">The component used to extract the deposits from the blocks appearing on chain.</param>
         /// <param name="maturedBlockSender">Service responsible for publishing newly matured blocks.</param>
-        /// /// <param name="blockTipSender">Service responsible for publishing the block tip.</param>
+        /// <param name="blockTipSender">Service responsible for publishing the block tip.</param>
         public BlockObserver(IFederationWalletSyncManager walletSyncManager,
                              ICrossChainTransactionMonitor crossChainTransactionMonitor,
                              IDepositExtractor depositExtractor,
@@ -71,7 +69,8 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.Notifications
             // todo: persist the last seen block height in database
             // todo: save these deposits in local database
 
-            var maturedBlockDeposits = this.depositExtractor.ExtractMaturedBlockDeposits(chainedHeaderBlock);
+            IMaturedBlockDeposits maturedBlockDeposits = 
+                this.depositExtractor.ExtractMaturedBlockDeposits(chainedHeaderBlock.ChainedHeader);
 
             if (maturedBlockDeposits == null) return;
 

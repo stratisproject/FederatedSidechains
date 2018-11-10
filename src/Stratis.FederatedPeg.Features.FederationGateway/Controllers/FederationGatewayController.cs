@@ -40,16 +40,28 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.Controllers
 
         private readonly ILeaderProvider leaderProvider;
 
+        private readonly ConcurrentChain chain;
+
+        private readonly IMaturedBlockSender maturedBlockSender;
+
+        private readonly IDepositExtractor depositExtractor;
+
         public FederationGatewayController(
             ILoggerFactory loggerFactory,
             ICounterChainSessionManager counterChainSessionManager,
             IMaturedBlockReceiver maturedBlockReceiver,
-            ILeaderProvider leaderProvider)
+            ILeaderProvider leaderProvider,
+            ConcurrentChain chain,
+            IMaturedBlockSender maturedBlockSender,
+            IDepositExtractor depositExtractor)
         {
             this.logger = loggerFactory.CreateLogger(this.GetType().FullName);
             this.counterChainSessionManager = counterChainSessionManager;
             this.maturedBlockReceiver = maturedBlockReceiver;
             this.leaderProvider = leaderProvider;
+            this.chain = chain;
+            this.maturedBlockSender = maturedBlockSender;
+            this.depositExtractor = depositExtractor;
         }
 
         [Route(FederationGatewayRouteEndPoint.ReceiveMaturedBlock)]
@@ -162,25 +174,46 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.Controllers
         }
 
         /// <summary>
-        /// Trigger a re-sync of missing matured blocks deposits.
+        /// Trigger a sync of missing matured blocks deposits.
         /// </summary>
-        /// <param name="maturedBlockTip"><see cref="MaturedBlockModel"/>Last known Block tip Hash and Height.</param>
+        /// <param name="blockHashHeight">Last known Block tip Hash and Height.</param>
         /// <returns><see cref="IActionResult"/>OK on success.</returns>
         [Route(FederationGatewayRouteEndPoint.ReSyncMaturedBlockDeposits)]
         [HttpPost]
-        public IActionResult ResyncMaturedBlockDeposits([FromBody] MaturedBlockModel maturedBlockTip)
+        public IActionResult ResyncMaturedBlockDeposits([FromBody] MaturedBlockModel blockHashHeight)
         {
-            Guard.NotNull(maturedBlockTip, nameof(maturedBlockTip));
+            Guard.NotNull(blockHashHeight, nameof(blockHashHeight));
 
             if (!this.ModelState.IsValid)
             {
-                return BuildErrorResponse(this.ModelState);
+                IEnumerable<string> errors = this.ModelState.Values.SelectMany(e => e.Errors.Select(m => m.ErrorMessage));
+                return ErrorHelpers.BuildErrorResponse(HttpStatusCode.BadRequest, "Formatting error", string.Join(Environment.NewLine, errors));
             }
 
             try
-            {
-                //TODO - Add logic to process mature block deposits for each missing block.                
+            {             
+                ChainedHeader chainedHeader = this.chain.GetBlock(blockHashHeight.BlockHash);
 
+                if (chainedHeader == null)
+                {
+                    return ErrorHelpers.BuildErrorResponse(HttpStatusCode.BadRequest, $"Block with hash {blockHashHeight.BlockHash} was not found on the blockchain.", string.Empty);
+                }
+
+                int currentHeight = chainedHeader.Height;
+
+                while (currentHeight < this.chain.Tip.Height)
+                {
+                    IMaturedBlockDeposits maturedBlockDeposits =
+                        this.depositExtractor.ExtractMaturedBlockDeposits(chainedHeader);
+
+                    if (maturedBlockDeposits == null) continue;
+
+                    this.maturedBlockSender.SendMaturedBlockDepositsAsync(maturedBlockDeposits).ConfigureAwait(false);
+
+                    currentHeight++;
+
+                    chainedHeader = this.chain.GetBlock(currentHeight);
+                }
 
                 return this.Ok();
             }

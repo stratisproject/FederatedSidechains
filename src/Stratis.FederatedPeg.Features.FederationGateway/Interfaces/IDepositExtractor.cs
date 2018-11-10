@@ -13,6 +13,6 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.Interfaces
     {
         IReadOnlyList<IDeposit> ExtractDepositsFromBlock(Block block, int blockHeight);
 
-        IMaturedBlockDeposits ExtractMaturedBlockDeposits(ChainedHeaderBlock latestPublishedBlock);
+        IMaturedBlockDeposits ExtractMaturedBlockDeposits(ChainedHeader chainedHeader);
     }
 }

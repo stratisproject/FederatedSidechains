@@ -3,7 +3,6 @@ using System.Linq;
 using Microsoft.Extensions.Logging;
 using NBitcoin;
 using Stratis.Bitcoin;
-using Stratis.Bitcoin.Primitives;
 using Stratis.FederatedPeg.Features.FederationGateway.Interfaces;
 using Stratis.FederatedPeg.Features.FederationGateway.Models;
 
@@ -59,9 +58,9 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.SourceChain
             return deposits.AsReadOnly();
         }
 
-        public IMaturedBlockDeposits ExtractMaturedBlockDeposits(ChainedHeaderBlock latestPublishedBlock)
+        public IMaturedBlockDeposits ExtractMaturedBlockDeposits(ChainedHeader chainedHeader)
         {
-            ChainedHeader newlyMaturedBlock = this.GetNewlyMaturedBlock(latestPublishedBlock);
+            ChainedHeader newlyMaturedBlock = this.GetNewlyMaturedBlock(chainedHeader);
 
             if (newlyMaturedBlock == null) return null;
 
@@ -79,9 +78,9 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.SourceChain
             return maturedBlockDeposits;
         }
 
-        private ChainedHeader GetNewlyMaturedBlock(ChainedHeaderBlock latestPublishedBlock)
+        private ChainedHeader GetNewlyMaturedBlock(ChainedHeader chainedHeader)
         {
-            var newMaturedHeight = latestPublishedBlock.ChainedHeader.Height - (int)this.minimumDepositConfirmations;
+            var newMaturedHeight = chainedHeader.Height - (int)this.minimumDepositConfirmations;
 
             if (newMaturedHeight < 0) return null;
 
