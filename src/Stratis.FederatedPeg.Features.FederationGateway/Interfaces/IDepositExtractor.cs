@@ -14,5 +14,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.Interfaces
         IReadOnlyList<IDeposit> ExtractDepositsFromBlock(Block block, int blockHeight);
 
         IMaturedBlockDeposits ExtractMaturedBlockDeposits(ChainedHeader chainedHeader);
+
+        uint MinimumDepositConfirmations { get; }
     }
 }

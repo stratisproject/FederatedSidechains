@@ -18,7 +18,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.SourceChain
 
         private readonly ConcurrentChain chain;
 
-        private readonly uint minimumDepositConfirmations;
+        public uint MinimumDepositConfirmations { get; private set; }
 
         public DepositExtractor(
             ILoggerFactory loggerFactory,
@@ -29,7 +29,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.SourceChain
             this.logger = loggerFactory.CreateLogger(this.GetType().FullName);
             this.depositScript = federationGatewaySettings.MultiSigRedeemScript;
             this.opReturnDataReader = opReturnDataReader;
-            this.minimumDepositConfirmations = federationGatewaySettings.MinimumDepositConfirmations;
+            this.MinimumDepositConfirmations = federationGatewaySettings.MinimumDepositConfirmations;
             this.chain = fullNode.NodeService<ConcurrentChain>();
         }
 
@@ -80,7 +80,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.SourceChain
 
         private ChainedHeader GetNewlyMaturedBlock(ChainedHeader chainedHeader)
         {
-            var newMaturedHeight = chainedHeader.Height - (int)this.minimumDepositConfirmations;
+            var newMaturedHeight = chainedHeader.Height - (int)this.MinimumDepositConfirmations;
 
             if (newMaturedHeight < 0) return null;
 

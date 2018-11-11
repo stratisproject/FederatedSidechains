@@ -196,12 +196,18 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.Controllers
 
                 if (chainedHeader == null)
                 {
-                    return ErrorHelpers.BuildErrorResponse(HttpStatusCode.BadRequest, $"Block with hash {blockHashHeight.BlockHash} was not found on the blockchain.", string.Empty);
+                    return ErrorHelpers.BuildErrorResponse(HttpStatusCode.BadRequest, $"Block with hash {blockHashHeight.BlockHash} was not found on the block chain.", string.Empty);
                 }
 
                 int currentHeight = chainedHeader.Height;
 
-                while (currentHeight < this.chain.Tip.Height)
+                if (currentHeight > this.chain.Tip.Height - this.depositExtractor.MinimumDepositConfirmations)
+                {
+                    return ErrorHelpers.BuildErrorResponse(HttpStatusCode.BadRequest, 
+                        $"Block height {blockHashHeight.BlockHeight} is greater than the minimum deposit confirmations required {this.depositExtractor.MinimumDepositConfirmations}.", string.Empty);
+                }
+
+                while (currentHeight <= this.chain.Tip.Height - this.depositExtractor.MinimumDepositConfirmations)
                 {
                     IMaturedBlockDeposits maturedBlockDeposits =
                         this.depositExtractor.ExtractMaturedBlockDeposits(chainedHeader);
