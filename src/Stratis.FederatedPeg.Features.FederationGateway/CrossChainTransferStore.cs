@@ -96,8 +96,8 @@ namespace Stratis.FederatedPeg.Features.FederationGateway
         /// <summary>Provider of time functions.</summary>
         private readonly IDateTimeProvider dateTimeProvider;
 
-        public CrossChainTransferStore(Network network, DataFolder dataFolder, IDateTimeProvider dateTimeProvider, ILoggerFactory loggerFactory)
-            : this(network, Path.Combine(dataFolder.RootPath, "xchaindata"), dateTimeProvider, loggerFactory)
+        public CrossChainTransferStore(Network network, DataFolder dataFolder, FederationGatewaySettings settings, IDateTimeProvider dateTimeProvider, ILoggerFactory loggerFactory)
+            : this(network, Path.Combine(dataFolder.RootPath, settings.IsMainChain ? "mainchaindata" : "sidechaindata"), dateTimeProvider, loggerFactory)
         {
         }
 
