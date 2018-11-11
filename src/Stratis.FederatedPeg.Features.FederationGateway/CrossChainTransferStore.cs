@@ -63,6 +63,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway
         /// <summary>
         /// Updates partial transactions in the store with signatures obtained from the passed transactions.
         /// </summary>
+        /// <param name="depositId">The deposit transaction to update.</param>
         /// <param name="partialTransactions">Partial transactions received from other federation members.</param>
         /// <remarks>
         /// The following statuses may be set:
@@ -70,7 +71,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway
         /// <item><see cref="CrossChainTransferStatus.FullySigned"/></item>
         /// </list>
         /// </remarks>
-        Task MergeTransactionSignatures(Transaction[] partialTransactions);
+        Task MergeTransactionSignaturesAsync(uint256 depositId, Transaction[] partialTransactions);
 
         /// <summary>
         /// The tip of our chain when we last updated the store.
@@ -205,7 +206,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway
 
                     foreach (CrossChainTransfer transfer in crossChainTransfers)
                     {
-                        this.PutTransferAsync(dbreezeTransaction, transfer);
+                        this.PutTransferAsync(dbreezeTransaction, transfer).GetAwaiter().GetResult();
                     }
 
                     // Commit additions
@@ -220,9 +221,34 @@ namespace Stratis.FederatedPeg.Features.FederationGateway
         }
 
         /// <inheritdoc />
-        public Task MergeTransactionSignatures(Transaction[] partialTransactions)
+        public Task MergeTransactionSignaturesAsync(uint256 depositId, Transaction[] partialTransactions)
         {
-            throw new NotImplementedException("Not implemented yet");
+            Guard.NotNull(partialTransactions, nameof(partialTransactions));
+
+            Task task = Task.Run(() =>
+            {
+                this.logger.LogTrace("()");
+
+                using (DBreeze.Transactions.Transaction dbreezeTransaction = this.DBreeze.GetTransaction())
+                {
+                    dbreezeTransaction.SynchronizeTables(transferTableName, commonTableName);
+
+                    CrossChainTransfer transfer = this.GetAsync(new[] { depositId }).GetAwaiter().GetResult().FirstOrDefault();
+
+                    if (transfer != null)
+                    {
+                        transfer.CombineSignatures(this.network, partialTransactions);
+
+                        this.PutTransferAsync(dbreezeTransaction, transfer).GetAwaiter().GetResult();
+                    }
+
+                    dbreezeTransaction.Commit();
+                }
+
+                this.logger.LogTrace("(-)");
+            });
+
+            return task;
         }
 
         /// <inheritdoc />
@@ -450,7 +476,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway
                         this.SetTransferStatus(storedDeposits[i], CrossChainTransferStatus.SeenInBlock);
                     }
 
-                    this.PutTransferAsync(dbreezeTransaction, storedDeposits[i]);
+                    this.PutTransferAsync(dbreezeTransaction, storedDeposits[i]).GetAwaiter().GetResult();
                 }
 
                 // Update lookups.

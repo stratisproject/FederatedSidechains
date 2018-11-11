@@ -169,5 +169,18 @@ namespace Stratis.FederatedPeg.Features.FederationGateway
 
             Guard.Assert(IsValid());
         }
+
+        public void CombineSignatures(Network network, Transaction[] partials)
+        {
+            Guard.Assert(this.status == CrossChainTransferStatus.Partial);
+
+            TransactionBuilder builder = new TransactionBuilder(network);
+
+            Transaction[] allPartials = new Transaction[partials.Length + 1];
+            allPartials[0] = this.partialTransaction;
+            partials.CopyTo(allPartials, 1);
+
+            this.partialTransaction = builder.CombineSignatures(allPartials);
+        }
     }
 }
