@@ -8,10 +8,9 @@ namespace Stratis.FederatedPeg.Features.FederationGateway
     /// </summary>
     public enum CrossChainTransferStatus
     {
-        TransactionCreated = 'T',
+        Partial = 'P',
         FullySigned = 'F',
         SeenInBlock = 'S',
-        Complete = 'C',
         Rejected = 'R'
     }
 
@@ -52,14 +51,22 @@ namespace Stratis.FederatedPeg.Features.FederationGateway
         private Transaction partialTransaction;
 
         /// <summary>
-        /// The hash of the block where the transaction resides.
+        /// The hash of the block where the transaction resides on our chain.
         /// </summary>
+        public uint256 BlockHash => this.blockHash;
         private uint256 blockHash;
+
+        /// <summary>
+        /// The height of the block where the transaction resides on our chain.
+        /// </summary>
+        public int BlockHeight => this.blockHeight;
+        private int blockHeight;
 
         /// <summary>
         /// The status of the cross chain transfer transaction.
         /// </summary>
         private CrossChainTransferStatus status;
+        public CrossChainTransferStatus Status => this.status;
 
         /// <summary>
         /// Parameter-less constructor for (de)serialization.
@@ -78,7 +85,9 @@ namespace Stratis.FederatedPeg.Features.FederationGateway
         /// <param name="depositAmount">The amount (in satoshis) of the deposit transaction.</param>
         /// <param name="partialTransaction">The unsigned partial transaction containing a full set of available UTXO's.</param>
         /// <param name="blockHash">The hash of the block where the transaction resides.</param>
-        public CrossChainTransfer(CrossChainTransferStatus status, uint256 depositTransactionId, long depositBlockHeight, Script depositTargetAddress, Money depositAmount, Transaction partialTransaction, uint256 blockHash)
+        /// <param name="blockHeight">The height (in our chain) of the block where the transaction resides.</param>
+        public CrossChainTransfer(CrossChainTransferStatus status, uint256 depositTransactionId, long depositBlockHeight, Script depositTargetAddress, Money depositAmount,
+            Transaction partialTransaction, uint256 blockHash, int blockHeight)
         {
             this.status = status;
             this.depositTransactionId = depositTransactionId;
@@ -87,6 +96,9 @@ namespace Stratis.FederatedPeg.Features.FederationGateway
             this.depositAmount = depositAmount;
             this.partialTransaction = partialTransaction;
             this.blockHash = blockHash;
+            this.blockHeight = blockHeight;
+
+            Guard.Assert(this.IsValid());
         }
 
         /// <summary>
@@ -115,10 +127,10 @@ namespace Stratis.FederatedPeg.Features.FederationGateway
                 stream.ReadWrite(ref this.depositAmount);
             }
 
-            if (this.status == CrossChainTransferStatus.TransactionCreated || this.status == CrossChainTransferStatus.SeenInBlock || this.status == CrossChainTransferStatus.Complete)
+            if (this.status == CrossChainTransferStatus.Partial || this.status == CrossChainTransferStatus.SeenInBlock)
             {
                 stream.ReadWrite(ref this.partialTransaction);
-                if (this.status != CrossChainTransferStatus.TransactionCreated)
+                if (this.status != CrossChainTransferStatus.Partial)
                     stream.ReadWrite(ref this.blockHash);
             }
         }
@@ -129,9 +141,9 @@ namespace Stratis.FederatedPeg.Features.FederationGateway
         /// <returns><c>false</c> if the object is invalid and <c>true</c> otherwise.</returns>
         private bool IsValid()
         {
-            if (this.status == CrossChainTransferStatus.TransactionCreated || this.status == CrossChainTransferStatus.SeenInBlock || this.status == CrossChainTransferStatus.Complete)
+            if (this.status == CrossChainTransferStatus.Partial || this.status == CrossChainTransferStatus.SeenInBlock)
             {
-                if (this.status != CrossChainTransferStatus.TransactionCreated)
+                if (this.status != CrossChainTransferStatus.Partial)
                 {
                     return this.blockHash != null;
                 }
@@ -140,6 +152,17 @@ namespace Stratis.FederatedPeg.Features.FederationGateway
             }
 
             return this.depositTransactionId != null;
+        }
+
+        /// <summary>
+        /// Sets the status and verifies that the status is valid given the available fields.
+        /// </summary>
+        /// <param name="status">The new status.</param>
+        public void SetStatus(CrossChainTransferStatus status)
+        {
+            this.status = status;
+
+            Guard.Assert(IsValid());
         }
     }
 }
