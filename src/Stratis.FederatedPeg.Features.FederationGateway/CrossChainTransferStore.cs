@@ -56,7 +56,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway
         /// Used in case of a reorg to revert status from <see cref="CrossChainTransferStatus.SeenInBlock"/> to
         /// <see cref="CrossChainTransferStatus.FullySigned"/>.
         /// </summary>
-        /// <param name="consensus">The current consensus for our chain.</param>
+        /// <param name="chain">The current consensus for our chain.</param>
         Task DeleteAsync(ConcurrentChain chain);
 
         /// <summary>
