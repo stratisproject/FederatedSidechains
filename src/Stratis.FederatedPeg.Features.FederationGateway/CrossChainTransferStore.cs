@@ -287,7 +287,8 @@ namespace Stratis.FederatedPeg.Features.FederationGateway
             {
                 this.logger.LogTrace("()");
 
-                if (chain.Tip.HashBlock != this.TipHashAndHeight.Hash)
+                // If the chain does not contain our tip..
+                if (chain.GetBlock(this.TipHashAndHeight.Hash) == null)
                 {
                     uint256 commonTip = this.network.GenesisHash;
                     int commonHeight = 0;
@@ -532,6 +533,11 @@ namespace Stratis.FederatedPeg.Features.FederationGateway
             }
         }
 
+        /// <summary>
+        /// Updates the status of the transfer and the status lookup.
+        /// </summary>
+        /// <param name="transfer">The cross-chain transfer to update.</param>
+        /// <param name="status">The new status.</param>
         private void SetTransferStatus(CrossChainTransfer transfer, CrossChainTransferStatus status)
         {
             this.depositsByStatus[transfer.Status].Remove(transfer.DepositTransactionId);
