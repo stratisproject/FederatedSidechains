@@ -54,11 +54,10 @@ namespace Stratis.FederatedPeg.Features.FederationGateway
 
         /// <summary>
         /// Used in case of a reorg to revert status from <see cref="CrossChainTransferStatus.SeenInBlock"/> to
-        /// <see cref="CrossChainTransferStatus.FullySigned"/>. This is expected to trigger the re-broadcasting
-        /// of the transaction.
+        /// <see cref="CrossChainTransferStatus.FullySigned"/>.
         /// </summary>
-        /// <param name="newTip">The new <see cref="ChainTip"/>.</param>
-        Task DeleteAsync(BlockLocator newTip);
+        /// <param name="consensus">The current consensus for our chain.</param>
+        Task DeleteAsync(ConcurrentChain chain);
 
         /// <summary>
         /// Updates partial transactions in the store with signatures obtained from the passed transactions.
@@ -278,35 +277,35 @@ namespace Stratis.FederatedPeg.Features.FederationGateway
         }
 
         /// <inheritdoc />
-        public Task DeleteAsync(BlockLocator newTip)
+        public Task DeleteAsync(ConcurrentChain chain)
         {
-            Guard.NotNull(newTip, nameof(newTip));
+            Guard.NotNull(chain, nameof(chain));
 
             Task task = Task.Run(() =>
             {
                 this.logger.LogTrace("()");
 
-                using (DBreeze.Transactions.Transaction transaction = this.DBreeze.GetTransaction())
+                if (chain.Tip.HashBlock != this.TipHashAndHeight.Hash)
                 {
-                    transaction.SynchronizeTables(transferTableName, commonTableName);
-                    transaction.ValuesLazyLoadingIsOn = false;
+                    uint256 commonTip = this.network.GenesisHash;
+                    int commonHeight = 0;
 
-                    uint256 commonTip = null;
+                    ChainedHeader fork = chain.FindFork(this.depositIdsByBlockHash.OrderByDescending(d => this.blockHeightsByBlockHash[d.Key]).Select(d => d.Key));
 
-                    foreach (uint256 hash in newTip.Blocks)
+                    if (fork != null)
                     {
-                        if (this.depositIdsByBlockHash.ContainsKey(hash))
-                        {
-                            commonTip = hash;
-                            break;
-                        }
+                        commonTip = fork.Block.GetHash();
+                        commonHeight = this.blockHeightsByBlockHash[commonTip];
                     }
 
-                    int commonHeight = this.blockHeightsByBlockHash[commonTip];
-
-                    this.OnDeleteBlocks(transaction, commonHeight);
-                    this.SaveTipHashAndHeight(transaction, new HashHeightPair(commonTip, commonHeight));
-                    transaction.Commit();
+                    using (DBreeze.Transactions.Transaction transaction = this.DBreeze.GetTransaction())
+                    {
+                        transaction.SynchronizeTables(transferTableName, commonTableName);
+                        transaction.ValuesLazyLoadingIsOn = false;
+                        this.OnDeleteBlocks(transaction, commonHeight);
+                        this.SaveTipHashAndHeight(transaction, new HashHeightPair(commonTip, commonHeight));
+                        transaction.Commit();
+                    }
                 }
 
                 this.logger.LogTrace("(-)");
@@ -516,6 +515,9 @@ namespace Stratis.FederatedPeg.Features.FederationGateway
             {
                 // Transaction is no longer seen.
                 this.SetTransferStatus(transfer, CrossChainTransferStatus.FullySigned);
+
+                // Write the transfer status to the database.
+                this.PutTransferAsync(dbreezeTransaction, transfer).GetAwaiter().GetResult();
 
                 // Update the lookups.
                 this.depositIdsByBlockHash[transfer.BlockHash].Remove(transfer.DepositTransactionId);
