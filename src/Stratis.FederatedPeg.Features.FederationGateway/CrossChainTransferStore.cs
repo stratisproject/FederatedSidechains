@@ -28,8 +28,10 @@ namespace Stratis.FederatedPeg.Features.FederationGateway
         Task<CrossChainTransfer[]> GetAsync(uint256[] depositIds);
 
         /// <summary>
-        /// Records the mature deposits at <see cref="NextMatureDepositHeight"/> on the counter-chain.
+        /// Records the mature deposits from <see cref="NextMatureDepositHeight"/> on the counter-chain.
         /// The value of <see cref="NextMatureDepositHeight"/> is incremented at the end of this call.
+        /// The caller should check that <see cref="NextMatureDepositHeight"/> is a represents a height
+        /// on the counter-chain which would contain mature deposits.
         /// </summary>
         /// <param name="crossChainTransfers">The deposit transactions.</param>
         /// <remarks>
@@ -37,7 +39,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway
         /// to check whether the transfer already exists without the deposit information and
         /// then provide the updated object in this call.
         /// The caller must also ensure the transfers passed to this call all have a
-        /// <see cref="CrossChainTransfer.status"/> of <see cref="CrossChainTransferStatus.Partial"/>.
+        /// <see cref="CrossChainTransfer.Status"/> of <see cref="CrossChainTransferStatus.Partial"/>.
         /// </remarks>
         Task RecordLatestMatureDeposits(IEnumerable<CrossChainTransfer> crossChainTransfers);
 
@@ -78,7 +80,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway
         /// <summary>
         /// The block height on the counter-chain for which the next list of deposits is expected.
         /// </summary>
-        long NextMatureDepositHeight { get; }
+        int NextMatureDepositHeight { get; }
     }
 
     public class CrossChainTransferStore : ICrossChainTransferStore
@@ -99,13 +101,16 @@ namespace Stratis.FederatedPeg.Features.FederationGateway
         private Dictionary<CrossChainTransferStatus, HashSet<uint256>> depositsByStatus = new Dictionary<CrossChainTransferStatus, HashSet<uint256>>();
 
         /// <inheritdoc />
-        public long NextMatureDepositHeight { get; private set; }
+        public int NextMatureDepositHeight { get; private set; }
 
         /// <inheritdoc />
         public HashHeightPair TipHashAndHeight { get; private set; }
 
         /// <summary>The key of the repository tip in the common table.</summary>
-        private static readonly byte[] RepositoryTipKey = new byte[0];
+        private static readonly byte[] RepositoryTipKey = new byte[] { 0 };
+
+        /// <summary>The key of the counter-chain last mature block tip in the common table.</summary>
+        private static readonly byte[] NextMatureTipKey = new byte[] { 1 };
 
         /// <summary>Instance logger.</summary>
         private readonly ILogger logger;
@@ -154,6 +159,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway
                 using (DBreeze.Transactions.Transaction dbreezeTransaction = this.DBreeze.GetTransaction())
                 {
                     this.LoadTipHashAndHeight(dbreezeTransaction);
+                    this.LoadNextMatureHeight(dbreezeTransaction);
 
                     // Initialize the lookups.
                     foreach (Row<byte[], CrossChainTransfer> transferRow in dbreezeTransaction.SelectForward<byte[], CrossChainTransfer>(transferTableName))
@@ -184,7 +190,33 @@ namespace Stratis.FederatedPeg.Features.FederationGateway
         /// <inheritdoc />
         public Task RecordLatestMatureDeposits(IEnumerable<CrossChainTransfer> crossChainTransfers)
         {
-            throw new NotImplementedException("Not implemented yet");
+            Guard.NotNull(crossChainTransfers, nameof(crossChainTransfers));
+            Guard.Assert(!crossChainTransfers.Any(t => !t.IsValid()));
+            Guard.Assert(!crossChainTransfers.Any(t => t.Status != CrossChainTransferStatus.Partial));
+            Guard.Assert(!crossChainTransfers.Any(t => t.DepositBlockHeight != this.NextMatureDepositHeight));
+
+            Task task = Task.Run(() =>
+            {
+                this.logger.LogTrace("()");
+
+                using (DBreeze.Transactions.Transaction dbreezeTransaction = this.DBreeze.GetTransaction())
+                {
+                    dbreezeTransaction.SynchronizeTables(transferTableName, commonTableName);
+
+                    foreach (CrossChainTransfer transfer in crossChainTransfers)
+                    {
+                        this.PutTransferAsync(dbreezeTransaction, transfer);
+                    }
+
+                    // Commit additions
+                    this.SaveNextMatureHeight(dbreezeTransaction, this.NextMatureDepositHeight + 1);
+                    dbreezeTransaction.Commit();
+                }
+
+                this.logger.LogTrace("(-)");
+            });
+
+            return task;
         }
 
         /// <inheritdoc />
@@ -201,6 +233,8 @@ namespace Stratis.FederatedPeg.Features.FederationGateway
 
             Task task = Task.Run(() =>
             {
+                this.logger.LogTrace("()");
+
                 using (DBreeze.Transactions.Transaction transaction = this.DBreeze.GetTransaction())
                 {
                     transaction.SynchronizeTables(transferTableName, commonTableName);
@@ -210,6 +244,8 @@ namespace Stratis.FederatedPeg.Features.FederationGateway
                     this.SaveTipHashAndHeight(transaction, newTip);
                     transaction.Commit();
                 }
+
+                this.logger.LogTrace("(-)");
             });
 
             return task;
@@ -222,6 +258,8 @@ namespace Stratis.FederatedPeg.Features.FederationGateway
 
             Task task = Task.Run(() =>
             {
+                this.logger.LogTrace("()");
+
                 using (DBreeze.Transactions.Transaction transaction = this.DBreeze.GetTransaction())
                 {
                     transaction.SynchronizeTables(transferTableName, commonTableName);
@@ -244,6 +282,8 @@ namespace Stratis.FederatedPeg.Features.FederationGateway
                     this.SaveTipHashAndHeight(transaction, new HashHeightPair(commonTip, commonHeight));
                     transaction.Commit();
                 }
+
+                this.logger.LogTrace("(-)");
             });
 
             return task;
@@ -263,8 +303,6 @@ namespace Stratis.FederatedPeg.Features.FederationGateway
                 Row<byte[], HashHeightPair> row = dbreezeTransaction.Select<byte[], HashHeightPair>(commonTableName, RepositoryTipKey);
                 if (row.Exists)
                     this.TipHashAndHeight = row.Value;
-
-                dbreezeTransaction.ValuesLazyLoadingIsOn = true;
             }
 
             return this.TipHashAndHeight;
@@ -279,6 +317,36 @@ namespace Stratis.FederatedPeg.Features.FederationGateway
         {
             this.TipHashAndHeight = newTip;
             dbreezeTransaction.Insert<byte[], HashHeightPair>(commonTableName, RepositoryTipKey, this.TipHashAndHeight);
+        }
+
+        /// <summary>
+        /// Loads the counter-chain next mature block height.
+        /// </summary>
+        /// <param name="dbreezeTransaction">The DBreeze transaction context to use.</param>
+        /// <returns>The hash and height pair.</returns>
+        private int LoadNextMatureHeight(DBreeze.Transactions.Transaction dbreezeTransaction)
+        {
+            if (this.TipHashAndHeight == null)
+            {
+                dbreezeTransaction.ValuesLazyLoadingIsOn = false;
+
+                Row<byte[], int> row = dbreezeTransaction.Select<byte[], int>(commonTableName, NextMatureTipKey);
+                if (row.Exists)
+                    this.NextMatureDepositHeight = row.Value;
+            }
+
+            return this.NextMatureDepositHeight;
+        }
+
+        /// <summary>
+        /// Saves the counter-chain next mature block height.
+        /// </summary>
+        /// <param name="dbreezeTransaction">The DBreeze transaction context to use.</param>
+        /// <param name="newTip">The next mature block height on the counter-chain.</param>
+        private void SaveNextMatureHeight(DBreeze.Transactions.Transaction dbreezeTransaction, int newTip)
+        {
+            this.NextMatureDepositHeight = newTip;
+            dbreezeTransaction.Insert<byte[], int>(commonTableName, NextMatureTipKey, this.NextMatureDepositHeight);
         }
 
         /// <inheritdoc />

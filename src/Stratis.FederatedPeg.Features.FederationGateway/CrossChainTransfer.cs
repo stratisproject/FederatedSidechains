@@ -29,25 +29,30 @@ namespace Stratis.FederatedPeg.Features.FederationGateway
         /// Indicated whether the deposit fields contain information.
         /// </summary>
         private bool depositPresent => this.depositTargetAddress != null;
+        public bool DepositPresent => this.depositPresent;
 
         /// <summary>
         /// The block height of the deposit transaction.
         /// </summary>
+        public long DepositBlockHeight => this.depositBlockHeight;
         private long depositBlockHeight;
 
         /// <summary>
         /// The target address of the deposit transaction.
         /// </summary>
+        public Script DepositTargetAddress => this.depositTargetAddress;
         private Script depositTargetAddress;
 
         /// <summary>
         /// The amount (in satoshis) of the deposit transaction.
         /// </summary>
+        public long DepositAmount => this.depositAmount;
         private long depositAmount;
 
         /// <summary>
         /// The unsigned partial transaction containing a full set of available UTXO's.
         /// </summary>
+        public Transaction PartialTransaction => this.partialTransaction;
         private Transaction partialTransaction;
 
         /// <summary>
@@ -139,7 +144,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway
         /// Depending on the status some fields can't be null.
         /// </summary>
         /// <returns><c>false</c> if the object is invalid and <c>true</c> otherwise.</returns>
-        private bool IsValid()
+        public bool IsValid()
         {
             if (this.status == CrossChainTransferStatus.Partial || this.status == CrossChainTransferStatus.SeenInBlock)
             {
