@@ -142,6 +142,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway
             this.DBreeze = new DBreezeEngine(folder);
             this.network = network;
             this.dateTimeProvider = dateTimeProvider;
+            this.TipHashAndHeight = null;
             this.NextMatureDepositHeight = 0;
 
             // Initialize tracking deposits by status.
@@ -255,6 +256,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway
         {
             Guard.NotNull(newTip, nameof(newTip));
             Guard.NotNull(blocks, nameof(blocks));
+            Guard.Assert(blocks.Count == 0 || blocks[0].Header.HashPrevBlock == (this.TipHashAndHeight?.Hash ?? 0));
 
             Task task = Task.Run(() =>
             {
