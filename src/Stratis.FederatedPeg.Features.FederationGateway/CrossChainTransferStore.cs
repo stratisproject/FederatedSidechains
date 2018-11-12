@@ -30,8 +30,8 @@ namespace Stratis.FederatedPeg.Features.FederationGateway
         /// <summary>
         /// Records the mature deposits from <see cref="NextMatureDepositHeight"/> on the counter-chain.
         /// The value of <see cref="NextMatureDepositHeight"/> is incremented at the end of this call.
-        /// The caller should check that <see cref="NextMatureDepositHeight"/> is a represents a height
-        /// on the counter-chain which would contain mature deposits.
+        /// The caller should check that <see cref="NextMatureDepositHeight"/> is a height on the
+        /// counter-chain which would contain mature deposits.
         /// </summary>
         /// <param name="crossChainTransfers">The deposit transactions.</param>
         /// <remarks>
@@ -61,23 +61,22 @@ namespace Stratis.FederatedPeg.Features.FederationGateway
 
         /// <summary>
         /// Updates partial transactions in the store with signatures obtained from the passed transactions.
+        /// The <see cref="CrossChainTransferStatus.FullySigned"/> status is set on fully signed transactions.
         /// </summary>
         /// <param name="depositId">The deposit transaction to update.</param>
         /// <param name="partialTransactions">Partial transactions received from other federation members.</param>
-        /// <remarks>
-        /// The following statuses may be set:
-        /// <list type="bullet">
-        /// <item><see cref="CrossChainTransferStatus.FullySigned"/></item>
-        /// </list>
-        /// </remarks>
         Task MergeTransactionSignaturesAsync(uint256 depositId, Transaction[] partialTransactions);
 
         /// <summary>
-        /// Returns all fully signed transactions.
+        /// Sets the cross-chaintransfer status associated with the rejected transaction to to <see cref="CrossChainTransferStatus.Rejected"/>.
         /// </summary>
-        /// <remarks>
-        /// The caller is responsible for checking the memory pool and not re-broadcasting transactions unneccessarily.
-        /// </remarks>
+        /// <param name="transaction">The transaction that was rejected.</param>
+        Task SetRejectedStatusAsync(Transaction transaction);
+
+        /// <summary>
+        /// Returns all fully signed transactions. The caller is responsible for checking the memory pool and
+        /// not re-broadcasting transactions unneccessarily.
+        /// </summary>
         /// <returns>An array of fully signed transactions.</returns>
         Task<Transaction[]> GetTransactionsToBroadcastAsync();
 
@@ -450,6 +449,42 @@ namespace Stratis.FederatedPeg.Features.FederationGateway
             return task;
         }
 
+        /// <inheritdoc />
+        public Task SetRejectedStatusAsync(Transaction transaction)
+        {
+            Task task = Task.Run(() =>
+            {
+                this.logger.LogTrace("()");
+
+                IDeposit deposit = this.depositExtractor.ExtractDepositFromTransaction(transaction, 0, 0);
+                if (deposit == null)
+                {
+                    this.logger.LogTrace("(-)[NO_DEPOSIT]");
+                    return;
+                }
+
+                CrossChainTransfer crossChainTransfer = this.GetAsync(new[] { deposit.Id }).GetAwaiter().GetResult().FirstOrDefault();
+                if (crossChainTransfer == null)
+                {
+                    this.logger.LogTrace("(-)[NO_TRANSFER]");
+                    return;
+                }
+
+                using (DBreeze.Transactions.Transaction dbreezeTransaction = this.DBreeze.GetTransaction())
+                {
+                    dbreezeTransaction.SynchronizeTables(transferTableName, commonTableName);
+                    dbreezeTransaction.ValuesLazyLoadingIsOn = false;
+                    crossChainTransfer.SetStatus(CrossChainTransferStatus.Rejected);
+                    this.PutTransferAsync(dbreezeTransaction, crossChainTransfer).GetAwaiter().GetResult();
+                    dbreezeTransaction.Commit();
+                }
+
+                this.logger.LogTrace("(-)");
+            });
+
+            return task;
+        }
+
         /// <summary>
         /// Persist the cross-chain transfer information into the database.
         /// </summary>
@@ -497,7 +532,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway
                         Script scriptPubKey = BitcoinAddress.Create(deposit.TargetAddress, this.network).ScriptPubKey;
                         Transaction transaction = block.Transactions.Single(t => t.GetHash() == deposit.Id);
 
-                        storedDeposits[i] = new CrossChainTransfer(CrossChainTransferStatus.SeenInBlock, deposit.Id, deposit.BlockNumber,
+                        storedDeposits[i] = new CrossChainTransfer(CrossChainTransferStatus.SeenInBlock, deposit.Id, -1 /* Unknown */,
                             scriptPubKey, deposit.Amount, transaction, block.GetHash(), blockHeight);
 
                         // Update the lookups.
