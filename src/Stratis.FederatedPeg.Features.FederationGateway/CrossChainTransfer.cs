@@ -170,6 +170,11 @@ namespace Stratis.FederatedPeg.Features.FederationGateway
             Guard.Assert(IsValid());
         }
 
+        /// <summary>
+        /// Combines signatures from partial transactions received from other federation members.
+        /// </summary>
+        /// <param name="network">The network targeted by the transactions.</param>
+        /// <param name="partials">Partial transactions received from other federation members.</param>
         public void CombineSignatures(Network network, Transaction[] partials)
         {
             Guard.Assert(this.status == CrossChainTransferStatus.Partial);
