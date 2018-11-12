@@ -1,7 +1,5 @@
 ﻿using System;
-using System.Net;
 using System.Net.Http;
-using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using NSubstitute;
@@ -36,28 +34,31 @@ namespace Stratis.FederatedPeg.Tests
         }
 
         [Fact]
-        public async Task SendBlockTip_Should_Be_Able_To_Send_IBlockTip()
+        public async Task SendBlockTip_Should_Be_Able_To_Send_IBlockTipAsync()
         {
-            this.PrepareWorkingHttpClient();
+            TestingHttpClient.PrepareWorkingHttpClient(ref this.messageHandler, ref this.httpClient, ref this.httpClientFactory);
 
             var restSender = new RestBlockTipSender(this.loggerFactory, this.federationSettings, this.httpClientFactory);
 
             var blockTip = new BlockTipModel(TestingValues.GetUint256(), TestingValues.GetPositiveInt());
 
-            await restSender.SendBlockTipAsync(blockTip);
+            await restSender.SendBlockTipAsync(blockTip).ConfigureAwait(false);
 
             this.logger.Received(0).Log<object>(LogLevel.Error, 0, Arg.Any<object>(), Arg.Any<Exception>(), Arg.Any<Func<object, Exception, string>>());
         }
 
-        private void PrepareWorkingHttpClient()
+        [Fact]
+        public async Task SendBlockTip_Should_Log_Error_When_Failing_To_Send_IBlockTipAsync()
         {
-            this.messageHandler = Substitute.ForPartsOf<HttpMessageHandler>();
-            this.messageHandler.Protected("SendAsync", Arg.Any<HttpRequestMessage>(), Arg.Any<CancellationToken>())
-                .Returns(Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK)));
-            this.httpClient = new HttpClient(this.messageHandler);
+            TestingHttpClient.PrepareFailingHttpClient(ref this.messageHandler, ref this.httpClient, ref this.httpClientFactory);
 
-            this.httpClientFactory = Substitute.For<IHttpClientFactory>();
-            this.httpClientFactory.CreateClient(Arg.Any<string>()).Returns(this.httpClient);
+            var restSender = new RestBlockTipSender(this.loggerFactory, this.federationSettings, this.httpClientFactory);
+
+            var blockTip = new BlockTipModel(TestingValues.GetUint256(), TestingValues.GetPositiveInt());
+
+            await restSender.SendBlockTipAsync(blockTip).ConfigureAwait(false);
+
+            this.logger.Received(1).Log<object>(LogLevel.Error, 0, Arg.Any<object>(), Arg.Is<Exception>(e => e != null), Arg.Any<Func<object, Exception, string>>());
         }
 
         /// <inheritdoc />

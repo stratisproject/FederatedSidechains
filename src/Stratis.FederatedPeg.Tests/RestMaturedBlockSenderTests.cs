@@ -1,13 +1,11 @@
 ﻿using System;
-using System.Net;
 using System.Net.Http;
-using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using NSubstitute;
-using NSubstitute.ExceptionExtensions;
 using Stratis.FederatedPeg.Features.FederationGateway;
 using Stratis.FederatedPeg.Features.FederationGateway.SourceChain;
+using Stratis.FederatedPeg.Tests.Utils;
 using Xunit;
 
 namespace Stratis.FederatedPeg.Tests
@@ -35,51 +33,31 @@ namespace Stratis.FederatedPeg.Tests
         }
 
         [Fact]
-        public async Task SendMaturedBlockDeposits_Should_Be_Able_To_Send_IMaturedBlockDeposits()
+        public async Task SendMaturedBlockDeposits_Should_Be_Able_To_Send_IMaturedBlockDepositsAsync()
         {
-            PrepareWorkingHttpClient();
+            TestingHttpClient.PrepareWorkingHttpClient(ref this.messageHandler, ref this.httpClient, ref this.httpClientFactory);
 
             var maturedBlockDeposits = MaturedBlockDepositModelTests.PrepareMaturedBlockDeposits();
 
             var restSender = new RestMaturedBlockSender(this.loggerFactory, this.federationSettings, this.httpClientFactory);
 
-            await restSender.SendMaturedBlockDepositsAsync(maturedBlockDeposits);
+            await restSender.SendMaturedBlockDepositsAsync(maturedBlockDeposits).ConfigureAwait(false);
+
             this.logger.Received(0).Log<object>(LogLevel.Error, 0, Arg.Any<object>(), Arg.Any<Exception>(), Arg.Any<Func<object, Exception, string>>());
         }
 
-        private void PrepareWorkingHttpClient()
-        {
-            this.messageHandler = Substitute.ForPartsOf<HttpMessageHandler>();
-            this.messageHandler.Protected("SendAsync", Arg.Any<HttpRequestMessage>(), Arg.Any<CancellationToken>())
-                .Returns(Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK)));
-            this.httpClient = new HttpClient(this.messageHandler);
-
-            this.httpClientFactory = Substitute.For<IHttpClientFactory>();
-            this.httpClientFactory.CreateClient(Arg.Any<string>()).Returns(this.httpClient);
-        }
-
         [Fact]
-        public async Task SendMaturedBlockDeposits_Should_Log_Error_When_Failing_To_Send_MaturedBlockDeposit()
+        public async Task SendMaturedBlockDeposits_Should_Log_Error_When_Failing_To_Send_MaturedBlockDepositAsync()
         {
-            PrepareFailingHttpClient();
+            TestingHttpClient.PrepareFailingHttpClient(ref this.messageHandler, ref this.httpClient, ref this.httpClientFactory);
 
             var maturedBlockDeposits = MaturedBlockDepositModelTests.PrepareMaturedBlockDeposits();
 
             var restSender = new RestMaturedBlockSender(this.loggerFactory, this.federationSettings, this.httpClientFactory);
 
-            await restSender.SendMaturedBlockDepositsAsync(maturedBlockDeposits);
+            await restSender.SendMaturedBlockDepositsAsync(maturedBlockDeposits).ConfigureAwait(false);
+
             this.logger.Received(1).Log<object>(LogLevel.Error, 0, Arg.Any<object>(), Arg.Is<Exception>(e => e != null), Arg.Any<Func<object, Exception, string>>());
-        }
-
-        private void PrepareFailingHttpClient()
-        {
-            this.messageHandler = Substitute.ForPartsOf<HttpMessageHandler>();
-            this.messageHandler.Protected("SendAsync", Arg.Any<HttpRequestMessage>(), Arg.Any<CancellationToken>())
-                .ThrowsForAnyArgs(new Exception("failed"));
-            this.httpClient = new HttpClient(this.messageHandler);
-
-            this.httpClientFactory = Substitute.For<IHttpClientFactory>();
-            this.httpClientFactory.CreateClient(Arg.Any<string>()).Returns(this.httpClient);
         }
 
         /// <inheritdoc />
