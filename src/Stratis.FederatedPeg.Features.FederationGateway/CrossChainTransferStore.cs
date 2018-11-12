@@ -73,6 +73,15 @@ namespace Stratis.FederatedPeg.Features.FederationGateway
         Task MergeTransactionSignaturesAsync(uint256 depositId, Transaction[] partialTransactions);
 
         /// <summary>
+        /// Returns all fully signed transactions.
+        /// </summary>
+        /// <remarks>
+        /// The caller is responsible for checking the memory pool and not re-broadcasting transactions unneccessarily.
+        /// </remarks>
+        /// <returns>An array of fully signed transactions.</returns>
+        Task<Transaction[]> GetTransactionsToBroadcastAsync();
+
+        /// <summary>
         /// The tip of our chain when we last updated the store.
         /// </summary>
         HashHeightPair TipHashAndHeight { get; }
@@ -98,7 +107,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway
         private Dictionary<uint256, int> blockHeightsByBlockHash = new Dictionary<uint256, int>();
 
         /// <summary>This table contains deposits ids by status.</summary>
-        private Dictionary<CrossChainTransferStatus, HashSet<uint256>> depositsByStatus = new Dictionary<CrossChainTransferStatus, HashSet<uint256>>();
+        private Dictionary<CrossChainTransferStatus, HashSet<uint256>> depositsIdsByStatus = new Dictionary<CrossChainTransferStatus, HashSet<uint256>>();
 
         /// <inheritdoc />
         public int NextMatureDepositHeight { get; private set; }
@@ -147,7 +156,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway
 
             // Initialize tracking deposits by status.
             foreach (var status in typeof(CrossChainTransferStatus).GetEnumValues())
-                this.depositsByStatus[(CrossChainTransferStatus)status] = new HashSet<uint256>();
+                this.depositsIdsByStatus[(CrossChainTransferStatus)status] = new HashSet<uint256>();
         }
 
         /// <summary>Performs any needed initialisation for the database.</summary>
@@ -175,7 +184,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway
 
                             deposits.Add(transfer.DepositTransactionId);
 
-                            this.depositsByStatus[transfer.Status].Add(transfer.DepositTransactionId);
+                            this.depositsIdsByStatus[transfer.Status].Add(transfer.DepositTransactionId);
 
                             this.blockHeightsByBlockHash[transfer.BlockHash] = transfer.BlockHeight;
                         }
@@ -238,6 +247,8 @@ namespace Stratis.FederatedPeg.Features.FederationGateway
                     if (transfer != null)
                     {
                         transfer.CombineSignatures(this.network, partialTransactions);
+
+                        // TODO: Update status to FullySigned when appropriate.
 
                         this.PutTransferAsync(dbreezeTransaction, transfer).GetAwaiter().GetResult();
                     }
@@ -418,6 +429,27 @@ namespace Stratis.FederatedPeg.Features.FederationGateway
             return task;
         }
 
+        /// <inheritdoc />
+        public Task<Transaction[]> GetTransactionsToBroadcastAsync()
+        {
+            Task<Transaction[]> task = Task.Run(() =>
+            {
+                this.logger.LogTrace("()");
+
+                uint256[] fullySignedTransfers = this.depositsIdsByStatus[CrossChainTransferStatus.FullySigned].ToArray();
+
+                CrossChainTransfer[] transfers = this.GetAsync(fullySignedTransfers).GetAwaiter().GetResult();
+
+                Transaction[] res = transfers.Select(t => t.PartialTransaction).ToArray();
+
+                this.logger.LogTrace("(-){0}", res);
+
+                return res;
+            });
+
+            return task;
+        }
+
         /// <summary>
         /// Persist the cross-chain transfer information into the database.
         /// </summary>
@@ -469,7 +501,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway
                             scriptPubKey, deposit.Amount, transaction, block.GetHash(), blockHeight);
 
                         // Update the lookups.
-                        this.depositsByStatus[CrossChainTransferStatus.SeenInBlock].Add(storedDeposits[i].DepositTransactionId);
+                        this.depositsIdsByStatus[CrossChainTransferStatus.SeenInBlock].Add(storedDeposits[i].DepositTransactionId);
                         this.depositIdsByBlockHash[block.GetHash()].Add(deposit.Id);
                     }
                     else
@@ -540,9 +572,9 @@ namespace Stratis.FederatedPeg.Features.FederationGateway
         /// <param name="status">The new status.</param>
         private void SetTransferStatus(CrossChainTransfer transfer, CrossChainTransferStatus status)
         {
-            this.depositsByStatus[transfer.Status].Remove(transfer.DepositTransactionId);
+            this.depositsIdsByStatus[transfer.Status].Remove(transfer.DepositTransactionId);
             transfer.SetStatus(status);
-            this.depositsByStatus[transfer.Status].Add(transfer.DepositTransactionId);
+            this.depositsIdsByStatus[transfer.Status].Add(transfer.DepositTransactionId);
         }
 
         /// <inheritdoc />
