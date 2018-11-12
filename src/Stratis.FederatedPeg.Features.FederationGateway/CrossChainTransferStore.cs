@@ -174,6 +174,9 @@ namespace Stratis.FederatedPeg.Features.FederationGateway
                     foreach (Row<byte[], CrossChainTransfer> transferRow in dbreezeTransaction.SelectForward<byte[], CrossChainTransfer>(transferTableName))
                     {
                         CrossChainTransfer transfer = transferRow.Value;
+
+                        this.depositsIdsByStatus[transfer.Status].Add(transfer.DepositTransactionId);
+
                         if (transfer.BlockHash != null)
                         {
                             if (!this.depositIdsByBlockHash.TryGetValue(transfer.BlockHash, out HashSet<uint256> deposits))
@@ -182,8 +185,6 @@ namespace Stratis.FederatedPeg.Features.FederationGateway
                             }
 
                             deposits.Add(transfer.DepositTransactionId);
-
-                            this.depositsIdsByStatus[transfer.Status].Add(transfer.DepositTransactionId);
 
                             this.blockHeightsByBlockHash[transfer.BlockHash] = transfer.BlockHeight;
                         }
