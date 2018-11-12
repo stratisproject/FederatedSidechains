@@ -200,14 +200,15 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.Controllers
                 }
 
                 int currentHeight = chainedHeader.Height;
+                int matureHeight = (this.chain.Tip.Height - (int)this.depositExtractor.MinimumDepositConfirmations);
 
-                if (currentHeight > this.chain.Tip.Height - this.depositExtractor.MinimumDepositConfirmations)
+                if (currentHeight > matureHeight)
                 {
                     return ErrorHelpers.BuildErrorResponse(HttpStatusCode.BadRequest, 
-                        $"Block height {blockHashHeight.BlockHeight} is greater than the minimum deposit confirmations required {this.depositExtractor.MinimumDepositConfirmations}.", string.Empty);
+                        $"Block height {blockHashHeight.BlockHeight} submitted is not mature enough. Blocks less than a height of {matureHeight} can be processed.", string.Empty);
                 }
 
-                while (currentHeight <= this.chain.Tip.Height - this.depositExtractor.MinimumDepositConfirmations)
+                while (currentHeight < matureHeight)
                 {
                     IMaturedBlockDeposits maturedBlockDeposits =
                         this.depositExtractor.ExtractMaturedBlockDeposits(chainedHeader);
