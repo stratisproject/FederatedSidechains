@@ -74,10 +74,9 @@ namespace Stratis.FederatedPeg.Tests
             var crossChainTransferStore = new CrossChainTransferStore(this.network, nodeSettings.DataFolder, chain, new FederationGatewaySettings(nodeSettings),
                 this.dateTimeProvider, this.loggerFactory, this.opReturnDataReader, this.fullNode, this.blockRepository);
 
-
             crossChainTransferStore.Initialize();
-            crossChainTransferStore.SynchronizeAsync().GetAwaiter().GetResult();
 
+            Assert.True(crossChainTransferStore.SynchronizeAsync().GetAwaiter().GetResult());
             Assert.Equal(chain.Tip.HashBlock, crossChainTransferStore.TipHashAndHeight.Hash);
             Assert.Equal(chain.Tip.Height, crossChainTransferStore.TipHashAndHeight.Height);
         }

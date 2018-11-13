@@ -76,9 +76,12 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
         Task<bool> DeleteAsync();
 
         /// <summary>
-        /// Synchronizes the store with the chain.
+        /// Attempts to synchronizes the store with the chain.
         /// </summary>
-        Task SynchronizeAsync();
+        /// <returns>
+        /// Returns <c>true</c> if the store is in sync or <c>false</c> otherwise.
+        /// </returns>
+        Task<bool> SynchronizeAsync();
 
         /// <summary>
         /// Updates partial transactions in the store with signatures obtained from the passed transactions.
@@ -388,19 +391,29 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
         }
 
         /// <inheritdoc />
-        public Task SynchronizeAsync()
+        public Task<bool> SynchronizeAsync()
         {
-            Task task = Task.Run(() =>
+            Task<bool> task = Task<bool>.Run(() =>
             {
                 this.logger.LogTrace("()");
 
                 while (!this.cancellation.IsCancellationRequested)
                 {
-                    if (SynchronizeBatchAsync().GetAwaiter().GetResult())
-                        break;
+                    if (this.DeleteAsync().GetAwaiter().GetResult())
+                    {
+                        this.logger.LogTrace("(-):true");
+                        return true;
+                    }
+
+                    if (!SynchronizeBatchAsync().GetAwaiter().GetResult())
+                    {
+                        this.logger.LogTrace("(-):false");
+                        return false;
+                    }
                 }
 
-                this.logger.LogTrace("(-)");
+                this.logger.LogTrace("(-):true");
+                return true;
             });
 
             return task;
@@ -415,12 +428,6 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
             Task<bool> task = Task<bool>.Run(() =>
             {
                 this.logger.LogTrace("()");
-
-                if (this.DeleteAsync().GetAwaiter().GetResult())
-                {
-                    this.logger.LogTrace("(-):true");
-                    return true;
-                }
 
                 // Get a batch of blocks.
                 var blockHashes = new List<uint256>();
@@ -448,8 +455,10 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
 
                 this.logger.LogTrace("Synchronized {0} blocks with cross-chain store.", availableBlocks);
 
-                this.logger.LogTrace("(-):false");
-                return false;
+                bool success = availableBlocks == blocks.Count;
+
+                this.logger.LogTrace("(-):{0}", success);
+                return success;
             });
 
             return task;
