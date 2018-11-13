@@ -298,30 +298,25 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
         }
 
         /// <inheritdoc />
-        public Task PutAsync(HashHeightPair newTip, List<Block> blocks)
+        public async Task PutAsync(HashHeightPair newTip, List<Block> blocks)
         {
             Guard.NotNull(newTip, nameof(newTip));
             Guard.NotNull(blocks, nameof(blocks));
             Guard.Assert(blocks.Count == 0 || blocks[0].Header.HashPrevBlock == (this.TipHashAndHeight?.Hash ?? 0));
 
-            Task task = Task.Run(() =>
+            this.logger.LogTrace("()");
+
+            using (DBreeze.Transactions.Transaction transaction = this.DBreeze.GetTransaction())
             {
-                this.logger.LogTrace("()");
+                transaction.SynchronizeTables(transferTableName, commonTableName);
+                await this.OnInsertBlocksAsync(transaction, newTip.Height - blocks.Count + 1, blocks);
 
-                using (DBreeze.Transactions.Transaction transaction = this.DBreeze.GetTransaction())
-                {
-                    transaction.SynchronizeTables(transferTableName, commonTableName);
-                    this.OnInsertBlocks(transaction, newTip.Height - blocks.Count + 1, blocks);
+                // Commit additions
+                this.SaveTipHashAndHeight(transaction, newTip);
+                transaction.Commit();
+            }
 
-                    // Commit additions
-                    this.SaveTipHashAndHeight(transaction, newTip);
-                    transaction.Commit();
-                }
-
-                this.logger.LogTrace("(-)");
-            });
-
-            return task;
+            this.logger.LogTrace("(-)");
         }
 
         /// <inheritdoc />
@@ -355,7 +350,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
                 {
                     transaction.SynchronizeTables(transferTableName, commonTableName);
                     transaction.ValuesLazyLoadingIsOn = false;
-                    this.OnDeleteBlocks(transaction, commonHeight);
+                    await this.OnDeleteBlocksAsync(transaction, commonHeight);
                     this.SaveTipHashAndHeight(transaction, new HashHeightPair(this.chain.Tip.HashBlock, this.chain.Tip.Height));
                     transaction.Commit();
                 }
@@ -613,7 +608,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
         /// <param name="dbreezeTransaction">The DBreeze transaction context to use.</param>
         /// <param name="blockHeight">The block height of the first block in the list.</param>
         /// <param name="blocks">The list of blocks to add.</param>
-        private void OnInsertBlocks(DBreeze.Transactions.Transaction dbreezeTransaction, int blockHeight, List<Block> blocks)
+        private async Task OnInsertBlocksAsync(DBreeze.Transactions.Transaction dbreezeTransaction, int blockHeight, List<Block> blocks)
         {
             // Find transfer transactions in blocks
             foreach (Block block in blocks)
@@ -646,7 +641,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
                         this.SetTransferStatus(storedDeposits[i], CrossChainTransferStatus.SeenInBlock);
                     }
 
-                    this.PutTransferAsync(dbreezeTransaction, storedDeposits[i]).GetAwaiter().GetResult();
+                    await this.PutTransferAsync(dbreezeTransaction, storedDeposits[i]);
                 }
 
                 // Update lookups.
@@ -659,7 +654,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
         /// </summary>
         /// <param name="dbreezeTransaction">The DBreeze transaction context to use.</param>
         /// <param name="lastBlockHeight">The last block to retain.</param>
-        private void OnDeleteBlocks(DBreeze.Transactions.Transaction dbreezeTransaction, int lastBlockHeight)
+        private async Task OnDeleteBlocksAsync(DBreeze.Transactions.Transaction dbreezeTransaction, int lastBlockHeight)
         {
             // Gather all the deposit ids.
             var depositIds = new HashSet<uint256>();
@@ -688,7 +683,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
                 this.SetTransferStatus(transfer, CrossChainTransferStatus.FullySigned);
 
                 // Write the transfer status to the database.
-                this.PutTransferAsync(dbreezeTransaction, transfer).GetAwaiter().GetResult();
+                await this.PutTransferAsync(dbreezeTransaction, transfer);
 
                 // Update the lookups.
                 this.depositIdsByBlockHash[transfer.BlockHash].Remove(transfer.DepositTransactionId);
