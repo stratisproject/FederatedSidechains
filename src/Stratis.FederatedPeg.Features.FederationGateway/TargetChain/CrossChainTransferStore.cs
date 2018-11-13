@@ -490,20 +490,15 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
         }
 
         /// <inheritdoc />
-        public Task<CrossChainTransfer[]> GetAsync(uint256[] depositId)
+        public async Task<CrossChainTransfer[]> GetAsync(uint256[] depositId)
         {
-            Task<CrossChainTransfer[]> task = Task.Run(() =>
+            this.logger.LogTrace("()");
+            using (DBreeze.Transactions.Transaction transaction = this.DBreeze.GetTransaction())
             {
-                this.logger.LogTrace("()");
-                using (DBreeze.Transactions.Transaction transaction = this.DBreeze.GetTransaction())
-                {
-                    transaction.ValuesLazyLoadingIsOn = false;
+                transaction.ValuesLazyLoadingIsOn = false;
 
-                    return Get(transaction, depositId);
-                }
-            });
-
-            return task;
+                return Get(transaction, depositId);
+            }
         }
 
         private CrossChainTransfer[] Get(DBreeze.Transactions.Transaction transaction, uint256[] depositId)
