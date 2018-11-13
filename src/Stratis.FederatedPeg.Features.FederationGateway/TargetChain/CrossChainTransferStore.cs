@@ -412,8 +412,8 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
                     }
                 }
 
-                this.logger.LogTrace("(-):true");
-                return true;
+                this.logger.LogTrace("(-):false");
+                return false;
             });
 
             return task;
