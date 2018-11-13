@@ -581,20 +581,15 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
         /// </summary>
         /// <param name="dbreezeTransaction">The DBreeze transaction context to use.</param>
         /// <param name="crossChainTransfer">Cross-chain transfer information to be inserted.</param>
-        private Task PutTransferAsync(DBreeze.Transactions.Transaction dbreezeTransaction, CrossChainTransfer crossChainTransfer)
+        private async Task PutTransferAsync(DBreeze.Transactions.Transaction dbreezeTransaction, CrossChainTransfer crossChainTransfer)
         {
             Guard.NotNull(crossChainTransfer, nameof(crossChainTransfer));
 
-            Task task = Task.Run(() =>
-            {
-                this.logger.LogTrace("()");
+            this.logger.LogTrace("()");
 
-                dbreezeTransaction.Insert<byte[], CrossChainTransfer>(transferTableName, crossChainTransfer.DepositTransactionId.ToBytes(), crossChainTransfer);
+            dbreezeTransaction.Insert<byte[], CrossChainTransfer>(transferTableName, crossChainTransfer.DepositTransactionId.ToBytes(), crossChainTransfer);
 
-                this.logger.LogTrace("(-)");
-            });
-
-            return task;
+            this.logger.LogTrace("(-)");
         }
 
         /// <summary>
