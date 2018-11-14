@@ -12,6 +12,7 @@ using Stratis.Bitcoin.Features.Wallet.Interfaces;
 using Stratis.Bitcoin.Utilities;
 using Stratis.FederatedPeg.Features.FederationGateway;
 using Stratis.FederatedPeg.Features.FederationGateway.Interfaces;
+using Stratis.FederatedPeg.Features.FederationGateway.TargetChain;
 using Stratis.FederatedPeg.Features.FederationGateway.Wallet;
 using Stratis.Sidechains.Networks;
 using Xunit;
@@ -159,7 +160,7 @@ namespace Stratis.FederatedPeg.Tests
             this.federationWalletManager.ProcessTransaction(transaction1);
 
             // All the input UTXO's should be present in spending details of the multi-sig address.
-            Assert.True(this.SanityCheck(transaction1));
+            Assert.True(CrossChainTransferStore.SanityCheck(transaction1, this.wallet));
 
             // Confirm this can be done twice without ill effect.
             // (We may have to re-reserve UTXO's associated with partial transactions after a node restart or re-org.)
@@ -216,29 +217,8 @@ namespace Stratis.FederatedPeg.Tests
             this.federationWalletManager.ProcessTransaction(transaction2);
 
             // All the input UTXO's should be present in spending details of the multi-sig address.
-            Assert.True(this.SanityCheck(transaction2));
+            Assert.True(CrossChainTransferStore.SanityCheck(transaction2, this.wallet));
 
-        }
-
-        /// <summary>
-        /// Verifies that the transaction's inout UTXO's have been reserved by the wallet.
-        /// </summary>
-        /// <param name="transaction">The transaction to check.</param>
-        /// <returns><c>True</c> if all's well and <c>false</c> otherwise.</returns>
-        private bool SanityCheck(Transaction transaction)
-        {
-            // All the input UTXO's should be present in spending details of the multi-sig address.
-            foreach (TxIn input in transaction.Inputs)
-            {
-                TransactionData transactionData = this.wallet.MultiSigAddress.Transactions
-                    .Where(t => t.SpendingDetails != null && t.SpendingDetails.TransactionId == transaction.GetHash()
-                        && t.Id == input.PrevOut.Hash && t.Index == input.PrevOut.N).FirstOrDefault();
-
-                if (transactionData == null)
-                    return false;
-            }
-
-            return true;
         }
 
         /// <summary>

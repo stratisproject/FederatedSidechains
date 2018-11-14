@@ -743,7 +743,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
         /// <param name="transaction">The transaction to check.</param>
         /// <param name="wallet">The wallet to check.</param>
         /// <returns><c>True</c> if all's well and <c>false</c> otherwise.</returns>
-        private bool SanityCheck(Transaction transaction, Wallet.FederationWallet wallet)
+        public static bool SanityCheck(Transaction transaction, Wallet.FederationWallet wallet)
         {
             // All the input UTXO's should be present in spending details of the multi-sig address.
             foreach (TxIn input in transaction.Inputs)
