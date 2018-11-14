@@ -66,7 +66,7 @@ namespace Stratis.FederatedPeg.Tests
         {
             ConcurrentChain chain = BuildChain(5);
 
-            string dataDir = GetTestDirectoryPath(this);
+            string dataDir = CreateTestDir(this);
             var nodeSettings = new NodeSettings(this.network, NBitcoin.Protocol.ProtocolVersion.ALT_PROTOCOL_VERSION,
                 args: new[] {
                     "-mainchain",
@@ -94,7 +94,7 @@ namespace Stratis.FederatedPeg.Tests
         {
             ConcurrentChain chain = BuildChain(5);
 
-            string dataDir = GetTestDirectoryPath(this);
+            string dataDir = CreateTestDir(this);
             var nodeSettings = new NodeSettings(this.network, NBitcoin.Protocol.ProtocolVersion.ALT_PROTOCOL_VERSION,
                 args: new[] {
                     "-mainchain",
@@ -189,6 +189,18 @@ namespace Stratis.FederatedPeg.Tests
         }
 
         /// <summary>
+        /// Creates a directory for a test, based on the name of the class containing the test and the name of the test.
+        /// </summary>
+        /// <param name="caller">The calling object, from which we derive the namespace in which the test is contained.</param>
+        /// <param name="callingMethod">The name of the test being executed. A directory with the same name will be created.</param>
+        /// <returns>The path of the directory that was created.</returns>
+        public static string CreateTestDir(object caller, [System.Runtime.CompilerServices.CallerMemberName] string callingMethod = "")
+        {
+            string directoryPath = GetTestDirectoryPath(caller, callingMethod);
+            return AssureEmptyDir(directoryPath);
+        }
+
+        /// <summary>
         /// Gets the path of the directory that <see cref="CreateTestDir(object, string)"/> or <see cref="CreateDataFolder(object, string)"/> would create.
         /// </summary>
         /// <remarks>The path of the directory is of the form TestCase/{testClass}/{testName}.</remarks>
@@ -197,7 +209,25 @@ namespace Stratis.FederatedPeg.Tests
         /// <returns>The path of the directory.</returns>
         public static string GetTestDirectoryPath(object caller, [System.Runtime.CompilerServices.CallerMemberName] string callingMethod = "")
         {
-            return Path.Combine(Path.GetTempPath() ?? ".", caller.GetType().Name, callingMethod);
+            return GetTestDirectoryPath(Path.Combine(caller.GetType().Name, callingMethod));
+        }
+
+        /// <summary>
+        /// Gets the path of the directory that <see cref="CreateTestDir(object, string)"/> would create.
+        /// </summary>
+        /// <remarks>The path of the directory is of the form TestCase/{testClass}/{testName}.</remarks>
+        /// <param name="testDirectory">The directory in which the test files are contained.</param>
+        /// <returns>The path of the directory.</returns>
+        public static string GetTestDirectoryPath(string testDirectory)
+        {
+            return Path.Combine("..", "..", "..", "..", "TestCase", testDirectory);
+        }
+
+        public static string AssureEmptyDir(string dir)
+        {
+            string uniqueDirName = $"{dir}-{DateTime.UtcNow:ddMMyyyyTHH.mm.ss.fff}";
+            Directory.CreateDirectory(uniqueDirName);
+            return uniqueDirName;
         }
     }
 }
