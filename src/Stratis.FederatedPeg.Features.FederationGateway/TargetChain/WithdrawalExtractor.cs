@@ -1,5 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
 using Microsoft.Extensions.Logging;
 using NBitcoin;
@@ -15,7 +14,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
 
         private readonly ILogger logger;
 
-        private readonly Script withdrawalScript;
+        private readonly BitcoinAddress multisigAddress;
 
         public WithdrawalExtractor(
             ILoggerFactory loggerFactory,
@@ -24,7 +23,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
             Network network)
         {
             this.logger = loggerFactory.CreateLogger(this.GetType().FullName);
-            this.withdrawalScript = federationGatewaySettings.MultiSigRedeemScript;
+            this.multisigAddress = federationGatewaySettings.MultiSigAddress;
             this.opReturnDataReader = opReturnDataReader;
             this.network = network;
         }
@@ -36,11 +35,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
             foreach (var transaction in block.Transactions)
             {
                 if (transaction.Outputs.Count(this.IsTargetAddressCandidate) != 1) continue;
-
-                var withdrawalFromMultisig = transaction.Inputs.Where(input =>
-                    input.ScriptSig == this.withdrawalScript).ToList();
-
-                if (!withdrawalFromMultisig.Any()) continue;
+                if (!transaction.Inputs.All(IsFromMultisig)) continue;
 
                 var depositId = this.opReturnDataReader.TryGetTransactionId(transaction);
                 if (string.IsNullOrWhiteSpace(depositId)) continue;
@@ -59,7 +54,13 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
 
         private bool IsTargetAddressCandidate(TxOut output)
         {
-            return output.ScriptPubKey != this.withdrawalScript && !output.ScriptPubKey.IsUnspendable;
+            return output.ScriptPubKey.Hash.GetAddress(this.network) != this.multisigAddress && !output.ScriptPubKey.IsUnspendable;
+        }
+
+        private bool IsFromMultisig(TxIn input)
+        {
+            var signerAddress = input.ScriptSig.GetSignerAddress(this.network);
+            return signerAddress == this.multisigAddress;
         }
     }
 }

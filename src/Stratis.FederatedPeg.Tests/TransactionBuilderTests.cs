@@ -55,7 +55,6 @@ namespace Stratis.FederatedPeg.Tests
                 this.loggerFactory,
                 this.network,
                 this.chain,
-                this.nodeSettings,
                 this.dataFolder,
                 this.walletFeePolicy,
                 new Mock<IAsyncLoopFactory>().Object,
