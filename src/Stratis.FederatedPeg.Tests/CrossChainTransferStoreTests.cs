@@ -22,13 +22,13 @@ namespace Stratis.FederatedPeg.Tests
         private readonly ILoggerFactory loggerFactory;
         private readonly ILogger logger;
         private readonly IDateTimeProvider dateTimeProvider;
-        private readonly IOpReturnDataReader opReturnDataReader;
+        private readonly IDepositExtractor depositExtractor;
         private readonly IBlockRepository blockRepository;
         private readonly IFullNode fullNode;
         private readonly IFederationWalletManager federationWalletManager;
         private readonly IFederationGatewaySettings federationGatewaySettings;
         private Dictionary<uint256, Block> blockDict;
-
+        
         /// <summary>
         /// Initializes the cross-chain transfer tests.
         /// </summary>
@@ -40,7 +40,7 @@ namespace Stratis.FederatedPeg.Tests
             this.logger = Substitute.For<ILogger>();
             this.loggerFactory.CreateLogger(null).ReturnsForAnyArgs(this.logger);
             this.dateTimeProvider = DateTimeProvider.Default;
-            this.opReturnDataReader = new OpReturnDataReader(this.loggerFactory, this.network);
+            this.depositExtractor = Substitute.For<IDepositExtractor>();
             this.blockRepository = Substitute.For<IBlockRepository>();
             this.fullNode = Substitute.For<IFullNode>();
             this.federationWalletManager = Substitute.For<IFederationWalletManager>();
@@ -76,7 +76,7 @@ namespace Stratis.FederatedPeg.Tests
             var dataFolder = new DataFolder(CreateTestDir(this));
 
             using (var crossChainTransferStore = new CrossChainTransferStore(this.network, dataFolder, chain, this.federationGatewaySettings,
-                this.dateTimeProvider, this.loggerFactory, this.opReturnDataReader, this.fullNode, this.blockRepository, this.federationWalletManager))
+                this.dateTimeProvider, this.loggerFactory, this.depositExtractor, this.fullNode, this.blockRepository, this.federationWalletManager))
             {
                 crossChainTransferStore.Initialize();
 
@@ -96,7 +96,7 @@ namespace Stratis.FederatedPeg.Tests
             var dataFolder = new DataFolder(CreateTestDir(this));
 
             using (var crossChainTransferStore = new CrossChainTransferStore(this.network, dataFolder, chain, this.federationGatewaySettings,
-                this.dateTimeProvider, this.loggerFactory, this.opReturnDataReader, this.fullNode, this.blockRepository, this.federationWalletManager))
+                this.dateTimeProvider, this.loggerFactory, this.depositExtractor, this.fullNode, this.blockRepository, this.federationWalletManager))
             {
                 crossChainTransferStore.Initialize();
 
@@ -110,7 +110,7 @@ namespace Stratis.FederatedPeg.Tests
             ConcurrentChain newChain = newTest.BuildChain(3);
 
             using (var crossChainTransferStore2 = new CrossChainTransferStore(newTest.network, dataFolder, newChain, this.federationGatewaySettings,
-                newTest.dateTimeProvider, newTest.loggerFactory, newTest.opReturnDataReader, newTest.fullNode, newTest.blockRepository, this.federationWalletManager))
+                newTest.dateTimeProvider, newTest.loggerFactory, newTest.depositExtractor, newTest.fullNode, newTest.blockRepository, this.federationWalletManager))
             {
                 crossChainTransferStore2.Initialize();
 
