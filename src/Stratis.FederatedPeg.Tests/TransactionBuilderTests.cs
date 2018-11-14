@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Text;
 using Microsoft.Extensions.Logging;
 using Moq;
@@ -27,7 +28,6 @@ namespace Stratis.FederatedPeg.Tests
         private ILoggerFactory loggerFactory;
         private IFederationGatewaySettings settings;
         private IFederationWalletManager federationWalletManager;
-        private IFederationWalletManager federationWalletManager2;
         private IFederationWalletTransactionHandler federationTransactionHandler;
         private ConcurrentChain chain;
         private NodeSettings nodeSettings;
@@ -159,6 +159,16 @@ namespace Stratis.FederatedPeg.Tests
             Assert.Equal(new Money(0m, MoneyUnit.BTC), transaction1.Outputs[2].Value);
             Assert.Equal(opReturnData1, new OpReturnDataReader(this.loggerFactory, this.network).GetString(transaction1, out OpReturnDataType dummy));
 
+            // Reserve UTXO's spent by transaction 1.
+            this.federationWalletManager.ProcessTransaction(transaction1);
+
+            // All the input UTXO's should be present in spending details of the multi-sig address.
+            Assert.True(this.SanityCheck(transaction1));
+
+            // Confirm this can be done twice without ill effect.
+            // (We may have to re-reserve UTXO's associated with partial transactions after a node restart or re-org.)
+            this.federationWalletManager.ProcessTransaction(transaction1);
+
             var recipient2 = new List<Recipient.Recipient>()
             {
                 new Recipient.Recipient
@@ -167,13 +177,6 @@ namespace Stratis.FederatedPeg.Tests
                     ScriptPubKey = PayToPubkeyHashTemplate.Instance.GenerateScriptPubKey(new Key().PubKey.Hash)
                 }
             };
-
-            // Reserve UTXO's spent by transaction 1.
-            this.federationWalletManager.ProcessTransaction(transaction1);
-
-            // Confirm this can be done twice without ill effect.
-            // (We may have to re-reserve UTXO's associated with partial transactions after a node restart or re-org.)
-            this.federationWalletManager.ProcessTransaction(transaction1);
 
             string opReturnData2 = blockHeight.ToString();
 
@@ -212,6 +215,34 @@ namespace Stratis.FederatedPeg.Tests
             // Transaction output value - op_return.
             Assert.Equal(new Money(0m, MoneyUnit.BTC), transaction2.Outputs[2].Value);
             Assert.Equal(opReturnData2, new OpReturnDataReader(this.loggerFactory, this.network).GetString(transaction2, out OpReturnDataType dummy2));
+
+            // Reserve UTXO's spent by transaction 2.
+            this.federationWalletManager.ProcessTransaction(transaction2);
+
+            // All the input UTXO's should be present in spending details of the multi-sig address.
+            Assert.True(this.SanityCheck(transaction2));
+
+        }
+
+        /// <summary>
+        /// Verifies that the transaction's inout UTXO's have been reserved by the wallet.
+        /// </summary>
+        /// <param name="transaction">The transaction to check.</param>
+        /// <returns><c>True</c> if all's well and <c>false</c> otherwise.</returns>
+        private bool SanityCheck(Transaction transaction)
+        {
+            // All the input UTXO's should be present in spending details of the multi-sig address.
+            foreach (TxIn input in transaction.Inputs)
+            {
+                TransactionData transactionData = this.wallet.MultiSigAddress.Transactions
+                    .Where(t => t.SpendingDetails != null && t.SpendingDetails.TransactionId == transaction.GetHash()
+                        && t.Id == input.PrevOut.Hash && t.Index == input.PrevOut.N).FirstOrDefault();
+
+                if (transactionData == null)
+                    return false;
+            }
+
+            return true;
         }
 
         /// <summary>
