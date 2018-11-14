@@ -35,7 +35,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
             foreach (var transaction in block.Transactions)
             {
                 if (transaction.Outputs.Count(this.IsTargetAddressCandidate) != 1) continue;
-                if (!transaction.Inputs.All(IsFromMultisig)) continue;
+                if (!IsOnlyFromMultisig(transaction)) continue;
 
                 var depositId = this.opReturnDataReader.TryGetTransactionId(transaction);
                 if (string.IsNullOrWhiteSpace(depositId)) continue;
@@ -57,10 +57,11 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
             return output.ScriptPubKey.Hash.GetAddress(this.network) != this.multisigAddress && !output.ScriptPubKey.IsUnspendable;
         }
 
-        private bool IsFromMultisig(TxIn input)
+        private bool IsOnlyFromMultisig(Transaction transaction)
         {
-            var signerAddress = input.ScriptSig.GetSignerAddress(this.network);
-            return signerAddress == this.multisigAddress;
+            if (!transaction.Inputs.Any()) return false;
+            return transaction.Inputs.All(
+                    i => i.ScriptSig?.GetSignerAddress(this.network) == this.multisigAddress);
         }
     }
 }

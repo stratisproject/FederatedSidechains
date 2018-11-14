@@ -76,6 +76,33 @@ namespace Stratis.FederatedPeg.Tests
         }
 
         [Fact]
+        public void ExtractWithdrawalsFromBlock_Should_Handle_Transaction_with_no_inputs()
+        {
+            var block = this.network.Consensus.ConsensusFactory.CreateBlock();
+
+            var noInputRandomTransaction = this.transactionBuilder.BuildTransaction(this.addressHelper.GetNewTargetChainPubKeyAddress());
+            block.AddTransaction(noInputRandomTransaction);
+            var noInputTransactionToMultisig = this.transactionBuilder.BuildTransaction(this.addressHelper.TargetChainMultisigAddress);
+            block.AddTransaction(noInputTransactionToMultisig);
+
+            var (targetScript, opReturnDepositId, amount, validWithdrawalTransaction) = AddWithdrawalToBlock(block);
+
+            var blockHeight = 5972176;
+
+            var withdrawals = this.withdrawalExtractor.ExtractWithdrawalsFromBlock(block, blockHeight);
+
+            withdrawals.Count.Should().Be(1);
+            this.VerifyWithdrawalData(
+                withdrawals[0],
+                amount,
+                block,
+                blockHeight,
+                validWithdrawalTransaction,
+                opReturnDepositId,
+                targetScript);
+        }
+
+        [Fact]
         public void ExtractWithdrawalsFromBlock_Should_Only_Find_Withdrawals_From_Multisig()
         {
             var block = this.network.Consensus.ConsensusFactory.CreateBlock();
