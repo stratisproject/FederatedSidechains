@@ -26,6 +26,7 @@ namespace Stratis.FederatedPeg.Tests
         private readonly IBlockRepository blockRepository;
         private readonly IFullNode fullNode;
         private readonly IFederationWalletManager federationWalletManager;
+        private readonly IFederationGatewaySettings federationGatewaySettings;
         private Dictionary<uint256, Block> blockDict;
 
         /// <summary>
@@ -43,6 +44,13 @@ namespace Stratis.FederatedPeg.Tests
             this.blockRepository = Substitute.For<IBlockRepository>();
             this.fullNode = Substitute.For<IFullNode>();
             this.federationWalletManager = Substitute.For<IFederationWalletManager>();
+            this.federationGatewaySettings = Substitute.For<IFederationGatewaySettings>();
+            var redeemScript = new Script("2 026ebcbf6bfe7ce1d957adbef8ab2b66c788656f35896a170257d6838bda70b95c 02a97b7d0fad7ea10f456311dcd496ae9293952d4c5f2ebdfc32624195fde14687 02e9d3cd0c2fa501957149ff9d21150f3901e6ece0e3fe3007f2372720c84e3ee1 03c99f997ed71c7f92cf532175cea933f2f11bf08f1521d25eb3cc9b8729af8bf4 034b191e3b3107b71d1373e840c5bf23098b55a355ca959b968993f5dec699fc38 5 OP_CHECKMULTISIG");
+            this.federationGatewaySettings.IsMainChain.Returns(false);
+            this.federationGatewaySettings.MultiSigRedeemScript.Returns(redeemScript);
+            this.federationGatewaySettings.MultiSigAddress.Returns(redeemScript.Hash.GetAddress(this.network));
+            this.federationGatewaySettings.PublicKey.Returns("026ebcbf6bfe7ce1d957adbef8ab2b66c788656f35896a170257d6838bda70b95c");
+
             this.blockDict = new Dictionary<uint256, Block>();
 
             this.blockRepository.GetBlocksAsync(Arg.Any<List<uint256>>()).ReturnsForAnyArgs((x) => {
@@ -65,20 +73,9 @@ namespace Stratis.FederatedPeg.Tests
         public void SynchronizeSynchronizesWithChain()
         {
             ConcurrentChain chain = BuildChain(5);
+            var dataFolder = new DataFolder(CreateTestDir(this));
 
-            string dataDir = CreateTestDir(this);
-
-            Guard.NotNull(dataDir, nameof(dataDir));
-
-            var dataFolder = new DataFolder(dataDir);
-            var nodeSettings = new NodeSettings(this.network, NBitcoin.Protocol.ProtocolVersion.ALT_PROTOCOL_VERSION,
-                args: new[] {
-                    "-mainchain",
-                    "-redeemscript=2 026ebcbf6bfe7ce1d957adbef8ab2b66c788656f35896a170257d6838bda70b95c 02a97b7d0fad7ea10f456311dcd496ae9293952d4c5f2ebdfc32624195fde14687 02e9d3cd0c2fa501957149ff9d21150f3901e6ece0e3fe3007f2372720c84e3ee1 03c99f997ed71c7f92cf532175cea933f2f11bf08f1521d25eb3cc9b8729af8bf4 034b191e3b3107b71d1373e840c5bf23098b55a355ca959b968993f5dec699fc38 5 OP_CHECKMULTISIG",
-                    "-publickey=026ebcbf6bfe7ce1d957adbef8ab2b66c788656f35896a170257d6838bda70b95c"
-            });
-
-            using (var crossChainTransferStore = new CrossChainTransferStore(this.network, nodeSettings.DataFolder, chain, new FederationGatewaySettings(nodeSettings),
+            using (var crossChainTransferStore = new CrossChainTransferStore(this.network, dataFolder, chain, this.federationGatewaySettings,
                 this.dateTimeProvider, this.loggerFactory, this.opReturnDataReader, this.fullNode, this.blockRepository, this.federationWalletManager))
             {
                 crossChainTransferStore.Initialize();
@@ -96,17 +93,9 @@ namespace Stratis.FederatedPeg.Tests
         public void SynchronizeSynchronizesWithChainAndSurvivesRestart()
         {
             ConcurrentChain chain = BuildChain(5);
+            var dataFolder = new DataFolder(CreateTestDir(this));
 
-            string dataDir = CreateTestDir(this);
-            var dataFolder = new DataFolder(dataDir);
-            var nodeSettings = new NodeSettings(this.network, NBitcoin.Protocol.ProtocolVersion.ALT_PROTOCOL_VERSION,
-                args: new[] {
-                    "-mainchain",
-                    "-redeemscript=2 026ebcbf6bfe7ce1d957adbef8ab2b66c788656f35896a170257d6838bda70b95c 02a97b7d0fad7ea10f456311dcd496ae9293952d4c5f2ebdfc32624195fde14687 02e9d3cd0c2fa501957149ff9d21150f3901e6ece0e3fe3007f2372720c84e3ee1 03c99f997ed71c7f92cf532175cea933f2f11bf08f1521d25eb3cc9b8729af8bf4 034b191e3b3107b71d1373e840c5bf23098b55a355ca959b968993f5dec699fc38 5 OP_CHECKMULTISIG",
-                    "-publickey=026ebcbf6bfe7ce1d957adbef8ab2b66c788656f35896a170257d6838bda70b95c"
-            });
-
-            using (var crossChainTransferStore = new CrossChainTransferStore(this.network, dataFolder, chain, new FederationGatewaySettings(nodeSettings),
+            using (var crossChainTransferStore = new CrossChainTransferStore(this.network, dataFolder, chain, this.federationGatewaySettings,
                 this.dateTimeProvider, this.loggerFactory, this.opReturnDataReader, this.fullNode, this.blockRepository, this.federationWalletManager))
             {
                 crossChainTransferStore.Initialize();
@@ -120,7 +109,7 @@ namespace Stratis.FederatedPeg.Tests
             var newTest = new CrossChainTransferStoreTests();
             ConcurrentChain newChain = newTest.BuildChain(3);
 
-            using (var crossChainTransferStore2 = new CrossChainTransferStore(newTest.network, dataFolder, newChain, new FederationGatewaySettings(nodeSettings),
+            using (var crossChainTransferStore2 = new CrossChainTransferStore(newTest.network, dataFolder, newChain, this.federationGatewaySettings,
                 newTest.dateTimeProvider, newTest.loggerFactory, newTest.opReturnDataReader, newTest.fullNode, newTest.blockRepository, this.federationWalletManager))
             {
                 crossChainTransferStore2.Initialize();

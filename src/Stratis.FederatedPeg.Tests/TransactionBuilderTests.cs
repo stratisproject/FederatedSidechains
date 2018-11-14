@@ -31,28 +31,24 @@ namespace Stratis.FederatedPeg.Tests
         private IFederationWalletManager federationWalletManager;
         private IFederationWalletTransactionHandler federationTransactionHandler;
         private ConcurrentChain chain;
-        private NodeSettings nodeSettings;
-        private DataFolder dataFolder;
         private IWalletFeePolicy walletFeePolicy;
         private FederationWallet wallet;
 
         public TransactionBuilderTests()
         {
             this.network = ApexNetwork.RegTest;
-            string dataDir = CreateTestDir(this);
-            if (Directory.Exists(dataDir))
-                Directory.Delete(dataDir, true);
-            this.nodeSettings = new NodeSettings(this.network, NBitcoin.Protocol.ProtocolVersion.ALT_PROTOCOL_VERSION,
-                args: new[] {
-                    "-mainchain",
-                    $"-datadir={dataDir}",
-                    "-redeemscript=2 026ebcbf6bfe7ce1d957adbef8ab2b66c788656f35896a170257d6838bda70b95c 02a97b7d0fad7ea10f456311dcd496ae9293952d4c5f2ebdfc32624195fde14687 02e9d3cd0c2fa501957149ff9d21150f3901e6ece0e3fe3007f2372720c84e3ee1 03c99f997ed71c7f92cf532175cea933f2f11bf08f1521d25eb3cc9b8729af8bf4 034b191e3b3107b71d1373e840c5bf23098b55a355ca959b968993f5dec699fc38 5 OP_CHECKMULTISIG",
-                    "-publickey=026ebcbf6bfe7ce1d957adbef8ab2b66c788656f35896a170257d6838bda70b95c"
-                });
+            var dataFolder = new DataFolder(CreateTestDir(this));
+
             this.loggerFactory = Substitute.For<ILoggerFactory>();
-            this.settings = new FederationGatewaySettings(this.nodeSettings);
+
+            this.settings = Substitute.For<IFederationGatewaySettings>();
+            var redeemScript = new Script("2 026ebcbf6bfe7ce1d957adbef8ab2b66c788656f35896a170257d6838bda70b95c 02a97b7d0fad7ea10f456311dcd496ae9293952d4c5f2ebdfc32624195fde14687 02e9d3cd0c2fa501957149ff9d21150f3901e6ece0e3fe3007f2372720c84e3ee1 03c99f997ed71c7f92cf532175cea933f2f11bf08f1521d25eb3cc9b8729af8bf4 034b191e3b3107b71d1373e840c5bf23098b55a355ca959b968993f5dec699fc38 5 OP_CHECKMULTISIG");
+            this.settings.IsMainChain.Returns(false);
+            this.settings.MultiSigRedeemScript.Returns(redeemScript);
+            this.settings.MultiSigAddress.Returns(redeemScript.Hash.GetAddress(this.network));
+            this.settings.PublicKey.Returns("026ebcbf6bfe7ce1d957adbef8ab2b66c788656f35896a170257d6838bda70b95c");
+
             this.chain = new ConcurrentChain(this.network);
-            this.dataFolder = this.nodeSettings.DataFolder;
             var mockWalletFeePolicy = new Mock<IWalletFeePolicy>();
             this.walletFeePolicy = mockWalletFeePolicy.Object;
             this.dateTimeProvider = DateTimeProvider.Default;
@@ -62,8 +58,7 @@ namespace Stratis.FederatedPeg.Tests
                 this.loggerFactory,
                 this.network,
                 this.chain,
-                this.nodeSettings,
-                this.dataFolder,
+                dataFolder,
                 this.walletFeePolicy,
                 new Mock<IAsyncLoopFactory>().Object,
                 new NodeLifetime(),
