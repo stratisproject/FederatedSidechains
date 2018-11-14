@@ -34,22 +34,35 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
             var withdrawals = new List<IWithdrawal>();
             foreach (var transaction in block.Transactions)
             {
-                if (transaction.Outputs.Count(this.IsTargetAddressCandidate) != 1) continue;
-                if (!IsOnlyFromMultisig(transaction)) continue;
-
-                var depositId = this.opReturnDataReader.TryGetTransactionId(transaction);
-                if (string.IsNullOrWhiteSpace(depositId)) continue;
-
-                this.logger.LogInformation("Processing received transaction with source deposit id: {0}. Transaction hash: {1}.",
-                    depositId, transaction.GetHash());
-
-                var targetAddressOutput = transaction.Outputs.Single(this.IsTargetAddressCandidate);
-                var withdrawal = new Withdrawal(uint256.Parse(depositId), transaction.GetHash(), targetAddressOutput.Value,
-                    targetAddressOutput.ScriptPubKey.GetScriptAddress(this.network).ToString(), blockHeight, block.GetHash());
-                withdrawals.Add(withdrawal);
+                var withdrawal = ExtractWithdrawalFromTransaction(transaction, block.GetHash(), blockHeight);
+                if (withdrawal != null) withdrawals.Add(withdrawal);
             }
 
             return withdrawals.AsReadOnly();
+        }
+
+        private IWithdrawal ExtractWithdrawalFromTransaction(Transaction transaction, uint256 blockHash, int blockHeight)
+        {
+            if (transaction.Outputs.Count(this.IsTargetAddressCandidate) != 1) return null;
+            if (!IsOnlyFromMultisig(transaction)) return null;
+
+            var depositId = this.opReturnDataReader.TryGetTransactionId(transaction);
+            if (string.IsNullOrWhiteSpace(depositId)) return null;
+
+            this.logger.LogInformation(
+                "Processing received transaction with source deposit id: {0}. Transaction hash: {1}.",
+                depositId,
+                transaction.GetHash());
+
+            var targetAddressOutput = transaction.Outputs.Single(this.IsTargetAddressCandidate);
+            var withdrawal = new Withdrawal(
+                uint256.Parse(depositId),
+                transaction.GetHash(),
+                targetAddressOutput.Value,
+                targetAddressOutput.ScriptPubKey.GetScriptAddress(this.network).ToString(),
+                blockHeight,
+                blockHash);
+            return withdrawal;
         }
 
         private bool IsTargetAddressCandidate(TxOut output)
