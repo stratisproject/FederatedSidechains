@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Linq;
+using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Runtime.CompilerServices;
 using System.Text;
@@ -13,7 +14,6 @@ using Stratis.Bitcoin.Builder.Feature;
 using Stratis.Bitcoin.Configuration.Logging;
 using Stratis.Bitcoin.Connection;
 using Stratis.Bitcoin.Features.Notifications;
-using Stratis.Bitcoin.Interfaces;
 using Stratis.Bitcoin.P2P.Protocol.Payloads;
 using Stratis.Bitcoin.Signals;
 using Stratis.Bitcoin.Utilities;
@@ -79,6 +79,8 @@ namespace Stratis.FederatedPeg.Features.FederationGateway
 
         private readonly ICounterChainSessionManager counterChainSessionManager;
 
+        private readonly ICrossChainTransferStore crossChainTransferStore;
+
         public FederationGatewayFeature(
             ILoggerFactory loggerFactory,
             ICrossChainTransactionMonitor crossChainTransactionMonitor,
@@ -97,7 +99,8 @@ namespace Stratis.FederatedPeg.Features.FederationGateway
             ConcurrentChain chain,
             IMonitorChainSessionManager monitorChainSessionManager,
             ICounterChainSessionManager counterChainSessionManager,
-            INodeStats nodeStats)
+            INodeStats nodeStats,
+            ICrossChainTransferStore crossChainTransferStore)
         {
             this.loggerFactory = loggerFactory;
             this.crossChainTransactionMonitor = crossChainTransactionMonitor;
@@ -106,6 +109,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway
             this.blockTipSender = blockTipSender;
             this.signals = signals;
             this.depositExtractor = depositExtractor;
+            this.leaderProvider = leaderProvider;
             this.connectionManager = connectionManager;
             this.federationGatewaySettings = federationGatewaySettings;
             this.fullNode = fullNode;
@@ -113,6 +117,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway
             this.federationWalletManager = federationWalletManager;
             this.walletSyncManager = walletSyncManager;
             this.network = network;
+            this.crossChainTransferStore = crossChainTransferStore;
 
             this.counterChainSessionManager = counterChainSessionManager;
             this.monitorChainSessionManager = monitorChainSessionManager;
@@ -133,8 +138,6 @@ namespace Stratis.FederatedPeg.Features.FederationGateway
                     this.walletSyncManager,
                     this.crossChainTransactionMonitor,
                     this.depositExtractor,
-                    this.federationGatewaySettings,
-                    this.fullNode,
                     this.maturedBlockSender,
                     this.blockTipSender));
 
@@ -142,9 +145,11 @@ namespace Stratis.FederatedPeg.Features.FederationGateway
 
             this.crossChainTransactionMonitor.Initialize(this.federationGatewaySettings);
             this.monitorChainSessionManager.Initialize();
+            this.crossChainTransferStore.Initialize();
 
             this.federationWalletManager.Start();
             this.walletSyncManager.Start();
+            this.crossChainTransferStore.Start();
 
             // Connect the node to the other federation members.
             foreach (var federationMemberIp in this.federationGatewaySettings.FederationNodeIpEndPoints)
@@ -162,6 +167,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway
             this.transactionSubscriberDisposable.Dispose();
             this.crossChainTransactionMonitor.Dispose();
             this.monitorChainSessionManager.Dispose();
+            this.crossChainTransferStore.Dispose();
         }
 
         public void AddInlineStats(StringBuilder benchLogs)
@@ -196,20 +202,15 @@ namespace Stratis.FederatedPeg.Features.FederationGateway
         public static IFullNodeBuilder AddFederationGateway(this IFullNodeBuilder fullNodeBuilder)
         {
             LoggingConfiguration.RegisterFeatureNamespace<FederationGatewayFeature>(FederationGatewayFeature.FederationGatewayFeatureNamespace);
-            
+
             fullNodeBuilder.ConfigureFeature(features =>
             {
                 features
                     .AddFeature<FederationGatewayFeature>()
                     .DependOn<BlockNotificationFeature>()
-                    .FeatureServices(services =>
-                    {
-                        services.AddHttpClient(
-                            FederationGatewayFeature.JsonHttpClientName,
-                            client => {
-                                    client.DefaultRequestHeaders.Accept.Clear();
-                                    client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
-                            });
+                    .FeatureServices(services => {
+
+                        services.AddSingleton<IHttpClientFactory, HttpClientFactory>();
                         services.AddSingleton<IMaturedBlockReceiver, MaturedBlockReceiver>();
                         services.AddSingleton<IMaturedBlockSender, RestMaturedBlockSender>();
                         services.AddSingleton<IBlockTipSender, RestBlockTipSender>();
@@ -226,9 +227,24 @@ namespace Stratis.FederatedPeg.Features.FederationGateway
                         services.AddSingleton<IFederationWalletManager, FederationWalletManager>();
                         services.AddSingleton<ILeaderProvider, LeaderProvider>();
                         services.AddSingleton<FederationWalletController>();
+                        services.AddSingleton<ICrossChainTransferStore, CrossChainTransferStore>();
                     });
             });
             return fullNodeBuilder;
+        }
+    }
+
+    //todo: this should be removed when compatible with full node API, instead, we should use
+    //services.AddHttpClient from Microsoft.Extensions.Http
+    public class HttpClientFactory : IHttpClientFactory
+    {
+        /// <inheritdoc />
+        public HttpClient CreateClient(string name)
+        {
+            var httpClient = new HttpClient();
+            httpClient.DefaultRequestHeaders.Accept.Clear();
+            httpClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+            return httpClient;
         }
     }
 }
