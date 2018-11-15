@@ -10,8 +10,6 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
     /// </summary>
     public interface IEventPersister
     {
-        ICrossChainTransferStore Store { get; }
-
         /// <summary>
         /// When new matured block arrive, this will trigger a call to the store to persist the given deposits.
         /// </summary>

@@ -1,11 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using Stratis.FederatedPeg.Features.FederationGateway.Interfaces;
-using System.Linq;
 using Microsoft.Extensions.Logging;
 using NBitcoin;
+using Stratis.FederatedPeg.Features.FederationGateway.Interfaces;
 
 namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
 {
@@ -16,9 +16,8 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
         private readonly ILogger logger;
 
         private readonly IDisposable maturedBlockDepositSubscription;
-
-        /// <inheritdoc />
-        public ICrossChainTransferStore Store { get; }
+        
+        private readonly ICrossChainTransferStore store;
         
         public EventsPersister(ILoggerFactory loggerFactory,
                                ICrossChainTransferStore store,
@@ -26,7 +25,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
         {
             this.maturedBlockReceiver = maturedBlockReceiver;
             this.logger = loggerFactory.CreateLogger(this.GetType().FullName);
-            this.Store = store;
+            this.store = store;
 
             this.maturedBlockDepositSubscription = maturedBlockReceiver.MaturedBlockDepositStream.Subscribe(async m => await PersistNewMaturedBlockDeposits(m));
         }
@@ -34,22 +33,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
         /// <inheritdoc />
         public async Task PersistNewMaturedBlockDeposits(IMaturedBlockDeposits maturedBlockDeposits)
         {
-            var depositIds = maturedBlockDeposits.Deposits.Select(d => d.Id).ToArray();
-            var knownDepositIds = (await Store.GetAsync(depositIds)).Select(t => t.DepositTransactionId);
-
-            var newDeposits = maturedBlockDeposits.Deposits.Where(d => !knownDepositIds.Contains(d.Id));
-
-            if (!newDeposits.Any()) return;
-            var depositBlockHeight = maturedBlockDeposits.Block.BlockHeight;
-
-            var crossChainTransfers = newDeposits.Select(d =>
-                new CrossChainTransfer(CrossChainTransferStatus.Partial, d.Id, depositBlockHeight, new Script(d.TargetAddress), d.Amount, null, null, -1));
-
-            //this will not do anything : RecordLatestMatureDepositsAsync expects all the crosschain transfer statuses to be different from partial...
-            //I don't understand why, or maybe itis expected that we build a template transaction before doing any persistence ?
-            //I need to understand why there is no persistence of the transaction before it is actually built :)
-
-            await Store.RecordLatestMatureDepositsAsync(crossChainTransfers);
+            await store.RecordLatestMatureDepositsAsync(maturedBlockDeposits.Deposits.ToArray());
         }
 
         /// <inheritdoc />
@@ -61,7 +45,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
         /// <inheritdoc />
         public void Dispose()
         {
-            this.Store?.Dispose();
+            this.store?.Dispose();
             this.maturedBlockDepositSubscription?.Dispose();
         }
     }
