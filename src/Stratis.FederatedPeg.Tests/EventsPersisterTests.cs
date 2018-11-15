@@ -21,13 +21,15 @@ using Xunit;
 
 namespace Stratis.FederatedPeg.Tests
 {
-    public class EventsPersisterTests
+    public class EventsPersisterTests : IDisposable
     {
         private readonly ICrossChainTransferStore store;
 
         private readonly IMaturedBlockReceiver maturedBlockReceiver;
 
         private readonly ILoggerFactory loggerFactory;
+
+        private EventsPersister eventsPersister;
 
         public EventsPersisterTests()
         {
@@ -43,8 +45,8 @@ namespace Stratis.FederatedPeg.Tests
             var maturedBlockDeposits = TestingValues.GetMaturedBlockDeposit(depositCount);
             IObservable<IMaturedBlockDeposits> maturedBlockStream = new[] { maturedBlockDeposits }.ToObservable();
             this.maturedBlockReceiver.MaturedBlockDepositStream.Returns(maturedBlockStream);
-            
-            var eventPersister = new EventsPersister(this.loggerFactory, this.store, this.maturedBlockReceiver);
+
+            this.eventsPersister = new EventsPersister(this.loggerFactory, this.store, this.maturedBlockReceiver);
             
             this.store.Received(1).RecordLatestMatureDepositsAsync(Arg.Is<IDeposit[]>(
                 deposits => deposits.Length == depositCount 
@@ -59,7 +61,7 @@ namespace Stratis.FederatedPeg.Tests
             IObservable<IMaturedBlockDeposits> maturedBlockStream = new[] { maturedBlockDeposits }.ToObservable();
             this.maturedBlockReceiver.MaturedBlockDepositStream.Returns(maturedBlockStream);
 
-            var eventPersister = new EventsPersister(this.loggerFactory, this.store, this.maturedBlockReceiver);
+            this.eventsPersister = new EventsPersister(this.loggerFactory, this.store, this.maturedBlockReceiver);
 
             this.store.Received(1).RecordLatestMatureDepositsAsync(Arg.Is<IDeposit[]>(
                 deposits => deposits.Length == depositCount));
@@ -76,7 +78,7 @@ namespace Stratis.FederatedPeg.Tests
             IObservable<IMaturedBlockDeposits> maturedBlockStream = maturedBlockDepositsEnum.ToObservable();
             this.maturedBlockReceiver.MaturedBlockDepositStream.Returns(maturedBlockStream);
 
-            var eventPersister = new EventsPersister(this.loggerFactory, this.store, this.maturedBlockReceiver);
+            this.eventsPersister = new EventsPersister(this.loggerFactory, this.store, this.maturedBlockReceiver);
 
             var storeCalls = this.store.ReceivedCalls();
             var indexedCallArguments = storeCalls.Select((c, i) => new { Index = i, Deposits = (IDeposit[])c.GetArguments()[0]}).ToList();
@@ -89,9 +91,10 @@ namespace Stratis.FederatedPeg.Tests
                     });
         }
 
-        private void CheckDepositCount(object o, ref int i)
+        /// <inheritdoc />
+        public void Dispose()
         {
-            throw new NotImplementedException();
+            this.eventsPersister?.Dispose();
         }
     }
 }
