@@ -106,7 +106,6 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
 
             if (this.status == CrossChainTransferStatus.Partial || this.status == CrossChainTransferStatus.SeenInBlock)
             {
-                string
                 stream.ReadWrite(ref this.partialTransaction);
                 if (this.status != CrossChainTransferStatus.Partial)
                     stream.ReadWrite(ref this.blockHash);
