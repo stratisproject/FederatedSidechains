@@ -5,19 +5,21 @@ using System.Linq;
 using System.Runtime.Serialization;
 using Microsoft.Extensions.Logging;
 using NBitcoin;
+using NBitcoin.Networks;
 using NSubstitute;
-using Stratis.Bitcoin.Configuration;
-using Stratis.FederatedPeg.Features.FederationGateway.Interfaces;
-using Stratis.FederatedPeg.Features.FederationGateway.TargetChain;
-using Xunit;
-using Stratis.Sidechains.Networks;
-using Stratis.FederatedPeg.Features.FederationGateway;
-using Stratis.Bitcoin.Utilities;
 using Stratis.Bitcoin;
+using Stratis.Bitcoin.Configuration;
+using Stratis.Bitcoin.Utilities;
 using Stratis.Bitcoin.Features.BlockStore;
-using Stratis.FederatedPeg.Features.FederationGateway.SourceChain;
-using Stratis.FederatedPeg.Features.FederationGateway.Wallet;
 using Stratis.Bitcoin.Features.Wallet.Interfaces;
+using Stratis.FederatedPeg.Features.FederationGateway;
+using Stratis.FederatedPeg.Features.FederationGateway.Interfaces;
+using Stratis.FederatedPeg.Features.FederationGateway.SourceChain;
+using Stratis.FederatedPeg.Features.FederationGateway.TargetChain;
+using Stratis.FederatedPeg.Features.FederationGateway.Wallet;
+using Stratis.Sidechains.Networks;
+using Xunit;
+
 
 namespace Stratis.FederatedPeg.Tests
 {
@@ -46,6 +48,7 @@ namespace Stratis.FederatedPeg.Tests
         public CrossChainTransferStoreTests()
         {
             this.network = ApexNetwork.RegTest;
+            NetworkRegistration.Register(this.network);
 
             DBreezeSerializer serializer = new DBreezeSerializer();
             serializer.Initialize(this.network);
@@ -103,32 +106,35 @@ namespace Stratis.FederatedPeg.Tests
             this.federationWalletManager.Start();
             this.wallet = this.federationWalletManager.GetWallet();
 
-            this.wallet.MultiSigAddress.Transactions.Add(new TransactionData()
+            if (this.wallet.MultiSigAddress.Transactions.Count == 0)
             {
-                Amount = Money.COIN * 90,
-                Id = new uint256(1),
-                Index = 0,
-                ScriptPubKey = this.wallet.MultiSigAddress.ScriptPubKey,
-                BlockHeight = 2
-            });
+                this.wallet.MultiSigAddress.Transactions.Add(new TransactionData()
+                {
+                    Amount = Money.COIN * 90,
+                    Id = new uint256(1),
+                    Index = 0,
+                    ScriptPubKey = this.wallet.MultiSigAddress.ScriptPubKey,
+                    BlockHeight = 2
+                });
 
-            this.wallet.MultiSigAddress.Transactions.Add(new TransactionData()
-            {
-                Amount = Money.COIN * 80,
-                Id = new uint256(1),
-                Index = 1,
-                ScriptPubKey = this.wallet.MultiSigAddress.ScriptPubKey,
-                BlockHeight = 2
-            });
+                this.wallet.MultiSigAddress.Transactions.Add(new TransactionData()
+                {
+                    Amount = Money.COIN * 80,
+                    Id = new uint256(1),
+                    Index = 1,
+                    ScriptPubKey = this.wallet.MultiSigAddress.ScriptPubKey,
+                    BlockHeight = 2
+                });
 
-            this.wallet.MultiSigAddress.Transactions.Add(new TransactionData()
-            {
-                Amount = Money.COIN * 70,
-                Id = new uint256(2),
-                Index = 0,
-                ScriptPubKey = this.wallet.MultiSigAddress.ScriptPubKey,
-                BlockHeight = 2
-            });
+                this.wallet.MultiSigAddress.Transactions.Add(new TransactionData()
+                {
+                    Amount = Money.COIN * 70,
+                    Id = new uint256(2),
+                    Index = 0,
+                    ScriptPubKey = this.wallet.MultiSigAddress.ScriptPubKey,
+                    BlockHeight = 2
+                });
+            }
 
             (this.federationWalletManager as FederationWalletManager).LoadKeysLookupLock();
 
@@ -153,6 +159,13 @@ namespace Stratis.FederatedPeg.Tests
 
             this.CreateWalletManagerAndTransactionHandler(chain, dataFolder);
 
+            List<Block> blocks = this.blockRepository.GetBlocksAsync(chain.EnumerateAfter(this.network.GenesisHash).Select(h => h.HashBlock).ToList()).GetAwaiter().GetResult();
+
+            foreach (Block block in blocks)
+            {
+                this.federationWalletSyncManager.ProcessBlock(block);
+            }
+
             using (var crossChainTransferStore = new CrossChainTransferStore(this.network, dataFolder, chain, this.federationGatewaySettings, this.dateTimeProvider,
                 this.loggerFactory, this.withdrawalExtractor, this.fullNode, this.blockRepository, this.federationWalletManager, this.federationWalletTransactionHandler))
             {
@@ -175,11 +188,20 @@ namespace Stratis.FederatedPeg.Tests
 
             this.CreateWalletManagerAndTransactionHandler(chain, dataFolder);
 
+            List<Block> blocks = this.blockRepository.GetBlocksAsync(chain.EnumerateAfter(this.network.GenesisHash).Select(h => h.HashBlock).ToList()).GetAwaiter().GetResult();
+
+            foreach (Block block in blocks)
+            {
+                this.federationWalletSyncManager.ProcessBlock(block);
+            }
+
             using (var crossChainTransferStore = new CrossChainTransferStore(this.network, dataFolder, chain, this.federationGatewaySettings, this.dateTimeProvider,
                 this.loggerFactory, this.withdrawalExtractor, this.fullNode, this.blockRepository, this.federationWalletManager, this.federationWalletTransactionHandler))
             {
                 crossChainTransferStore.Initialize();
                 crossChainTransferStore.Start();
+
+                this.federationWalletManager.SaveWallet();
 
                 Assert.Equal(this.wallet.LastBlockSyncedHash, crossChainTransferStore.TipHashAndHeight.Hash);
                 Assert.Equal(this.wallet.LastBlockSyncedHeight, crossChainTransferStore.TipHashAndHeight.Height);
@@ -187,10 +209,13 @@ namespace Stratis.FederatedPeg.Tests
 
             // Create a new instance of this test that loads from the persistence that we created in the step before.
             var newTest = new CrossChainTransferStoreTests();
-            ConcurrentChain newChain = newTest.BuildChain(3);
 
-            using (var crossChainTransferStore2 = new CrossChainTransferStore(newTest.network, dataFolder, newChain, this.federationGatewaySettings, newTest.dateTimeProvider,
-                newTest.loggerFactory, newTest.withdrawalExtractor, newTest.fullNode, newTest.blockRepository, this.federationWalletManager, this.federationWalletTransactionHandler))
+            // Force a form by creating a new chain that only has genesis in common.
+            ConcurrentChain newChain = newTest.BuildChain(3);
+            newTest.CreateWalletManagerAndTransactionHandler(newChain, dataFolder);
+
+            using (var crossChainTransferStore2 = new CrossChainTransferStore(newTest.network, dataFolder, newChain, newTest.federationGatewaySettings, newTest.dateTimeProvider,
+                newTest.loggerFactory, newTest.withdrawalExtractor, newTest.fullNode, newTest.blockRepository, newTest.federationWalletManager, newTest.federationWalletTransactionHandler))
             {
                 crossChainTransferStore2.Initialize();
 
@@ -198,11 +223,11 @@ namespace Stratis.FederatedPeg.Tests
                 Assert.Equal(this.wallet.LastBlockSyncedHash, crossChainTransferStore2.TipHashAndHeight.Hash);
                 Assert.Equal(this.wallet.LastBlockSyncedHeight, crossChainTransferStore2.TipHashAndHeight.Height);
 
-                // Test that synchronizing the store aligns it with the current chain tip.
+                // Test that synchronizing the store aligns it with the current chain tip after the fork.
                 crossChainTransferStore2.Start();
 
-                Assert.Equal(this.wallet.LastBlockSyncedHash, crossChainTransferStore2.TipHashAndHeight.Hash);
-                Assert.Equal(this.wallet.LastBlockSyncedHeight, crossChainTransferStore2.TipHashAndHeight.Height);
+                Assert.Equal(newTest.wallet.LastBlockSyncedHash, crossChainTransferStore2.TipHashAndHeight.Hash);
+                Assert.Equal(newTest.wallet.LastBlockSyncedHeight, crossChainTransferStore2.TipHashAndHeight.Height);
             }
         }
 
