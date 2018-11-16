@@ -191,8 +191,8 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
                     dbreezeTransaction.SynchronizeTables(transferTableName, commonTableName);
 
                     CrossChainTransfer[] partialTransfers = this.Get(dbreezeTransaction,
-                    this.depositsIdsByStatus[CrossChainTransferStatus.Partial].Union(
-                        this.depositsIdsByStatus[CrossChainTransferStatus.FullySigned]).ToArray());
+                        this.depositsIdsByStatus[CrossChainTransferStatus.Partial].Union(
+                            this.depositsIdsByStatus[CrossChainTransferStatus.FullySigned]).ToArray());
 
                     foreach (CrossChainTransfer partialTransfer in partialTransfers)
                     {
@@ -249,10 +249,10 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
 
                     try
                     {
-                        string opReturnData = deposit.BlockNumber.ToString();
+                        uint256 opReturnData = deposit.Id;
 
                         // Build the multisig transaction template.
-                        var multiSigContext = new Wallet.TransactionBuildContext(recipient, opReturnData: Encoding.UTF8.GetBytes(opReturnData))
+                        var multiSigContext = new Wallet.TransactionBuildContext(recipient, opReturnData: opReturnData.ToBytes())
                         {
                             TransactionFee = Money.Coins(0.01m), // TODO
                             MinConfirmations = 0,                // TODO
