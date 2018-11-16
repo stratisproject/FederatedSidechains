@@ -45,7 +45,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
             return withdrawalsFromBlock;
         }
 
-        public IWithdrawal ExtractWithdrawalFromTransaction(Transaction transaction, uint256 blockHash, int blockHeight)
+        private IWithdrawal ExtractWithdrawalFromTransaction(Transaction transaction, uint256 blockHash, int blockHeight)
         {
             if (transaction.Outputs.Count(this.IsTargetAddressCandidate) != 1) return null;
             if (!IsOnlyFromMultisig(transaction)) return null;
