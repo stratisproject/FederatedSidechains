@@ -36,6 +36,8 @@ namespace Stratis.FederatedPeg.Tests
 
         private readonly IDepositExtractor depositExtractor;
 
+        private readonly ILeaderReceiver leaderReceiver;
+
         public FederationGatewayControllerTests()
         {
             this.network = ApexNetwork.RegTest;
@@ -48,6 +50,7 @@ namespace Stratis.FederatedPeg.Tests
             this.leaderProvider = Substitute.For<ILeaderProvider>();
             this.maturedBlockSender = Substitute.For<IMaturedBlockSender>();
             this.depositExtractor = Substitute.For<IDepositExtractor>();
+            this.leaderReceiver = Substitute.For<ILeaderReceiver>();
         }
 
         [Fact]
@@ -62,7 +65,8 @@ namespace Stratis.FederatedPeg.Tests
                 this.leaderProvider,
                 this.chain,
                 this.maturedBlockSender,
-                this.depositExtractor);
+                this.depositExtractor,
+                this.leaderReceiver);
 
             MaturedBlockModel model = new MaturedBlockModel()
             {
@@ -102,7 +106,8 @@ namespace Stratis.FederatedPeg.Tests
                 this.leaderProvider,
                 this.chain,
                 this.maturedBlockSender,
-                this.depositExtractor);
+                this.depositExtractor,
+                this.leaderReceiver);
 
             // Back online at block height : 3
             // 0 - 1 - 2 - 3
@@ -149,7 +154,8 @@ namespace Stratis.FederatedPeg.Tests
                 this.leaderProvider,
                 this.chain,
                 this.maturedBlockSender,
-                this.depositExtractor);
+                this.depositExtractor,
+                this.leaderReceiver);
 
             ChainedHeader earlierBlock = this.chain.GetBlock(2);
 
@@ -194,7 +200,8 @@ namespace Stratis.FederatedPeg.Tests
                 this.leaderProvider,
                 this.chain,
                 this.maturedBlockSender,
-                this.depositExtractor);
+                this.depositExtractor,
+                this.leaderReceiver);
 
             var model = new BlockTipModelRequest()
             {

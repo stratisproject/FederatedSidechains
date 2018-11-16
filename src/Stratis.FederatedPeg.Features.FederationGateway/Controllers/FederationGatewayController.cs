@@ -46,6 +46,8 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.Controllers
 
         private readonly IDepositExtractor depositExtractor;
 
+        private readonly ILeaderReceiver leaderReceiver;
+
         public FederationGatewayController(
             ILoggerFactory loggerFactory,
             ICounterChainSessionManager counterChainSessionManager,
@@ -53,7 +55,8 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.Controllers
             ILeaderProvider leaderProvider,
             ConcurrentChain chain,
             IMaturedBlockSender maturedBlockSender,
-            IDepositExtractor depositExtractor)
+            IDepositExtractor depositExtractor,
+            ILeaderReceiver leaderReceiver)
         {
             this.logger = loggerFactory.CreateLogger(this.GetType().FullName);
             this.counterChainSessionManager = counterChainSessionManager;
@@ -62,6 +65,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.Controllers
             this.chain = chain;
             this.maturedBlockSender = maturedBlockSender;
             this.depositExtractor = depositExtractor;
+            this.leaderReceiver = leaderReceiver;
         }
 
         [Route(FederationGatewayRouteEndPoint.ReceiveMaturedBlock)]
@@ -163,6 +167,8 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.Controllers
             try
             {
                 this.leaderProvider.Update(new BlockTipModel(uint256.Parse(blockTip.Hash), blockTip.Height));
+
+                this.leaderReceiver.ReceiveLeader(this.leaderProvider);
 
                 return this.Ok();
             }
