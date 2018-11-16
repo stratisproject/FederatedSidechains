@@ -1,22 +1,16 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using System.Threading;
-
 using FluentAssertions;
-
-using Stratis.FederatedPeg.Features.FederationGateway.Interfaces;
 using Stratis.FederatedPeg.Features.FederationGateway.TargetChain;
 using Stratis.FederatedPeg.Tests.Utils;
-
 using Xunit;
 
 namespace Stratis.FederatedPeg.Tests
 {
     public class WithdrawalReceiverTests : IDisposable
     {
-        private IWithdrawalReceiver withdrawalReceiver;
+        private WithdrawalReceiver withdrawalReceiver;
 
         private IDisposable streamSubscription;
 
