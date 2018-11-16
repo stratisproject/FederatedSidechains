@@ -152,7 +152,6 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
         /// </summary>
         public void Start()
         {
-            this.SynchronizeAsync().GetAwaiter().GetResult();
             this.SanityCheckAsync().GetAwaiter().GetResult();
         }
 
@@ -598,7 +597,6 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
         {
             this.logger.LogTrace("()");
 
-            await this.SynchronizeAsync();
             await this.SanityCheckAsync();
 
             uint256[] signedTransferHashes = this.depositsIdsByStatus[CrossChainTransferStatus.FullySigned].ToArray();
@@ -617,7 +615,6 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
         {
             this.logger.LogTrace("()");
 
-            await this.SynchronizeAsync();
             await this.SanityCheckAsync();
 
             uint256[] partialTransferHashes = this.depositsIdsByStatus[CrossChainTransferStatus.Partial].ToArray();
