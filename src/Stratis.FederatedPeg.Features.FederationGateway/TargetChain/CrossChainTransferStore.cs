@@ -265,7 +265,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
                         // Build the transaction.
                         transaction = this.federationWalletTransactionHandler.BuildTransaction(multiSigContext);
 
-                        // TODO: Include my signature?
+                        wallet.SignPartialTransaction(transaction, this.federationWalletManager.Secret.WalletPassword);
                     }
                     catch (Exception)
                     {
