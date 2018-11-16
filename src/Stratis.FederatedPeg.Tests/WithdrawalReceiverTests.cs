@@ -1,5 +1,4 @@
 using System;
-using System.Linq;
 using System.Threading;
 using FluentAssertions;
 using Stratis.FederatedPeg.Features.FederationGateway.TargetChain;
