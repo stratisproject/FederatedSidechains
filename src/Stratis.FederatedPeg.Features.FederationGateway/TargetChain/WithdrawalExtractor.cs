@@ -1,4 +1,7 @@
-﻿using System.Collections.Generic;using System.Linq;
+﻿using System.Collections.Generic;
+using System.Linq;
+using System.Reactive.Subjects;
+
 using Microsoft.Extensions.Logging;
 using NBitcoin;
 using Stratis.FederatedPeg.Features.FederationGateway.Interfaces;

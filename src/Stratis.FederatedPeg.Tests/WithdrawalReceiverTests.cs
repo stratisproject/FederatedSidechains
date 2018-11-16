@@ -1,9 +1,10 @@
-﻿using System;
+using System;
 using System.Linq;
 using System.Threading;
 using FluentAssertions;
 using Stratis.FederatedPeg.Features.FederationGateway.TargetChain;
 using Stratis.FederatedPeg.Tests.Utils;
+
 using Xunit;
 
 namespace Stratis.FederatedPeg.Tests
@@ -11,6 +12,7 @@ namespace Stratis.FederatedPeg.Tests
     public class WithdrawalReceiverTests : IDisposable
     {
         private WithdrawalReceiver withdrawalReceiver;
+
 
         private IDisposable streamSubscription;
 
@@ -23,7 +25,7 @@ namespace Stratis.FederatedPeg.Tests
             this.streamSubscription = this.withdrawalReceiver.NewWithdrawalsOnTargetChainStream.Subscribe(
                 _ => { Interlocked.Increment(ref receivedWithdrawalListCount); });
 
-            var withdrawals = Enumerable.Range(0, 10).Select(i => TestingValues.GetWithdrawal()).ToList().AsReadOnly();
+            var withdrawals = TestingValues.GetWithdrawals(3);
 
             this.withdrawalReceiver.ReceiveWithdrawals(withdrawals);
 
