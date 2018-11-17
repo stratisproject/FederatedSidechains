@@ -45,11 +45,13 @@ namespace Stratis.FederatedPeg.Tests
         private FederationWallet wallet;
         private ExtKey[] federationKeys;
         private ExtKey extendedKey;
-        private Script redeemScript {
-            get {
+        private Script redeemScript
+        {
+            get
+            {
                 return PayToMultiSigTemplate.Instance.GenerateScriptPubKey(2, this.federationKeys.Select(k => k.PrivateKey.PubKey).ToArray());
-                }
             }
+        }
 
         /// <summary>
         /// Initializes the cross-chain transfer tests.
@@ -100,6 +102,10 @@ namespace Stratis.FederatedPeg.Tests
             });
         }
 
+        /// <summary>
+        /// Chooses the key we use.
+        /// </summary>
+        /// <param name="keyNum">The key number.</param>
         private void SetExtendedKey(int keyNum)
         {
             this.extendedKey = this.federationKeys[keyNum];
@@ -111,6 +117,11 @@ namespace Stratis.FederatedPeg.Tests
             this.withdrawalExtractor = new WithdrawalExtractor(this.loggerFactory, this.federationGatewaySettings, this.opReturnDataReader, this.network);
         }
 
+        /// <summary>
+        /// Create the wallet manager and wallet transaction handler.
+        /// </summary>
+        /// <param name="chain">The chain.</param>
+        /// <param name="dataFolder">The data folder.</param>
         private void CreateWalletManagerAndTransactionHandler(ConcurrentChain chain, DataFolder dataFolder)
         {
             // Create the wallet manager.
@@ -360,6 +371,9 @@ namespace Stratis.FederatedPeg.Tests
             }
         }
 
+        /// <summary>
+        /// Tests whether the store merges signatures as expected.
+        /// </summary>
         [Fact]
         public void StoreMergesSignaturesAsExpected()
         {
@@ -417,13 +431,13 @@ namespace Stratis.FederatedPeg.Tests
                     transaction2 = crossChainTransfer2.PartialTransaction;
                 }
 
+                // Merges the transaction signatures.
                 crossChainTransferStore.MergeTransactionSignaturesAsync(deposit.Id, new[] { transaction2 }).GetAwaiter().GetResult();
 
                 // Test the outcome.
                 crossChainTransfer = crossChainTransferStore.GetAsync(new[] { deposit.Id }).GetAwaiter().GetResult().SingleOrDefault();
 
                 Assert.NotNull(crossChainTransfer);
-
                 Assert.Equal(CrossChainTransferStatus.FullySigned, crossChainTransfer.Status);
             }
         }
@@ -518,6 +532,11 @@ namespace Stratis.FederatedPeg.Tests
             return Path.Combine("..", "..", "..", "..", "TestCase", testDirectory);
         }
 
+        /// <summary>
+        /// Creates a new folder that will be empty.
+        /// </summary>
+        /// <param name="dir">The first part of the folder name.</param>
+        /// <returns>A folder name with the current time concatenated.</returns>
         public static string AssureEmptyDir(string dir)
         {
             string uniqueDirName = $"{dir}-{DateTime.UtcNow:ddMMyyyyTHH.mm.ss.fff}";
