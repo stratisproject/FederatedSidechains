@@ -439,6 +439,10 @@ namespace Stratis.FederatedPeg.Tests
 
                 Assert.NotNull(crossChainTransfer);
                 Assert.Equal(CrossChainTransferStatus.FullySigned, crossChainTransfer.Status);
+
+                // Should be returned as signed.
+                Transaction signedTransaction = crossChainTransferStore.GetSignedTransactionsAsync().GetAwaiter().GetResult().SingleOrDefault();
+                Assert.NotNull(signedTransaction);
             }
         }
 

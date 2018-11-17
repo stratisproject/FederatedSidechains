@@ -339,7 +339,11 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
                     {
                         var builder = new TransactionBuilder(this.network);
 
+                        uint256 oldTransactionId = transfer.PartialTransaction.GetHash();
+
                         transfer.CombineSignatures(builder, partialTransactions);
+
+                        this.UpdateSpendingDetailsInWallet(oldTransactionId, transfer.PartialTransaction, wallet);
 
                         Op ops = wallet.MultiSigAddress.RedeemScript.ToOps().FirstOrDefault();
                         int? signaturesRequired = ops?.GetInt();
@@ -425,8 +429,6 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
             if (this.TipHashAndHeight != null && (this.TipHashAndHeight.Height > tipToChase.Height || this.chain.GetBlock(this.TipHashAndHeight.Hash) == null))
             {
                 // We are ahead of the current chain or on the wrong chain.
-                uint256 commonTip = this.network.GenesisHash;
-                int commonHeight = 0;
 
                 // Find the block hashes that are not beyond the height of the tip being chased.
                 uint256[] blockHashes = this.depositIdsByBlockHash
@@ -436,11 +438,8 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
                 // Find the fork based on those hashes.
                 ChainedHeader fork = this.chain.FindFork(blockHashes);
 
-                if (fork != null)
-                {
-                    commonTip = fork.Block.GetHash();
-                    commonHeight = this.blockHeightsByBlockHash[commonTip];
-                }
+                uint256 commonTip = (fork == null) ? this.network.GenesisHash : fork.Block.GetHash();
+                int commonHeight = (fork == null) ? 0 : this.blockHeightsByBlockHash[commonTip];
 
                 using (DBreeze.Transactions.Transaction transaction = this.DBreeze.GetTransaction())
                 {
@@ -525,9 +524,9 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
                 HashHeightPair newTip = new HashHeightPair(lastBlock.GetHash(), (this.TipHashAndHeight?.Height ?? -1) + availableBlocks);
 
                 this.Put(newTip, blocks.GetRange(0, availableBlocks));
-            }
 
-            this.logger.LogTrace("Synchronized {0} blocks with cross-chain store.", availableBlocks);
+                this.logger.LogTrace("Synchronized {0} blocks with cross-chain store to advance tip to block {1}", availableBlocks, newTip);
+            }
 
             bool success = availableBlocks == blocks.Count;
 
@@ -829,6 +828,28 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
             }
 
             return true;
+        }
+
+        /// <summary>
+        /// Update spending details when the transaction hash changes.
+        /// </summary>
+        /// <param name="oldTransactionId">The transaction id before signatures were added.</param>
+        /// <param name="transaction">The transaction, possibly with additional signatures.</param>
+        /// <param name="wallet">The wallet to update.</param>
+        private void UpdateSpendingDetailsInWallet(uint256 oldTransactionId, Transaction transaction, Wallet.FederationWallet wallet)
+        {
+            // All the input UTXO's should be present in spending details of the multi-sig address.
+            foreach (TxIn input in transaction.Inputs)
+            {
+                // Only check inputs that the wallet could have seen...
+                foreach (Recipient.SpendingDetails spendingDetails in wallet.MultiSigAddress.Transactions
+                    .Select(t => t.SpendingDetails)
+                    .Where(s => s != null && s.TransactionId == oldTransactionId))
+                {
+                    spendingDetails.TransactionId = transaction.GetHash();
+                    spendingDetails.Hex = transaction.ToHex(this.network);
+                }
+            }
         }
 
         /// <inheritdoc />
