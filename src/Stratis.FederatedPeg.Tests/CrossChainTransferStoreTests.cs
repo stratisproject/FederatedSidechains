@@ -25,6 +25,7 @@ namespace Stratis.FederatedPeg.Tests
 {
     public class CrossChainTransferStoreTests
     {
+        private const string walletPassword = "123";
         private Network network;
         private ILoggerFactory loggerFactory;
         private ILogger logger;
@@ -42,6 +43,13 @@ namespace Stratis.FederatedPeg.Tests
         private Dictionary<uint256, Block> blockDict;
         private Transaction[] fundingTransactions;
         private FederationWallet wallet;
+        private ExtKey[] federationKeys;
+        private ExtKey extendedKey;
+        private Script redeemScript {
+            get {
+                return PayToMultiSigTemplate.Instance.GenerateScriptPubKey(2, this.federationKeys.Select(k => k.PrivateKey.PubKey).ToArray());
+                }
+            }
 
         /// <summary>
         /// Initializes the cross-chain transfer tests.
@@ -68,12 +76,15 @@ namespace Stratis.FederatedPeg.Tests
             this.walletFeePolicy = Substitute.For<IWalletFeePolicy>();
             this.wallet = null;
             this.federationGatewaySettings = Substitute.For<IFederationGatewaySettings>();
-            var redeemScript = new Script("2 026ebcbf6bfe7ce1d957adbef8ab2b66c788656f35896a170257d6838bda70b95c 02a97b7d0fad7ea10f456311dcd496ae9293952d4c5f2ebdfc32624195fde14687 02e9d3cd0c2fa501957149ff9d21150f3901e6ece0e3fe3007f2372720c84e3ee1 03c99f997ed71c7f92cf532175cea933f2f11bf08f1521d25eb3cc9b8729af8bf4 034b191e3b3107b71d1373e840c5bf23098b55a355ca959b968993f5dec699fc38 5 OP_CHECKMULTISIG");
-            this.federationGatewaySettings.IsMainChain.Returns(false);
-            this.federationGatewaySettings.MultiSigRedeemScript.Returns(redeemScript);
-            this.federationGatewaySettings.MultiSigAddress.Returns(redeemScript.Hash.GetAddress(this.network));
-            this.federationGatewaySettings.PublicKey.Returns("026ebcbf6bfe7ce1d957adbef8ab2b66c788656f35896a170257d6838bda70b95c");
-            this.withdrawalExtractor = new WithdrawalExtractor(this.loggerFactory, this.federationGatewaySettings, this.opReturnDataReader, this.network);
+
+            // Generate the keys used by the federation members for our tests.
+            this.federationKeys = new ExtKey[5];
+            for (int i = 0; i < 5; i++)
+            {
+                this.federationKeys[i] = HdOperations.GetExtendedKey(new Mnemonic(Wordlist.English, WordCount.Twelve));
+            }
+
+            SetExtendedKey(0);
 
             this.blockDict = new Dictionary<uint256, Block>();
 
@@ -87,6 +98,17 @@ namespace Stratis.FederatedPeg.Tests
 
                 return blocks;
             });
+        }
+
+        private void SetExtendedKey(int keyNum)
+        {
+            this.extendedKey = this.federationKeys[keyNum];
+
+            this.federationGatewaySettings.IsMainChain.Returns(false);
+            this.federationGatewaySettings.MultiSigRedeemScript.Returns(this.redeemScript);
+            this.federationGatewaySettings.MultiSigAddress.Returns(this.redeemScript.Hash.GetAddress(this.network));
+            this.federationGatewaySettings.PublicKey.Returns(this.extendedKey.PrivateKey.PubKey.ToHex());
+            this.withdrawalExtractor = new WithdrawalExtractor(this.loggerFactory, this.federationGatewaySettings, this.opReturnDataReader, this.network);
         }
 
         private void CreateWalletManagerAndTransactionHandler(ConcurrentChain chain, DataFolder dataFolder)
@@ -123,7 +145,7 @@ namespace Stratis.FederatedPeg.Tests
                 {
                     Amount = tran1.Outputs[0].Value,
                     Id = tran1.GetHash(),
-                    Hex = tran1.ToString(this.network, RawFormat.BlockExplorer),
+                    Hex = tran1.ToHex(this.network),
                     Index = 0,
                     ScriptPubKey = this.wallet.MultiSigAddress.ScriptPubKey,
                     BlockHeight = 2
@@ -133,7 +155,7 @@ namespace Stratis.FederatedPeg.Tests
                 {
                     Amount = tran1.Outputs[1].Value,
                     Id = tran1.GetHash(),
-                    Hex = tran1.ToString(this.network, RawFormat.BlockExplorer),
+                    Hex = tran1.ToHex(this.network),
                     Index = 1,
                     ScriptPubKey = this.wallet.MultiSigAddress.ScriptPubKey,
                     BlockHeight = 2
@@ -143,7 +165,7 @@ namespace Stratis.FederatedPeg.Tests
                 {
                     Amount = tran2.Outputs[0].Value,
                     Id = tran2.GetHash(),
-                    Hex = tran2.ToString(this.network, RawFormat.BlockExplorer),
+                    Hex = tran2.ToHex(this.network),
                     Index = 0,
                     ScriptPubKey = this.wallet.MultiSigAddress.ScriptPubKey,
                     BlockHeight = 3
@@ -169,6 +191,12 @@ namespace Stratis.FederatedPeg.Tests
             {
                 this.federationWalletSyncManager.ProcessBlock(block);
             }
+
+            // Set up the encrypted seed on the wallet.
+            string encryptedSeed = this.extendedKey.PrivateKey.GetEncryptedBitcoinSecret(walletPassword, this.network).ToWif();
+            this.wallet.EncryptedSeed = encryptedSeed;
+
+            this.federationWalletManager.Secret = new WalletSecret() { WalletPassword = walletPassword };
         }
 
         /// <summary>
@@ -363,22 +391,40 @@ namespace Stratis.FederatedPeg.Tests
 
                 Transaction transaction = crossChainTransfer.PartialTransaction;
 
-                var mnemonic = new Mnemonic(Wordlist.English, WordCount.Twelve);
-                ExtKey extendedKey = HdOperations.GetExtendedKey(mnemonic);
-                string encryptedSeed = extendedKey.PrivateKey.GetEncryptedBitcoinSecret("123", this.network).ToWif();
-                this.wallet.EncryptedSeed = encryptedSeed;
+                // Create a separate instance to generate another transaction.
+                Transaction transaction2;
+                var newTest = new CrossChainTransferStoreTests();
+                newTest.federationKeys = this.federationKeys;
+                newTest.SetExtendedKey(1);
+                ConcurrentChain newChain = newTest.BuildChain(3);
+                DataFolder dataFolder2 = new DataFolder(CreateTestDir(this));
+                newTest.CreateWalletManagerAndTransactionHandler(newChain, dataFolder2);
+                using (var crossChainTransferStore2 = new CrossChainTransferStore(newTest.network, dataFolder2, newChain, newTest.federationGatewaySettings, newTest.dateTimeProvider,
+                    newTest.loggerFactory, newTest.withdrawalExtractor, newTest.fullNode, newTest.blockRepository, newTest.federationWalletManager, newTest.federationWalletTransactionHandler))
+                {
+                    crossChainTransferStore2.Initialize();
+                    crossChainTransferStore2.Start();
 
-                // TODO
-                /*
+                    Assert.Equal(newChain.Tip.HashBlock, crossChainTransferStore2.TipHashAndHeight.Hash);
+                    Assert.Equal(newChain.Tip.Height, crossChainTransferStore2.TipHashAndHeight.Height);
 
-                TransactionBuilder builder = new TransactionBuilder(this.network);
+                    crossChainTransferStore2.RecordLatestMatureDepositsAsync(new[] { deposit }).GetAwaiter().GetResult();
 
-                Transaction signed = builder
-                    .AddKeys(multiSigAddress.GetPrivateKey(this.wallet.EncryptedSeed, "123", this.network))
-                    .SignTransactionInPlace(transaction);
+                    ICrossChainTransfer crossChainTransfer2 = crossChainTransferStore2.GetAsync(new[] { deposit.Id }).GetAwaiter().GetResult().SingleOrDefault();
 
-                TransactionSignature[] signatures = PayToMultiSigTemplate.Instance.ExtractScriptSigParameters(this.network, signed.Inputs[1].ScriptSig);
-                */
+                    Assert.NotNull(crossChainTransfer2);
+
+                    transaction2 = crossChainTransfer2.PartialTransaction;
+                }
+
+                crossChainTransferStore.MergeTransactionSignaturesAsync(deposit.Id, new[] { transaction2 }).GetAwaiter().GetResult();
+
+                // Test the outcome.
+                crossChainTransfer = crossChainTransferStore.GetAsync(new[] { deposit.Id }).GetAwaiter().GetResult().SingleOrDefault();
+
+                Assert.NotNull(crossChainTransfer);
+
+                Assert.Equal(CrossChainTransferStatus.FullySigned, crossChainTransfer.Status);
             }
         }
 

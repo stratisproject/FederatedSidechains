@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using DBreeze;
@@ -199,7 +198,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
                         if (!SanityCheck(partialTransfer.PartialTransaction, wallet))
                         {
                             this.SetTransferStatus(partialTransfer, CrossChainTransferStatus.Rejected);
-                            await this.PutTransferAsync(dbreezeTransaction, partialTransfer);
+                            this.PutTransfer(dbreezeTransaction, partialTransfer);
                         }
                     }
 
@@ -210,6 +209,46 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
             this.logger.LogTrace("(-)");
         }
 
+        public static Transaction BuildDeterministicTransaction(uint256 depositId, Recipient.Recipient recipient, Network network,
+            IFederationWalletTransactionHandler federationWalletTransactionHandler, string walletPassword = "", Transaction[] partials = null, ILogger logger = null)
+        {
+            try
+            {
+                logger?.LogTrace("()");
+
+                uint256 opReturnData = depositId;
+
+                // Build the multisig transaction template.
+                var multiSigContext = new Recipient.TransactionBuildContext(new[] { recipient }.ToList(), opReturnData: opReturnData.ToBytes())
+                {
+                    TransactionFee = Money.Coins(0.01m), // TODO
+                    MinConfirmations = 0,                // TODO
+                    Shuffle = false,
+                    IgnoreVerify = true,
+                    WalletPassword = walletPassword,
+                    Sign = (walletPassword ?? "") != ""
+                };
+
+                // Build the transaction.
+                Transaction transaction = federationWalletTransactionHandler.BuildTransaction(multiSigContext);
+
+                if (partials?.Any() ?? false)
+                {
+                    multiSigContext.TransactionBuilder.CombineSignatures(partials);
+                }
+
+                logger?.LogTrace("(-)");
+
+                return transaction;
+            }
+            catch (Exception error)
+            {
+                logger?.LogTrace("Could not create transaction for deposit {0}: {1}", depositId, error.Message);
+            }
+
+            return null;
+        }
+
         /// <inheritdoc />
         public async Task RecordLatestMatureDepositsAsync(IDeposit[] deposits)
         {
@@ -218,7 +257,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
 
             Recipient.FederationWallet wallet = this.federationWalletManager.GetWallet();
 
-            Guard.Assert(wallet.LastBlockSyncedHash == this.TipHashAndHeight.Hash);
+            Guard.Assert(wallet.LastBlockSyncedHash == this.TipHashAndHeight?.Hash);
 
             this.logger.LogTrace("()");
 
@@ -233,43 +272,16 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
                 {
                     IDeposit deposit = deposits[i];
                     CrossChainTransfer transfer = transfers[i];
-
                     Script scriptPubKey = BitcoinAddress.Create(deposit.TargetAddress, this.network).ScriptPubKey;
 
-                    var recipient = new List<Recipient.Recipient>()
+                    var recipient = new Recipient.Recipient
                     {
-                        new Recipient.Recipient
-                        {
-                            Amount = deposit.Amount,
-                            ScriptPubKey = scriptPubKey
-                        }
+                        Amount = deposit.Amount,
+                        ScriptPubKey = scriptPubKey
                     };
 
-                    Transaction transaction = null;
-
-                    try
-                    {
-                        uint256 opReturnData = deposit.Id;
-
-                        // Build the multisig transaction template.
-                        var multiSigContext = new Wallet.TransactionBuildContext(recipient, opReturnData: opReturnData.ToBytes())
-                        {
-                            TransactionFee = Money.Coins(0.01m), // TODO
-                            MinConfirmations = 0,                // TODO
-                            Shuffle = false,
-                            MultiSig = wallet.MultiSigAddress,
-                            IgnoreVerify = true,
-                            Sign = false
-                        };
-
-                        // Build the transaction.
-                        transaction = this.federationWalletTransactionHandler.BuildTransaction(multiSigContext);
-
-                        wallet.SignPartialTransaction(transaction, this.federationWalletManager.Secret.WalletPassword);
-                    }
-                    catch (Exception)
-                    {
-                    }
+                    Transaction transaction = BuildDeterministicTransaction(deposit.Id, recipient, this.network,
+                        this.federationWalletTransactionHandler, this.federationWalletManager.Secret.WalletPassword, logger: this.logger);
 
                     if (transfer == null)
                     {
@@ -284,11 +296,11 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
                             transfer.BlockHash, transfer.BlockHeight);
                     }
 
-                    await this.PutTransferAsync(dbreezeTransaction, transfer);
+                    this.PutTransfer(dbreezeTransaction, transfer);
 
                     if (transaction != null)
                     {
-                        this.federationWalletManager.ProcessTransaction(transaction);
+                        this.federationWalletManager.ProcessTransaction(transaction, isPropagated: false);
                     }
                 }
 
@@ -305,6 +317,8 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
         {
             Guard.NotNull(partialTransactions, nameof(partialTransactions));
 
+            Recipient.FederationWallet wallet = this.federationWalletManager.GetWallet();
+
             this.logger.LogTrace("()");
 
             using (DBreeze.Transactions.Transaction dbreezeTransaction = this.DBreeze.GetTransaction())
@@ -315,11 +329,35 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
 
                 if (transfer != null)
                 {
-                    transfer.CombineSignatures(this.network, partialTransactions);
+                    var builder = new TransactionBuilder(this.network);
 
-                    // TODO: Update status to FullySigned when appropriate.
+                    transfer.CombineSignatures(builder, partialTransactions);
 
-                    await this.PutTransferAsync(dbreezeTransaction, transfer);
+                    Op ops = wallet.MultiSigAddress.RedeemScript.ToOps().FirstOrDefault();
+                    int? signaturesRequired = ops?.GetInt();
+
+                    bool fullySigned = signaturesRequired != null;
+
+                    if (fullySigned)
+                    {
+                        foreach (TxIn txIn in transfer.PartialTransaction.Inputs)
+                        {
+                            PayToScriptHashSigParameters args = PayToScriptHashTemplate.Instance.ExtractScriptSigParameters(this.network, txIn.ScriptSig);
+                            TransactionSignature[] signatures = args.GetMultisigSignatures(this.network).Where(s => s != null).ToArray();
+                            if (signatures.Length < signaturesRequired)
+                            {
+                                fullySigned = false;
+                                break;
+                            }
+                        }
+                    }
+
+                    if (fullySigned)
+                    {
+                        this.SetTransferStatus(transfer, CrossChainTransferStatus.FullySigned);
+                    }
+
+                    this.PutTransfer(dbreezeTransaction, transfer);
                 }
 
                 dbreezeTransaction.Commit();
@@ -401,7 +439,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
                 {
                     transaction.SynchronizeTables(transferTableName, commonTableName);
                     transaction.ValuesLazyLoadingIsOn = false;
-                    await this.OnDeleteBlocksAsync(transaction, commonHeight);
+                    this.OnDeleteBlocks(transaction, commonHeight);
                     this.SaveTipHashAndHeight(transaction, new HashHeightPair(commonTip, commonHeight));
                     transaction.Commit();
                 }
@@ -633,7 +671,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
         /// </summary>
         /// <param name="dbreezeTransaction">The DBreeze transaction context to use.</param>
         /// <param name="crossChainTransfer">Cross-chain transfer information to be inserted.</param>
-        private async Task PutTransferAsync(DBreeze.Transactions.Transaction dbreezeTransaction, ICrossChainTransfer crossChainTransfer)
+        private void PutTransfer(DBreeze.Transactions.Transaction dbreezeTransaction, ICrossChainTransfer crossChainTransfer)
         {
             Guard.NotNull(crossChainTransfer, nameof(crossChainTransfer));
 
@@ -683,7 +721,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
                         this.SetTransferStatus(storedDeposits[i], CrossChainTransferStatus.SeenInBlock);
                     }
 
-                    await this.PutTransferAsync(dbreezeTransaction, storedDeposits[i]);
+                    this.PutTransfer(dbreezeTransaction, storedDeposits[i]);
                 }
 
                 // Update lookups.
@@ -696,7 +734,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
         /// </summary>
         /// <param name="dbreezeTransaction">The DBreeze transaction context to use.</param>
         /// <param name="lastBlockHeight">The last block to retain.</param>
-        private async Task OnDeleteBlocksAsync(DBreeze.Transactions.Transaction dbreezeTransaction, int lastBlockHeight)
+        private void OnDeleteBlocks(DBreeze.Transactions.Transaction dbreezeTransaction, int lastBlockHeight)
         {
             // Gather all the deposit ids that may have had transactions in the blocks being deleted.
             var depositIds = new HashSet<uint256>();
@@ -716,7 +754,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
                 this.SetTransferStatus(transfer, CrossChainTransferStatus.FullySigned);
 
                 // Write the transfer status to the database.
-                await this.PutTransferAsync(dbreezeTransaction, transfer);
+                this.PutTransfer(dbreezeTransaction, transfer);
 
                 // Update the lookups.
                 this.depositIdsByBlockHash[transfer.BlockHash].Remove(transfer.DepositTransactionId);

@@ -104,11 +104,17 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
                 stream.ReadWrite(ref this.depositAmount);
             }
 
-            if (this.status == CrossChainTransferStatus.Partial || this.status == CrossChainTransferStatus.SeenInBlock)
+            if (this.status == CrossChainTransferStatus.Partial ||
+                this.status == CrossChainTransferStatus.FullySigned ||
+                this.status == CrossChainTransferStatus.SeenInBlock)
             {
                 stream.ReadWrite(ref this.partialTransaction);
-                if (this.status != CrossChainTransferStatus.Partial)
+
+                if (this.status == CrossChainTransferStatus.SeenInBlock)
+                {
                     stream.ReadWrite(ref this.blockHash);
+                    stream.ReadWrite(ref this.blockHeight);
+                }
             }
         }
 
@@ -137,15 +143,13 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
         }
 
         /// <inheritdoc />
-        public void CombineSignatures(Network network, Transaction[] partials)
+        public void CombineSignatures(TransactionBuilder builder, Transaction[] partialTransactions)
         {
             Guard.Assert(this.status == CrossChainTransferStatus.Partial);
 
-            TransactionBuilder builder = new TransactionBuilder(network);
-
-            Transaction[] allPartials = new Transaction[partials.Length + 1];
+            Transaction[] allPartials = new Transaction[partialTransactions.Length + 1];
             allPartials[0] = this.partialTransaction;
-            partials.CopyTo(allPartials, 1);
+            partialTransactions.CopyTo(allPartials, 1);
 
             this.partialTransaction = builder.CombineSignatures(allPartials);
         }

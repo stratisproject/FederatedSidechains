@@ -72,8 +72,8 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.Interfaces
         /// <summary>
         /// Combines signatures from partial transactions received from other federation members.
         /// </summary>
-        /// <param name="network">The network targeted by the transactions.</param>
-        /// <param name="partials">Partial transactions received from other federation members.</param>
-        void CombineSignatures(Network network, Transaction[] partials);
+        /// <param name="builder">The transaction builder to use.</param>
+        /// <param name="partialTransactions">Partial transactions received from other federation members.</param>
+        void CombineSignatures(TransactionBuilder builder, Transaction[] partialTransactions);
     }
 }
