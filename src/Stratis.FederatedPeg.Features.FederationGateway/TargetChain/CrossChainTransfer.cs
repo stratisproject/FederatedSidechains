@@ -104,17 +104,12 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
                 stream.ReadWrite(ref this.depositAmount);
             }
 
-            if (this.status == CrossChainTransferStatus.Partial ||
-                this.status == CrossChainTransferStatus.FullySigned ||
-                this.status == CrossChainTransferStatus.SeenInBlock)
-            {
-                stream.ReadWrite(ref this.partialTransaction);
+            stream.ReadWrite(ref this.partialTransaction);
 
-                if (this.status == CrossChainTransferStatus.SeenInBlock)
-                {
-                    stream.ReadWrite(ref this.blockHash);
-                    stream.ReadWrite(ref this.blockHeight);
-                }
+            if (this.status == CrossChainTransferStatus.SeenInBlock)
+            {
+                stream.ReadWrite(ref this.blockHash);
+                stream.ReadWrite(ref this.blockHeight);
             }
         }
 

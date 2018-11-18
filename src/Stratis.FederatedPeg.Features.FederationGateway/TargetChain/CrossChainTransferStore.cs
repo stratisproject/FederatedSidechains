@@ -145,7 +145,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
         /// </summary>
         public void Start()
         {
-            this.SanityCheckAsync().GetAwaiter().GetResult();
+            this.SanityCheck();
         }
 
         /// <summary>
@@ -170,45 +170,36 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
         /// Sets transfers to <see cref="CrossChainTransferStatus.Rejected"/> if their UTXO's are not reserved
         /// within the wallet.
         /// </summary>
-        public Task SanityCheckAsync()
+        private bool SanityCheck()
         {
-            return Task.Run(() =>
+            // Ensure that the store is synchoronized with the wallet before doing the cross-check.
+            if (!this.Synchronize())
+                return false;
+
+            Recipient.FederationWallet wallet = this.federationWalletManager.GetWallet();
+
+            using (DBreeze.Transactions.Transaction dbreezeTransaction = this.DBreeze.GetTransaction())
             {
-                this.logger.LogTrace("()");
+                dbreezeTransaction.SynchronizeTables(transferTableName, commonTableName);
 
-                this.SanityCheck();
+                CrossChainTransfer[] partialTransfers = this.Get(dbreezeTransaction,
+                    this.depositsIdsByStatus[CrossChainTransferStatus.Partial].Union(
+                        this.depositsIdsByStatus[CrossChainTransferStatus.FullySigned]).ToArray());
 
-                this.logger.LogTrace("(-)");
-            });
-        }
-
-        private void SanityCheck()
-        {
-            // Ensure that the store is synchoronized with the wallet.
-            if (this.Synchronize())
-            {
-                Recipient.FederationWallet wallet = this.federationWalletManager.GetWallet();
-
-                using (DBreeze.Transactions.Transaction dbreezeTransaction = this.DBreeze.GetTransaction())
+                foreach (CrossChainTransfer partialTransfer in partialTransfers)
                 {
-                    dbreezeTransaction.SynchronizeTables(transferTableName, commonTableName);
-
-                    CrossChainTransfer[] partialTransfers = this.Get(dbreezeTransaction,
-                        this.depositsIdsByStatus[CrossChainTransferStatus.Partial].Union(
-                            this.depositsIdsByStatus[CrossChainTransferStatus.FullySigned]).ToArray());
-
-                    foreach (CrossChainTransfer partialTransfer in partialTransfers)
+                    // Verify that the transaction input UTXO's have been reserved by the wallet.
+                    if (!SanityCheck(partialTransfer.PartialTransaction, wallet))
                     {
-                        if (!SanityCheck(partialTransfer.PartialTransaction, wallet))
-                        {
-                            this.SetTransferStatus(partialTransfer, CrossChainTransferStatus.Rejected);
-                            this.PutTransfer(dbreezeTransaction, partialTransfer);
-                        }
+                        this.SetTransferStatus(partialTransfer, CrossChainTransferStatus.Rejected);
+                        this.PutTransfer(dbreezeTransaction, partialTransfer);
                     }
-
-                    dbreezeTransaction.Commit();
                 }
+
+                dbreezeTransaction.Commit();
             }
+
+            return true;
         }
 
         public static Transaction BuildDeterministicTransaction(uint256 depositId, Recipient.Recipient recipient, Network network,
@@ -223,8 +214,8 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
                 // Build the multisig transaction template.
                 var multiSigContext = new Recipient.TransactionBuildContext(new[] { recipient }.ToList(), opReturnData: opReturnData.ToBytes())
                 {
-                    TransactionFee = Money.Coins(0.01m), // TODO
-                    MinConfirmations = 0,                // TODO
+                    TransactionFee = Money.Coins(0.01m), // TODO: Configurable?
+                    MinConfirmations = 1,                // TODO: Require Maturity Depth?
                     Shuffle = false,
                     IgnoreVerify = true,
                     WalletPassword = walletPassword,
@@ -259,9 +250,9 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
 
             return Task.Run(() =>
             {
-                Recipient.FederationWallet wallet = this.federationWalletManager.GetWallet();
+                Guard.Assert(this.SanityCheck());
 
-                Guard.Assert(wallet.LastBlockSyncedHash == this.TipHashAndHeight?.Hash);
+                Recipient.FederationWallet wallet = this.federationWalletManager.GetWallet();
 
                 this.logger.LogTrace("()");
 
@@ -597,7 +588,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
         /// <inheritdoc />
         public Task<ICrossChainTransfer[]> GetAsync(uint256[] depositIds)
         {
-            return Task.Run<ICrossChainTransfer[]>(() =>
+            return Task.Run(() =>
             {
                 this.logger.LogTrace("()");
 
@@ -659,7 +650,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
             {
                 this.logger.LogTrace("()");
 
-                this.SanityCheck();
+                Guard.Assert(this.SanityCheck());
 
                 uint256[] signedTransferHashes = this.depositsIdsByStatus[CrossChainTransferStatus.FullySigned].ToArray();
 
@@ -676,11 +667,11 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
         /// <inheritdoc />
         public Task<Transaction[]> GetPartialTransactionsAsync()
         {
-            return Task.Run<Transaction[]>(() =>
+            return Task.Run(() =>
             {
                 this.logger.LogTrace("()");
 
-                this.SanityCheck();
+                Guard.Assert(this.SanityCheck());
 
                 uint256[] partialTransferHashes = this.depositsIdsByStatus[CrossChainTransferStatus.Partial].ToArray();
 
@@ -819,12 +810,13 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
             foreach (TxIn input in transaction.Inputs)
             {
                 // Only check inputs that the wallet could have seen...
-                Wallet.TransactionData transactionData = wallet.MultiSigAddress.Transactions
-                    .Where(t => t.SpendingDetails != null && t.SpendingDetails.TransactionId == transaction.GetHash()
-                        && t.Id == input.PrevOut.Hash && t.Index == input.PrevOut.N).FirstOrDefault();
-
-                if (transactionData == null)
-                    return false;
+                foreach (Wallet.TransactionData transactionData in wallet.MultiSigAddress.Transactions
+                    .Where(t => t.SpendingDetails != null && t.Id == input.PrevOut.Hash && t.Index == input.PrevOut.N))
+                {
+                    // Check that the previous outputs are only spent by this transaction.
+                    if (transactionData == null || transactionData.SpendingDetails.TransactionId != transaction.GetHash())
+                        return false;
+                }
             }
 
             return true;

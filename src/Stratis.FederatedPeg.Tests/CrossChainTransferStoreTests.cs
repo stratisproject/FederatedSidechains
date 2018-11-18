@@ -159,7 +159,7 @@ namespace Stratis.FederatedPeg.Tests
                     Hex = tran1.ToHex(this.network),
                     Index = 0,
                     ScriptPubKey = this.wallet.MultiSigAddress.ScriptPubKey,
-                    BlockHeight = 2
+                    BlockHeight = 1
                 });
 
                 this.wallet.MultiSigAddress.Transactions.Add(new Features.FederationGateway.Wallet.TransactionData()
@@ -169,7 +169,7 @@ namespace Stratis.FederatedPeg.Tests
                     Hex = tran1.ToHex(this.network),
                     Index = 1,
                     ScriptPubKey = this.wallet.MultiSigAddress.ScriptPubKey,
-                    BlockHeight = 2
+                    BlockHeight = 1
                 });
 
                 this.wallet.MultiSigAddress.Transactions.Add(new Features.FederationGateway.Wallet.TransactionData()
@@ -179,7 +179,7 @@ namespace Stratis.FederatedPeg.Tests
                     Hex = tran2.ToHex(this.network),
                     Index = 0,
                     ScriptPubKey = this.wallet.MultiSigAddress.ScriptPubKey,
-                    BlockHeight = 3
+                    BlockHeight = 2
                 });
 
                 this.fundingTransactions = new[] { tran1, tran2 };
@@ -305,7 +305,7 @@ namespace Stratis.FederatedPeg.Tests
                 BitcoinAddress address2 = (new Key()).PubKey.Hash.GetAddress(this.network);
 
                 Deposit deposit1 = new Deposit(0, new Money(160m, MoneyUnit.BTC), address1.ToString(), crossChainTransferStore.NextMatureDepositHeight, 1);
-                Deposit deposit2 = new Deposit(1, new Money(70m, MoneyUnit.BTC), address2.ToString(), crossChainTransferStore.NextMatureDepositHeight, 1);
+                Deposit deposit2 = new Deposit(1, new Money(60m, MoneyUnit.BTC), address2.ToString(), crossChainTransferStore.NextMatureDepositHeight, 1);
 
                 crossChainTransferStore.RecordLatestMatureDepositsAsync(new[] { deposit1, deposit2 }).GetAwaiter().GetResult();
 
@@ -336,21 +336,19 @@ namespace Stratis.FederatedPeg.Tests
                 Assert.Equal(deposit1.Id.ToString(), new OpReturnDataReader(this.loggerFactory, this.network).TryGetTransactionId(transactions[0]));
 
                 // Transactions[1] inputs.
-                Assert.Equal(2, transactions[1].Inputs.Count);
-                Assert.Equal(transactions[0].GetHash(), transactions[1].Inputs[0].PrevOut.Hash);
+                Assert.Single(transactions[1].Inputs);
+                Assert.Equal(this.fundingTransactions[1].GetHash(), transactions[1].Inputs[0].PrevOut.Hash);
                 Assert.Equal((uint)0, transactions[1].Inputs[0].PrevOut.N);
-                Assert.Equal(this.fundingTransactions[1].GetHash(), transactions[1].Inputs[1].PrevOut.Hash);
-                Assert.Equal((uint)0, transactions[1].Inputs[1].PrevOut.N);
 
                 // Transaction[1] outputs.
                 Assert.Equal(3, transactions[1].Outputs.Count);
 
                 // Transaction[1] output value - change.
-                Assert.Equal(new Money(9.98m, MoneyUnit.BTC), transactions[1].Outputs[0].Value);
+                Assert.Equal(new Money(9.99m, MoneyUnit.BTC), transactions[1].Outputs[0].Value);
                 Assert.Equal(multiSigAddress.ScriptPubKey, transactions[1].Outputs[0].ScriptPubKey);
 
                 // Transaction[1] output value - recipient 2.
-                Assert.Equal(new Money(70m, MoneyUnit.BTC), transactions[1].Outputs[1].Value);
+                Assert.Equal(new Money(60m, MoneyUnit.BTC), transactions[1].Outputs[1].Value);
                 Assert.Equal(address2.ScriptPubKey, transactions[1].Outputs[1].ScriptPubKey);
 
                 // Transaction[1] output value - op_return.
