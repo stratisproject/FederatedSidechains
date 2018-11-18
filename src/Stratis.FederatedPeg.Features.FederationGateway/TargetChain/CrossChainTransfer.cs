@@ -14,10 +14,6 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
         private uint256 depositTransactionId;
 
         /// <inheritdoc />
-        public bool DepositPresent => this.depositPresent;
-        private bool depositPresent => this.depositTargetAddress != null;
-
-        /// <inheritdoc />
         public long DepositBlockHeight => this.depositBlockHeight;
         private long depositBlockHeight;
 
@@ -94,15 +90,9 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
             this.status = (CrossChainTransferStatus)status;
             stream.ReadWrite(ref this.depositTransactionId);
 
-            bool depositPresent = this.depositPresent;
-            stream.ReadWrite(ref depositPresent);
-
-            if (depositPresent)
-            {
-                stream.ReadWrite(ref this.depositBlockHeight);
-                stream.ReadWrite(ref this.depositTargetAddress);
-                stream.ReadWrite(ref this.depositAmount);
-            }
+            stream.ReadWrite(ref this.depositBlockHeight);
+            stream.ReadWrite(ref this.depositTargetAddress);
+            stream.ReadWrite(ref this.depositAmount);
 
             stream.ReadWrite(ref this.partialTransaction);
 
