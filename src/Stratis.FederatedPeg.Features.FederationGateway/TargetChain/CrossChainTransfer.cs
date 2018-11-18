@@ -14,10 +14,6 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
         private uint256 depositTransactionId;
 
         /// <inheritdoc />
-        public long DepositBlockHeight => this.depositBlockHeight;
-        private long depositBlockHeight;
-
-        /// <inheritdoc />
         public Script DepositTargetAddress => this.depositTargetAddress;
         private Script depositTargetAddress;
 
@@ -53,18 +49,16 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
         /// </summary>
         /// <param name="status">The status of the cross chain transfer transaction.</param>
         /// <param name="depositTransactionId">The transaction id of the deposit transaction.</param>
-        /// <param name="depositBlockHeight">The block height of the deposit transaction.</param>
         /// <param name="depositTargetAddress">The target address of the deposit transaction.</param>
         /// <param name="depositAmount">The amount (in satoshis) of the deposit transaction.</param>
         /// <param name="partialTransaction">The unsigned partial transaction containing a full set of available UTXO's.</param>
         /// <param name="blockHash">The hash of the block where the transaction resides.</param>
         /// <param name="blockHeight">The height (in our chain) of the block where the transaction resides.</param>
-        public CrossChainTransfer(CrossChainTransferStatus status, uint256 depositTransactionId, long depositBlockHeight, Script depositTargetAddress, Money depositAmount,
+        public CrossChainTransfer(CrossChainTransferStatus status, uint256 depositTransactionId, int depositBlockHeight, Script depositTargetAddress, Money depositAmount,
             Transaction partialTransaction, uint256 blockHash, int blockHeight)
         {
             this.status = status;
             this.depositTransactionId = depositTransactionId;
-            this.depositBlockHeight = depositBlockHeight;
             this.depositTargetAddress = depositTargetAddress;
             this.depositAmount = depositAmount;
             this.partialTransaction = partialTransaction;
@@ -88,12 +82,10 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
             byte status = (byte)this.status;
             stream.ReadWrite(ref status);
             this.status = (CrossChainTransferStatus)status;
-            stream.ReadWrite(ref this.depositTransactionId);
 
-            stream.ReadWrite(ref this.depositBlockHeight);
+            stream.ReadWrite(ref this.depositTransactionId);
             stream.ReadWrite(ref this.depositTargetAddress);
             stream.ReadWrite(ref this.depositAmount);
-
             stream.ReadWrite(ref this.partialTransaction);
 
             if (this.status == CrossChainTransferStatus.SeenInBlock)

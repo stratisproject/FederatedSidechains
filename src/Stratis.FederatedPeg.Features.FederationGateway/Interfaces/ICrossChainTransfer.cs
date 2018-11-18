@@ -21,11 +21,6 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.Interfaces
         uint256 DepositTransactionId { get; }
 
         /// <summary>
-        /// The block height of the deposit transaction.
-        /// </summary>
-        long DepositBlockHeight { get; }
-
-        /// <summary>
         /// The target address of the deposit transaction.
         /// </summary>
         Script DepositTargetAddress { get; }
