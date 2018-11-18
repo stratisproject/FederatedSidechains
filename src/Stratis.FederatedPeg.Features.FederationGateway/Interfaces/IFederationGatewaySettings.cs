@@ -45,6 +45,11 @@ namespace Stratis.FederatedPeg.Features.FederationGateway
         int MultiSigN { get; }
 
         /// <summary>
+        /// The mimimum confirmations required for coins added to withdrawals.
+        /// </summary>
+        int MinCoinMaturity { get; }
+
+        /// <summary>
         /// Address for the MultiSig script.
         /// </summary>
         BitcoinAddress MultiSigAddress { get; }

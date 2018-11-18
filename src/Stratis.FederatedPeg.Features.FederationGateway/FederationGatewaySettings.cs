@@ -20,6 +20,8 @@ namespace Stratis.FederatedPeg.Features.FederationGateway
 
         private const string FederationIpsParam = "federationips";
 
+        private const string MinCoinMaturityParam = "mincoinmaturity";
+
         public FederationGatewaySettings(NodeSettings nodeSettings)
         {
             Guard.NotNull(nodeSettings, nameof(nodeSettings));
@@ -42,6 +44,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway
             this.FederationPublicKeys = payToMultisigScriptParams.PubKeys;
 
             this.PublicKey = configReader.GetOrDefault<string>(PublicKeyParam, null);
+            this.MinCoinMaturity = configReader.GetOrDefault<int>(MinCoinMaturityParam, 1);
 
             if (this.FederationPublicKeys.All(p => p != new PubKey(this.PublicKey)))
             {
@@ -75,6 +78,9 @@ namespace Stratis.FederatedPeg.Features.FederationGateway
 
         /// <inheritdoc/>
         public int MultiSigN { get; }
+
+        /// <inheritdoc/>
+        public int MinCoinMaturity { get; }
 
         /// <inheritdoc/>
         public BitcoinAddress MultiSigAddress { get; }
