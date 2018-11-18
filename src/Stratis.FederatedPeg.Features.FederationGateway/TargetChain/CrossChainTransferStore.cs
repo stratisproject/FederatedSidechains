@@ -29,12 +29,17 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
         /// <param name="blockHeight">The block height of the partialTransaction.</param>
         public void SetTransferStatus(ICrossChainTransfer transfer, CrossChainTransferStatus? status = null, uint256 blockHash = null, int blockHeight = 0)
         {
-            // Record the old status.
-            this[transfer] = transfer.Status;
-
-            // Set the new status.
             if (status != null)
+            {
+                // If setting the status then record the previous status.
+                this[transfer] = transfer.Status;
                 transfer.SetStatus((CrossChainTransferStatus)status, blockHash, blockHeight);
+            }
+            else
+            {
+                // If not setting the status then assume there is no previous status.
+                this[transfer] = null;
+            }
         }
 
         /// <summary>
@@ -470,7 +475,6 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
                 try
                 {
                     var tracker = new StatusChangeTracker();
-                    var blockHeightsByBlockHash = new Dictionary<uint256, int>();
 
                     // Find transfer transactions in blocks
                     foreach (Block block in blocks)
@@ -886,18 +890,6 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
         }
 
         /// <summary>
-        /// Updates the status of the transfer and the status lookup.
-        /// </summary>
-        /// <param name="transfer">The cross-chain transfer to update.</param>
-        /// <param name="status">The new status.</param>
-        private void SetTransferStatus(CrossChainTransfer transfer, CrossChainTransferStatus status)
-        {
-            CrossChainTransferStatus oldStatus = transfer.Status;
-            transfer.SetStatus(status);
-            TransferStatusUpdated(transfer, oldStatus);
-        }
-
-        /// <summary>
         /// Updates the status lookup based on the transfer and its previous status.
         /// </summary>
         /// <param name="transfer">The cross-chain transfer that was update.</param>
@@ -916,10 +908,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
         {
             foreach (uint256 hash in tracker.UniqueBlockHashes())
             {
-                if (!this.depositIdsByBlockHash.ContainsKey(hash))
-                {
-                    this.depositIdsByBlockHash[hash] = new HashSet<uint256>();
-                }
+                this.depositIdsByBlockHash[hash] = new HashSet<uint256>();
             }
 
             foreach (KeyValuePair<ICrossChainTransfer, CrossChainTransferStatus?> kv in tracker)
@@ -928,6 +917,8 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
 
                 if (kv.Key.BlockHash != 0)
                 {
+                    if (!this.depositIdsByBlockHash[kv.Key.BlockHash].Contains(kv.Key.DepositTransactionId))
+                        this.depositIdsByBlockHash[kv.Key.BlockHash].Add(kv.Key.DepositTransactionId);
                     this.blockHeightsByBlockHash[kv.Key.BlockHash] = kv.Key.BlockHeight;
                 }
             }

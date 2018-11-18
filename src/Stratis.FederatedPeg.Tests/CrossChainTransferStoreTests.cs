@@ -80,11 +80,14 @@ namespace Stratis.FederatedPeg.Tests
             this.federationGatewaySettings = Substitute.For<IFederationGatewaySettings>();
 
             // Generate the keys used by the federation members for our tests.
-            this.federationKeys = new ExtKey[5];
-            for (int i = 0; i < 5; i++)
+            this.federationKeys = new[]
             {
-                this.federationKeys[i] = HdOperations.GetExtendedKey(new Mnemonic(Wordlist.English, WordCount.Twelve));
-            }
+                "air transfer hello zebra into trick riot elevator maze boring escape wine",
+                "steel evil vivid settle render tobacco trumpet bundle track reveal olympic ski",
+                "public human shoe cram flee deer claw arch equal ghost betray canal",
+                "world joy bundle business wealth price timber salt tilt mesh achieve inmate",
+                "dawn best alone urban visa fine mouse dwarf divorce mercy crawl slab"
+            }.Select(m => HdOperations.GetExtendedKey(m)).ToArray();
 
             SetExtendedKey(0);
 
@@ -442,6 +445,35 @@ namespace Stratis.FederatedPeg.Tests
             }
         }
 
+        [Fact]
+        public void StoreRecoversFromChain()
+        {
+            ConcurrentChain chain = BuildChain(5);
+            var dataFolder = new DataFolder(CreateTestDir(this));
+
+            Transaction transaction = this.network.CreateTransaction("0100000002d2eefdc21fb0598664f8fcc8e7866969b9d7bb53f9f8dfb7823ee3eeadb33cbf00000000fd410100473044022038e16c1d58982bf964c186e4d72d372d16a3a63883fa7608261cdb0fdef519e50220149791d4956f0d6ddd61f754274513b2d5ad5fc1df1bed02b1f0f1c7df5322cd01483045022100eb553d5f199cd0aad40b7dd5773741f136e23cf681cc2fb7c2d66a07c2110c3d02207ccbe4547b92ba0ea2e1a01811325ee406c11e5bc832df9c40df9e0bfac59d0a014cad52210332195438ff52eb495321ffb598054e95c8b9aced0238ecf389a55e87f9d26c732103b1af6922b8fc1cc05bec47fdb54f2f85d00a3b4152c7d4bdb5a1e62fea558a362102c426f49fbf65601d7e59bf39cb69a1d488c098aa36caf99cd6ec236830279cdc2102b6128cc9fd484cb2024693e2afbcabecabf44faaa10306459c51a70bb8f510f62103b40dd94129f50521d38b7014295a5c48f2be01eceef2336cc44f321cc613a0c655aeffffffffd2eefdc21fb0598664f8fcc8e7866969b9d7bb53f9f8dfb7823ee3eeadb33cbf01000000fd420100483045022100e232b626ca289b6fe76b4ed011430d67a0243f5a135d5342ea3cd6b02f6bdb780220679de7791bba313373ea906d4236b48358fb00934ac658ad889a7f0e5654c4a301483045022100b698390a1d0c67495be0e14f56e75520e39fa6b01e60e82cc19be32b63b8cc0602206f146ce0324ab795faf19e0802d03c8f036c5cf7ce25d8a70b9b3f17438c2fbf014cad52210332195438ff52eb495321ffb598054e95c8b9aced0238ecf389a55e87f9d26c732103b1af6922b8fc1cc05bec47fdb54f2f85d00a3b4152c7d4bdb5a1e62fea558a362102c426f49fbf65601d7e59bf39cb69a1d488c098aa36caf99cd6ec236830279cdc2102b6128cc9fd484cb2024693e2afbcabecabf44faaa10306459c51a70bb8f510f62103b40dd94129f50521d38b7014295a5c48f2be01eceef2336cc44f321cc613a0c655aeffffffff03c0878b3b0000000017a914623b4eab628d77b96c41df080122ac2c037954138700a0acb9030000001976a914b79f48d2e34702cf134bfbbd3f7787c1db4acd3688ac0000000000000000226a20000000000000000000000000000000000000000000000000000000000000000000000000");
+            AppendBlock(chain, transaction);
+
+            this.CreateWalletManagerAndTransactionHandler(chain, dataFolder);
+
+            MultiSigAddress multiSigAddress = this.wallet.MultiSigAddress;
+
+            using (var crossChainTransferStore = new CrossChainTransferStore(this.network, dataFolder, chain, this.federationGatewaySettings, this.dateTimeProvider,
+                this.loggerFactory, this.withdrawalExtractor, this.fullNode, this.blockRepository, this.federationWalletManager, this.federationWalletTransactionHandler))
+            {
+                crossChainTransferStore.Initialize();
+                crossChainTransferStore.Start();
+
+                Assert.Equal(chain.Tip.HashBlock, crossChainTransferStore.TipHashAndHeight.Hash);
+                Assert.Equal(chain.Tip.Height, crossChainTransferStore.TipHashAndHeight.Height);
+
+                ICrossChainTransfer transfer = crossChainTransferStore.GetAsync(new uint256[] { 0 }).GetAwaiter().GetResult().SingleOrDefault();
+
+                Assert.NotNull(transfer);
+                Assert.Equal(transaction.GetHash(), transfer.PartialTransaction.GetHash());
+            }
+        }
+
         /// <summary>
         /// Builds a chain with the requested number of blocks.
         /// </summary>
@@ -465,36 +497,24 @@ namespace Stratis.FederatedPeg.Tests
         /// <summary>
         /// Create a block and add it to the dictionary used by the mock block repository.
         /// </summary>
-        /// <param name="previous">Previous chained header.</param>
-        /// <param name="chains">Chains to add the block to.</param>
+        /// <param name="chain">Chains to add the block to.</param>
+        /// <param name="transaction">An optional transaction to add to the block.</param>
         /// <returns>The last chained header.</returns>
-        private ChainedHeader AppendBlock(ChainedHeader previous, params ConcurrentChain[] chains)
+        private ChainedHeader AppendBlock(ConcurrentChain chain, Transaction transaction = null)
         {
             ChainedHeader last = null;
             uint nonce = RandomUtils.GetUInt32();
-            foreach (ConcurrentChain chain in chains)
-            {
-                Block block = this.network.CreateBlock();
-                block.AddTransaction(this.network.CreateTransaction());
-                block.UpdateMerkleRoot();
-                block.Header.HashPrevBlock = previous == null ? chain.Tip.HashBlock : previous.HashBlock;
-                block.Header.Nonce = nonce;
-                if (!chain.TrySetTip(block.Header, out last))
-                    throw new InvalidOperationException("Previous not existing");
-                this.blockDict[block.GetHash()] = block;
-            }
-            return last;
-        }
 
-        /// <summary>
-        /// Append a block to the specified chain(s).
-        /// </summary>
-        /// <param name="chains">The chains to append a block to.</param>
-        /// <returns>The last chained header.</returns>
-        private ChainedHeader AppendBlock(params ConcurrentChain[] chains)
-        {
-            ChainedHeader index = null;
-            return this.AppendBlock(index, chains);
+            Block block = this.network.CreateBlock();
+            block.AddTransaction(transaction ?? this.network.CreateTransaction());
+            block.UpdateMerkleRoot();
+            block.Header.HashPrevBlock = chain.Tip.HashBlock;
+            block.Header.Nonce = nonce;
+            if (!chain.TrySetTip(block.Header, out last))
+                throw new InvalidOperationException("Previous not existing");
+            this.blockDict[block.GetHash()] = block;
+
+            return last;
         }
 
         /// <summary>
