@@ -280,10 +280,10 @@ namespace Stratis.FederatedPeg.Tests
         }
 
         /// <summary>
-        /// Recording a deposit creates a <see cref="CrossChainTransferStatus.Rejected" /> transfer if the balance is insufficient.
+        /// Recording deposits when the wallet UTXOs are sufficient succeeds with deterministic transactions.
         /// </summary>
         [Fact]
-        public void StoringDepositWhenWalletBalanceSufficientSucceedsWithDeterministicTransaction()
+        public void StoringDepositsWhenWalletBalanceSufficientSucceedsWithDeterministicTransactions()
         {
             ConcurrentChain chain = BuildChain(5);
             var dataFolder = new DataFolder(CreateTestDir(this));
@@ -361,11 +361,9 @@ namespace Stratis.FederatedPeg.Tests
                 Assert.Equal(CrossChainTransferStatus.Partial, transfers[0].Status);
                 Assert.Equal(deposit1.Amount, new Money(transfers[0].DepositAmount));
                 Assert.Equal(address1.ScriptPubKey, transfers[0].DepositTargetAddress);
-                Assert.Equal(crossChainTransferStore.NextMatureDepositHeight - 1, transfers[0].DepositBlockHeight);
                 Assert.Equal(CrossChainTransferStatus.Partial, transfers[1].Status);
                 Assert.Equal(deposit2.Amount, new Money(transfers[1].DepositAmount));
                 Assert.Equal(address2.ScriptPubKey, transfers[1].DepositTargetAddress);
-                Assert.Equal(crossChainTransferStore.NextMatureDepositHeight - 1, transfers[1].DepositBlockHeight);
             }
         }
 

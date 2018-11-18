@@ -57,7 +57,9 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.Interfaces
         /// Sets the status and verifies that the status is valid given the available fields.
         /// </summary>
         /// <param name="status">The new status.</param>
-        void SetStatus(CrossChainTransferStatus status);
+        /// <param name="blockHash">The block hash of the partialTranction.</param>
+        /// <param name="blockHeight">The block height of the partialTransaction.</param>
+        void SetStatus(CrossChainTransferStatus status, uint256 blockHash = null, int blockHeight = 0);
 
         /// <summary>
         /// Combines signatures from partial transactions received from other federation members.

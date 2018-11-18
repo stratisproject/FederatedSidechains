@@ -18,6 +18,35 @@ using Recipient = Stratis.FederatedPeg.Features.FederationGateway.Wallet;
 
 namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
 {
+    public class StatusChangeTracker:Dictionary<ICrossChainTransfer, CrossChainTransferStatus?>
+    {
+        /// <summary>
+        /// Records changes to transfers for the purpose of synchronizing the transient lookups after the DB commit.
+        /// </summary>
+        /// <param name="transfer">The cross-chain transfer to update.</param>
+        /// <param name="status">The new status.</param>
+        /// <param name="blockHash">The block hash of the partialTranction.</param>
+        /// <param name="blockHeight">The block height of the partialTransaction.</param>
+        public void SetTransferStatus(ICrossChainTransfer transfer, CrossChainTransferStatus? status = null, uint256 blockHash = null, int blockHeight = 0)
+        {
+            // Record the old status.
+            this[transfer] = transfer.Status;
+
+            // Set the new status.
+            if (status != null)
+                transfer.SetStatus((CrossChainTransferStatus)status, blockHash, blockHeight);
+        }
+
+        /// <summary>
+        /// Returns a list of unique block hashes for the transfers being tracked.
+        /// </summary>
+        /// <returns>A list of unique block hashes for the transfers being tracked.</returns>
+        public uint256[] UniqueBlockHashes()
+        {
+            return this.Keys.Where(k => k.BlockHash != null).Select(k => k.BlockHash).Distinct().ToArray();
+        }
+    }
+
     public class CrossChainTransferStore : ICrossChainTransferStore
     {
         /// <summary>This table contains the cross-chain transfer information.</summary>
@@ -170,6 +199,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
         /// Sets transfers to <see cref="CrossChainTransferStatus.Rejected"/> if their UTXO's are not reserved
         /// within the wallet.
         /// </summary>
+        /// <returns><c>True</c> if the check completed and <c>false</c> if the store is not synchronized.</returns>
         private bool SanityCheck()
         {
             // Ensure that the store is synchoronized with the wallet before doing the cross-check.
@@ -186,17 +216,33 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
                     this.depositsIdsByStatus[CrossChainTransferStatus.Partial].Union(
                         this.depositsIdsByStatus[CrossChainTransferStatus.FullySigned]).ToArray());
 
-                foreach (CrossChainTransfer partialTransfer in partialTransfers)
-                {
-                    // Verify that the transaction input UTXO's have been reserved by the wallet.
-                    if (!SanityCheck(partialTransfer.PartialTransaction, wallet))
-                    {
-                        this.SetTransferStatus(partialTransfer, CrossChainTransferStatus.Rejected);
-                        this.PutTransfer(dbreezeTransaction, partialTransfer);
-                    }
-                }
+                var tracker = new StatusChangeTracker();
 
-                dbreezeTransaction.Commit();
+                try
+                {
+                    foreach (CrossChainTransfer partialTransfer in partialTransfers)
+                    {
+                        // Verify that the transaction input UTXO's have been reserved by the wallet.
+                        if (!SanityCheck(partialTransfer.PartialTransaction, wallet))
+                        {
+                            tracker.SetTransferStatus(partialTransfer, CrossChainTransferStatus.Rejected);
+                            this.PutTransfer(dbreezeTransaction, partialTransfer);
+                        }
+                    }
+
+                    dbreezeTransaction.Commit();
+
+                    this.UpdateLookups(tracker);
+                }
+                catch (Exception err)
+                {
+                    this.logger.LogError("Error during database update: {0}", err.Message);
+                    this.logger.LogTrace("(-):[SANITY_ERROR]");
+
+                    // Restore expected store state in case the calling code retries / continues using the store.
+                    dbreezeTransaction.Rollback();
+                    throw err;
+                }
             }
 
             return true;
@@ -372,13 +418,16 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
 
                         if (fullySigned)
                         {
-                            this.SetTransferStatus(transfer, CrossChainTransferStatus.FullySigned);
+                            transfer.SetStatus(CrossChainTransferStatus.FullySigned);
                         }
 
                         try
                         {
                             this.PutTransfer(dbreezeTransaction, transfer);
 
+                            dbreezeTransaction.Commit();
+
+                            // Do this last to maintain DB integrity. We are assuming that this won't throw.
                             this.TransferStatusUpdated(transfer, CrossChainTransferStatus.Partial);
                         }
                         catch (Exception err)
@@ -392,7 +441,6 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
                         }
                     }
 
-                    dbreezeTransaction.Commit();
                 }
 
                 this.logger.LogTrace("(-)");
@@ -412,14 +460,69 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
 
             this.logger.LogTrace("()");
 
-            using (DBreeze.Transactions.Transaction transaction = this.DBreeze.GetTransaction())
+            using (DBreeze.Transactions.Transaction dbreezeTransaction = this.DBreeze.GetTransaction())
             {
-                transaction.SynchronizeTables(transferTableName, commonTableName);
-                this.OnInsertBlocks(transaction, newTip.Height - blocks.Count + 1, blocks);
+                dbreezeTransaction.SynchronizeTables(transferTableName, commonTableName);
 
-                // Commit additions
-                this.SaveTipHashAndHeight(transaction, newTip);
-                transaction.Commit();
+                int blockHeight = newTip.Height - blocks.Count + 1;
+                HashHeightPair prevTip = this.TipHashAndHeight;
+
+                try
+                {
+                    var tracker = new StatusChangeTracker();
+                    var blockHeightsByBlockHash = new Dictionary<uint256, int>();
+
+                    // Find transfer transactions in blocks
+                    foreach (Block block in blocks)
+                    {
+                        IReadOnlyList<IWithdrawal> withdrawals = this.withdrawalExtractor.ExtractWithdrawalsFromBlock(block, blockHeight);
+
+                        // First check the database to see if we already know about these deposits.
+                        CrossChainTransfer[] crossChainTransfers = this.Get(dbreezeTransaction, withdrawals.Select(d => d.DepositId).ToArray());
+
+                        // Update the information about these deposits or record their status.
+                        for (int i = 0; i < crossChainTransfers.Length; i++)
+                        {
+                            IWithdrawal withdrawal = withdrawals[i];
+
+                            if (crossChainTransfers[i] == null)
+                            {
+                                Script scriptPubKey = BitcoinAddress.Create(withdrawal.TargetAddress, this.network).ScriptPubKey;
+                                Transaction transaction = block.Transactions.Single(t => t.GetHash() == withdrawal.Id);
+
+                                crossChainTransfers[i] = new CrossChainTransfer(CrossChainTransferStatus.SeenInBlock, withdrawal.DepositId, 0 /* Unknown */,
+                                    scriptPubKey, withdrawal.Amount, transaction, block.GetHash(), blockHeight);
+
+                                tracker.SetTransferStatus(crossChainTransfers[i]);
+                            }
+                            else
+                            {
+                                tracker.SetTransferStatus(crossChainTransfers[i], CrossChainTransferStatus.SeenInBlock, block.GetHash(), blockHeight);
+                            }
+
+                            this.PutTransfer(dbreezeTransaction, crossChainTransfers[i]);
+                        }
+
+                        blockHeight++;
+                    }
+
+                    // Commit additions
+                    this.SaveTipHashAndHeight(dbreezeTransaction, newTip);
+                    dbreezeTransaction.Commit();
+
+                    // Update the lookups last to ensure store integrity.
+                    this.UpdateLookups(tracker);
+                }
+                catch (Exception err)
+                {
+                    this.logger.LogError("Error during database update: {0}", err.Message);
+                    this.logger.LogTrace("(-):[PUT_ERROR]");
+
+                    // Restore expected store state in case the calling code retries / continues using the store.
+                    this.TipHashAndHeight = prevTip;
+                    dbreezeTransaction.Rollback();
+                    throw err;
+                }
             }
 
             this.logger.LogTrace("(-)");
@@ -461,13 +564,31 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
                 uint256 commonTip = (fork == null) ? this.network.GenesisHash : fork.Block.GetHash();
                 int commonHeight = (fork == null) ? 0 : this.blockHeightsByBlockHash[commonTip];
 
-                using (DBreeze.Transactions.Transaction transaction = this.DBreeze.GetTransaction())
+                using (DBreeze.Transactions.Transaction dbreezeTransaction = this.DBreeze.GetTransaction())
                 {
-                    transaction.SynchronizeTables(transferTableName, commonTableName);
-                    transaction.ValuesLazyLoadingIsOn = false;
-                    this.OnDeleteBlocks(transaction, commonHeight);
-                    this.SaveTipHashAndHeight(transaction, new HashHeightPair(commonTip, commonHeight));
-                    transaction.Commit();
+                    dbreezeTransaction.SynchronizeTables(transferTableName, commonTableName);
+                    dbreezeTransaction.ValuesLazyLoadingIsOn = false;
+
+                    HashHeightPair prevTip = this.TipHashAndHeight;
+
+                    try
+                    {
+                        StatusChangeTracker tracker = this.OnDeleteBlocks(dbreezeTransaction, commonHeight);
+                        this.SaveTipHashAndHeight(dbreezeTransaction, new HashHeightPair(commonTip, commonHeight));
+                        dbreezeTransaction.Commit();
+
+                        this.UndoLookups(tracker);
+                    }
+                    catch (Exception err)
+                    {
+                        this.logger.LogError("Error during database update: {0}", err.Message);
+                        this.logger.LogTrace("(-):[REWIND_ERROR]");
+
+                        // Restore expected store state in case the calling code retries / continues using the store.
+                        this.TipHashAndHeight = prevTip;
+                        dbreezeTransaction.Rollback();
+                        throw err;
+                    }
                 }
 
                 bool caughtUp = commonTip == tipToChase.Hash;
@@ -731,58 +852,12 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
         }
 
         /// <summary>
-        /// Records transfer information from the supplied blocks.
-        /// </summary>
-        /// <param name="dbreezeTransaction">The DBreeze transaction context to use.</param>
-        /// <param name="blockHeight">The block height of the first block in the list.</param>
-        /// <param name="blocks">The list of blocks to add.</param>
-        private void OnInsertBlocks(DBreeze.Transactions.Transaction dbreezeTransaction, int blockHeight, List<Block> blocks)
-        {
-            // Find transfer transactions in blocks
-            foreach (Block block in blocks)
-            {
-                IReadOnlyList<IWithdrawal> withdrawals = this.withdrawalExtractor.ExtractWithdrawalsFromBlock(block, blockHeight);
-
-                // First check the database to see if we already know about these deposits.
-                CrossChainTransfer[] storedDeposits = this.Get(dbreezeTransaction, withdrawals.Select(d => d.DepositId).ToArray());
-
-                // Update the information about these deposits or record their status.
-                for (int i = 0; i < storedDeposits.Length; i++)
-                {
-                    IWithdrawal withdrawal = withdrawals[i];
-
-                    if (storedDeposits[i] == null)
-                    {
-                        Script scriptPubKey = BitcoinAddress.Create(withdrawal.TargetAddress, this.network).ScriptPubKey;
-                        Transaction transaction = block.Transactions.Single(t => t.GetHash() == withdrawal.Id);
-
-                        storedDeposits[i] = new CrossChainTransfer(CrossChainTransferStatus.SeenInBlock, withdrawal.DepositId, -1 /* Unknown */,
-                            scriptPubKey, withdrawal.Amount, transaction, block.GetHash(), blockHeight);
-
-                        // Update the lookups.
-                        this.depositsIdsByStatus[CrossChainTransferStatus.SeenInBlock].Add(storedDeposits[i].DepositTransactionId);
-                        this.depositIdsByBlockHash[block.GetHash()].Add(withdrawal.DepositId);
-                    }
-                    else
-                    {
-                        // Update the lookups.
-                        this.SetTransferStatus(storedDeposits[i], CrossChainTransferStatus.SeenInBlock);
-                    }
-
-                    this.PutTransfer(dbreezeTransaction, storedDeposits[i]);
-                }
-
-                // Update lookups.
-                this.blockHeightsByBlockHash[block.GetHash()] = blockHeight++;
-            }
-        }
-
-        /// <summary>
         /// Forgets transfer information from the blocks being removed.
         /// </summary>
         /// <param name="dbreezeTransaction">The DBreeze transaction context to use.</param>
         /// <param name="lastBlockHeight">The last block to retain.</param>
-        private void OnDeleteBlocks(DBreeze.Transactions.Transaction dbreezeTransaction, int lastBlockHeight)
+        /// <returns>A tracker with all the cross chain transfers that were affected.</returns>
+        private StatusChangeTracker OnDeleteBlocks(DBreeze.Transactions.Transaction dbreezeTransaction, int lastBlockHeight)
         {
             // Gather all the deposit ids that may have had transactions in the blocks being deleted.
             var depositIds = new HashSet<uint256>();
@@ -796,23 +871,18 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
             // Find the transfers related to these deposit ids in the database.
             CrossChainTransfer[] crossChainTransfers = this.Get(dbreezeTransaction, depositIds.ToArray());
 
+            var tracker = new StatusChangeTracker();
+
             foreach (CrossChainTransfer transfer in crossChainTransfers)
             {
                 // Transaction is no longer seen.
-                this.SetTransferStatus(transfer, CrossChainTransferStatus.FullySigned);
+                tracker.SetTransferStatus(transfer, CrossChainTransferStatus.FullySigned);
 
                 // Write the transfer status to the database.
                 this.PutTransfer(dbreezeTransaction, transfer);
-
-                // Update the lookups.
-                this.depositIdsByBlockHash[transfer.BlockHash].Remove(transfer.DepositTransactionId);
             }
 
-            // Update the lookups.
-            foreach (uint256 blockHash in blocksToRemove)
-            {
-                this.blockHeightsByBlockHash.Remove(blockHash);
-            }
+            return tracker;
         }
 
         /// <summary>
@@ -832,10 +902,49 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
         /// </summary>
         /// <param name="transfer">The cross-chain transfer that was update.</param>
         /// <param name="oldStatus">The old status.</param>
-        private void TransferStatusUpdated(CrossChainTransfer transfer, CrossChainTransferStatus oldStatus)
+        private void TransferStatusUpdated(ICrossChainTransfer transfer, CrossChainTransferStatus? oldStatus)
         {
-            this.depositsIdsByStatus[oldStatus].Remove(transfer.DepositTransactionId);
+            if (oldStatus != null)
+            {
+                this.depositsIdsByStatus[(CrossChainTransferStatus)oldStatus].Remove(transfer.DepositTransactionId);
+            }
+
             this.depositsIdsByStatus[transfer.Status].Add(transfer.DepositTransactionId);
+        }
+
+        public void UpdateLookups(StatusChangeTracker tracker)
+        {
+            foreach (uint256 hash in tracker.UniqueBlockHashes())
+            {
+                if (!this.depositIdsByBlockHash.ContainsKey(hash))
+                {
+                    this.depositIdsByBlockHash[hash] = new HashSet<uint256>();
+                }
+            }
+
+            foreach (KeyValuePair<ICrossChainTransfer, CrossChainTransferStatus?> kv in tracker)
+            {
+                this.TransferStatusUpdated(kv.Key, kv.Value);
+
+                if (kv.Key.BlockHash != 0)
+                {
+                    this.blockHeightsByBlockHash[kv.Key.BlockHash] = kv.Key.BlockHeight;
+                }
+            }
+        }
+
+        public void UndoLookups(StatusChangeTracker tracker)
+        {
+            foreach (KeyValuePair<ICrossChainTransfer, CrossChainTransferStatus?> kv in tracker)
+            {
+                this.TransferStatusUpdated(kv.Key, kv.Value);
+            }
+
+            foreach (uint256 hash in tracker.UniqueBlockHashes())
+            {
+                this.depositIdsByBlockHash.Remove(hash);
+                this.blockHeightsByBlockHash.Remove(hash);
+            }
         }
 
         /// <summary>
