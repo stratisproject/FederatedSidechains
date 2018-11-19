@@ -204,30 +204,40 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
         /// Sets transfers to <see cref="CrossChainTransferStatus.Rejected"/> if their UTXO's are not reserved
         /// within the wallet.
         /// </summary>
-        private void SanityCheck()
+        /// <param name="crossChainTransfers">The transfers to check. If not supplied then all partial and fully signed transfers are checked.</param>
+        private void SanityCheck(ICrossChainTransfer[] crossChainTransfers = null)
         {
             Recipient.FederationWallet wallet = this.federationWalletManager.GetWallet();
+
+            if (crossChainTransfers == null)
+            {
+                crossChainTransfers = Get(
+                    this.depositsIdsByStatus[CrossChainTransferStatus.Partial].Union(
+                        this.depositsIdsByStatus[CrossChainTransferStatus.FullySigned]).ToArray());
+            }
+
+            var tracker = new StatusChangeTracker();
+            foreach (CrossChainTransfer partialTransfer in crossChainTransfers)
+            {
+                // Verify that the transaction input UTXO's have been reserved by the wallet.
+                if (!SanityCheck(partialTransfer.PartialTransaction, wallet, partialTransfer.Status == CrossChainTransferStatus.FullySigned))
+                {
+                    tracker.SetTransferStatus(partialTransfer, CrossChainTransferStatus.Rejected);
+                }
+            }
+
+            if (tracker.Count == 0)
+                return;
 
             using (DBreeze.Transactions.Transaction dbreezeTransaction = this.DBreeze.GetTransaction())
             {
                 dbreezeTransaction.SynchronizeTables(transferTableName, commonTableName);
 
-                CrossChainTransfer[] partialTransfers = this.Get(dbreezeTransaction,
-                    this.depositsIdsByStatus[CrossChainTransferStatus.Partial].Union(
-                        this.depositsIdsByStatus[CrossChainTransferStatus.FullySigned]).ToArray());
-
-                var tracker = new StatusChangeTracker();
-
                 try
                 {
-                    foreach (CrossChainTransfer partialTransfer in partialTransfers)
+                    foreach (KeyValuePair<ICrossChainTransfer, CrossChainTransferStatus?> kv in tracker)
                     {
-                        // Verify that the transaction input UTXO's have been reserved by the wallet.
-                        if (!SanityCheck(partialTransfer.PartialTransaction, wallet, partialTransfer.Status == CrossChainTransferStatus.FullySigned))
-                        {
-                            tracker.SetTransferStatus(partialTransfer, CrossChainTransferStatus.Rejected);
-                            this.PutTransfer(dbreezeTransaction, partialTransfer);
-                        }
+                        this.PutTransfer(dbreezeTransaction, kv.Key);
                     }
 
                     dbreezeTransaction.Commit();
@@ -725,6 +735,8 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
 
                 ICrossChainTransfer[] res = this.Get(depositIds);
 
+                this.SanityCheck(res);
+
                 this.logger.LogTrace("(-)");
                 return res;
             });
@@ -801,9 +813,11 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
 
                 uint256[] partialTransferHashes = this.depositsIdsByStatus[CrossChainTransferStatus.FullySigned].ToArray();
 
-                ICrossChainTransfer[] partialTransfers = this.Get(partialTransferHashes).Where(t => t?.Status == CrossChainTransferStatus.FullySigned).ToArray();
+                ICrossChainTransfer[] partialTransfers = this.Get(partialTransferHashes).ToArray();
 
-                Transaction[] res = partialTransfers.Select(t => t.PartialTransaction).ToArray();
+                this.SanityCheck(partialTransfers);
+
+                Transaction[] res = partialTransfers.Where(t => t.Status == CrossChainTransferStatus.FullySigned).Select(t => t.PartialTransaction).ToArray();
 
                 this.logger.LogTrace("(-){0}", res);
 
@@ -820,9 +834,11 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
 
                 uint256[] partialTransferHashes = this.depositsIdsByStatus[CrossChainTransferStatus.Partial].ToArray();
 
-                ICrossChainTransfer[] partialTransfers = this.Get(partialTransferHashes).Where(t => t?.Status == CrossChainTransferStatus.Partial).ToArray();
+                ICrossChainTransfer[] partialTransfers = this.Get(partialTransferHashes).ToArray();
 
-                Transaction[] res = partialTransfers.Select(t => t.PartialTransaction).ToArray();
+                this.SanityCheck(partialTransfers);
+
+                Transaction[] res = partialTransfers.Where(t => t.Status == CrossChainTransferStatus.Partial).Select(t => t.PartialTransaction).ToArray();
 
                 this.logger.LogTrace("(-){0}", res);
 
