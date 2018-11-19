@@ -586,6 +586,15 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
         {
             this.logger.LogTrace("()");
 
+            HashHeightPair tipToChase = this.TipToChase();
+
+            if (tipToChase.Hash == (this.TipHashAndHeight?.Hash ?? 0))
+            {
+                // Indicate that we are synchronized.
+                this.logger.LogTrace("(-):true");
+                return true;
+            }
+
             while (!this.cancellation.IsCancellationRequested)
             {
                 if (this.RewindIfRequired())
