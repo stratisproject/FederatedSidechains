@@ -723,27 +723,43 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
             {
                 this.logger.LogTrace("()");
 
-                this.Synchronize();
-
                 ICrossChainTransfer[] res = this.Get(depositIds);
 
-                this.logger.LogTrace("()");
+                this.logger.LogTrace("(-)");
                 return res;
             });
         }
 
         private ICrossChainTransfer[] Get(uint256[] depositId)
         {
-            CrossChainTransfer[] res;
+            this.Synchronize();
 
             using (DBreeze.Transactions.Transaction dbreezeTransaction = this.DBreeze.GetTransaction())
             {
                 dbreezeTransaction.ValuesLazyLoadingIsOn = false;
 
-                res = Get(dbreezeTransaction, depositId);
-            }
+                Recipient.FederationWallet wallet = this.federationWalletManager.GetWallet();
 
-            return res;
+                ICrossChainTransfer[] crossChainTransfers = Get(dbreezeTransaction, depositId);
+
+                for (int i = 0; i < crossChainTransfers.Length; i++)
+                {
+                    ICrossChainTransfer transfer = crossChainTransfers[i];
+
+                    if (transfer == null)
+                        continue;
+
+                    if (transfer.Status != CrossChainTransferStatus.FullySigned && transfer.Status != CrossChainTransferStatus.Partial)
+                        continue;
+
+                    if (SanityCheck(transfer.PartialTransaction, wallet, transfer.Status == CrossChainTransferStatus.FullySigned))
+                        continue;
+
+                    crossChainTransfers[i].SetStatus(CrossChainTransferStatus.Rejected);
+                }
+
+                return crossChainTransfers;
+            }
         }
 
         private CrossChainTransfer[] Get(DBreeze.Transactions.Transaction transaction, uint256[] depositId)
@@ -783,13 +799,11 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
             {
                 this.logger.LogTrace("()");
 
-                this.Synchronize();
+                uint256[] partialTransferHashes = this.depositsIdsByStatus[CrossChainTransferStatus.FullySigned].ToArray();
 
-                uint256[] signedTransferHashes = this.depositsIdsByStatus[CrossChainTransferStatus.FullySigned].ToArray();
+                ICrossChainTransfer[] partialTransfers = this.Get(partialTransferHashes).Where(t => t?.Status == CrossChainTransferStatus.FullySigned).ToArray();
 
-                ICrossChainTransfer[] signedTransfers = this.Get(signedTransferHashes);
-
-                Transaction[] res = signedTransfers.Select(t => t.PartialTransaction).ToArray();
+                Transaction[] res = partialTransfers.Select(t => t.PartialTransaction).ToArray();
 
                 this.logger.LogTrace("(-){0}", res);
 
@@ -804,11 +818,9 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
             {
                 this.logger.LogTrace("()");
 
-                this.Synchronize();
-
                 uint256[] partialTransferHashes = this.depositsIdsByStatus[CrossChainTransferStatus.Partial].ToArray();
 
-                ICrossChainTransfer[] partialTransfers = this.Get(partialTransferHashes);
+                ICrossChainTransfer[] partialTransfers = this.Get(partialTransferHashes).Where(t => t?.Status == CrossChainTransferStatus.Partial).ToArray();
 
                 Transaction[] res = partialTransfers.Select(t => t.PartialTransaction).ToArray();
 
