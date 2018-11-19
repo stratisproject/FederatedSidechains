@@ -179,7 +179,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
         /// </summary>
         public void Start()
         {
-            Guard.Assert(this.SanityCheck());
+            Guard.Assert(this.Synchronize());
         }
 
         /// <summary>
@@ -204,13 +204,8 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
         /// Sets transfers to <see cref="CrossChainTransferStatus.Rejected"/> if their UTXO's are not reserved
         /// within the wallet.
         /// </summary>
-        /// <returns><c>True</c> if the check completed and <c>false</c> if the store is not synchronized.</returns>
-        private bool SanityCheck()
+        private void SanityCheck()
         {
-            // Ensure that the store is synchoronized with the wallet before doing the cross-check.
-            if (!this.Synchronize())
-                return false;
-
             Recipient.FederationWallet wallet = this.federationWalletManager.GetWallet();
 
             using (DBreeze.Transactions.Transaction dbreezeTransaction = this.DBreeze.GetTransaction())
@@ -249,8 +244,6 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
                     throw err;
                 }
             }
-
-            return true;
         }
 
         public static Transaction BuildDeterministicTransaction(uint256 depositId, Recipient.Recipient recipient, Network network,
@@ -266,7 +259,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
                 var multiSigContext = new Recipient.TransactionBuildContext(new[] { recipient }.ToList(), opReturnData: opReturnData.ToBytes())
                 {
                     TransactionFee = Money.Coins(0.01m), // TODO: Configurable?
-                    MinConfirmations = 1,                // TODO: Require Maturity Depth?
+                    MinConfirmations = 1,                // TODO: This may have to be zero to allow multiple deposits spending a single UTXO.
                     Shuffle = false,
                     IgnoreVerify = true,
                     WalletPassword = walletPassword,
@@ -301,8 +294,6 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
 
             return Task.Run(() =>
             {
-                Guard.Assert(this.SanityCheck());
-
                 Recipient.FederationWallet wallet = this.federationWalletManager.GetWallet();
 
                 this.logger.LogTrace("()");
@@ -313,11 +304,12 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
 
                     // Check if the deposits already exist which could happen if it was found on the chain.
                     CrossChainTransfer[] transfers = this.Get(dbreezeTransaction, deposits.Select(d => d.Id).ToArray());
-                    bool[] newTransfers = transfers.Select(t => t == null).ToArray();
                     int currentDepositHeight = this.NextMatureDepositHeight;
 
                     try
                     {
+                        var tracker = new StatusChangeTracker();
+
                         for (int i = 0; i < deposits.Length; i++)
                         {
                             IDeposit deposit = deposits[i];
@@ -340,6 +332,8 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
                                 transfers[i] = new CrossChainTransfer((transaction != null) ? CrossChainTransferStatus.Partial : CrossChainTransferStatus.Rejected,
                                     deposit.Id, scriptPubKey, deposit.Amount, transaction, 0, -1 /* Unknown */);
 
+                                tracker.SetTransferStatus(transfers[i]);
+
                                 this.PutTransfer(dbreezeTransaction, transfers[i]);
 
                                 // Reserve the UTXOs before building the next transaction.
@@ -353,13 +347,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
                         dbreezeTransaction.Commit();
 
                         // Do this last to maintain DB integrity. We are assuming that this won't throw.
-                        for (int i = 0; i < newTransfers.Length; i++)
-                        {
-                            if (newTransfers[i])
-                            {
-                                this.depositsIdsByStatus[transfers[i].Status].Add(transfers[i].DepositTransactionId);
-                            }
-                        }
+                        this.UpdateLookups(tracker);
                     }
                     catch (Exception err)
                     {
@@ -521,7 +509,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
         /// <see cref="CrossChainTransferStatus.FullySigned"/>. Also returns a flag to indicate whether we are behind the current tip.
         /// </summary>
         /// <returns>
-        /// Returns <c>true</c> if we match the chain tip and <c>false</c> if we are behind the tip.
+        /// Returns <c>true</c> if a rewind was performed and <c>false</c> otherwise.
         /// </returns>
         private bool RewindIfRequired()
         {
@@ -532,8 +520,8 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
             if (tipToChase.Hash == (this.TipHashAndHeight?.Hash ?? 0))
             {
                 // Indicate that we are synchronized.
-                this.logger.LogTrace("(-):true");
-                return true;
+                this.logger.LogTrace("(-):false");
+                return false;
             }
 
             // If the chain does not contain our tip..
@@ -579,11 +567,8 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
                     }
                 }
 
-                bool caughtUp = commonTip == tipToChase.Hash;
-
-                // Indicate that we have rewound to the current chain.
-                this.logger.LogTrace("(-):{0}", caughtUp);
-                return caughtUp;
+                this.logger.LogTrace("(-):true");
+                return true;
             }
 
             // Indicate that we are behind the current chain.
@@ -605,14 +590,13 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
             {
                 if (this.RewindIfRequired())
                 {
-                    this.logger.LogTrace("(-):true");
-                    return true;
+                    this.SanityCheck();
                 }
 
-                if (!this.SynchronizeBatch())
+                if (this.SynchronizeBatch())
                 {
-                    this.logger.LogTrace("(-):false");
-                    return false;
+                    this.logger.LogTrace("(-):true");
+                    return true;
                 }
             }
 
@@ -730,6 +714,8 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
             {
                 this.logger.LogTrace("()");
 
+                this.Synchronize();
+
                 ICrossChainTransfer[] res = this.Get(depositIds);
 
                 this.logger.LogTrace("()");
@@ -788,7 +774,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
             {
                 this.logger.LogTrace("()");
 
-                Guard.Assert(this.SanityCheck());
+                this.Synchronize();
 
                 uint256[] signedTransferHashes = this.depositsIdsByStatus[CrossChainTransferStatus.FullySigned].ToArray();
 
@@ -809,7 +795,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
             {
                 this.logger.LogTrace("()");
 
-                Guard.Assert(this.SanityCheck());
+                this.Synchronize();
 
                 uint256[] partialTransferHashes = this.depositsIdsByStatus[CrossChainTransferStatus.Partial].ToArray();
 

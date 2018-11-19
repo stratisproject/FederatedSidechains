@@ -479,6 +479,25 @@ namespace Stratis.FederatedPeg.Tests
 
                 Assert.NotNull(transfer);
                 Assert.Equal(transaction.GetHash(), transfer.PartialTransaction.GetHash());
+                Assert.Equal(CrossChainTransferStatus.SeenInBlock, transfer.Status);
+
+                // Re-org the chain.
+                chain.SetTip(chain.Tip.Previous);
+                this.federationWalletManager.UpdateLastBlockSyncedHeight(chain.Tip);
+
+                transfer = crossChainTransferStore.GetAsync(new uint256[] { 0 }).GetAwaiter().GetResult().SingleOrDefault();
+
+                // Check that the status reverts for a transaction that is no longer visible on the chain.
+                Assert.Equal(CrossChainTransferStatus.FullySigned, transfer.Status);
+
+                // Restore the chain.
+                AppendBlock(chain, transaction);
+                this.federationWalletManager.UpdateLastBlockSyncedHeight(chain.Tip);
+
+                transfer = crossChainTransferStore.GetAsync(new uint256[] { 0 }).GetAwaiter().GetResult().SingleOrDefault();
+
+                // Check that the status reverts for a transaction that is again visible on the chain.
+                Assert.Equal(CrossChainTransferStatus.SeenInBlock, transfer.Status);
             }
         }
 
