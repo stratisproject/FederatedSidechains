@@ -405,6 +405,8 @@ namespace Stratis.FederatedPeg.Tests
 
                 Transaction transaction = crossChainTransfer.PartialTransaction;
 
+                Assert.True(CrossChainTransferStore.SanityCheck(transaction, this.wallet));
+
                 // Create a separate instance to generate another transaction.
                 Transaction transaction2;
                 var newTest = new CrossChainTransferStoreTests();
@@ -429,6 +431,8 @@ namespace Stratis.FederatedPeg.Tests
                     Assert.NotNull(crossChainTransfer2);
 
                     transaction2 = crossChainTransfer2.PartialTransaction;
+
+                    Assert.True(CrossChainTransferStore.SanityCheck(transaction2, newTest.wallet));
                 }
 
                 // Merges the transaction signatures.
@@ -444,23 +448,8 @@ namespace Stratis.FederatedPeg.Tests
                 Transaction signedTransaction = crossChainTransferStore.GetSignedTransactionsAsync().GetAwaiter().GetResult().SingleOrDefault();
                 Assert.NotNull(signedTransaction);
 
-                // Get the list of coins.
-                var coins = new List<Coin>();
-                foreach (TxIn input in signedTransaction.Inputs)
-                {
-                    foreach (Recipient.TransactionData transactionData in this.wallet.MultiSigAddress.Transactions
-                        .Where(t => t.SpendingDetails != null && t.Id == input.PrevOut.Hash && t.Index == input.PrevOut.N))
-                    {
-                        // Check that the previous outputs are only spent by this transaction.
-                        Assert.Equal(transactionData.SpendingDetails.TransactionId, signedTransaction.GetHash());
-
-                        coins.Add(new Coin(transactionData.Id, (uint)transactionData.Index, transactionData.Amount, transactionData.ScriptPubKey));
-                    }
-                }
-
-                // Verify that all inputs are signed.
-                TransactionBuilder builder = new TransactionBuilder(this.network).AddCoins(coins);
-                Assert.True(builder.Verify(signedTransaction, new Money(0.01m, MoneyUnit.BTC), out NBitcoin.Policy.TransactionPolicyError[] errors));
+                // Check ths signature.
+                Assert.True(CrossChainTransferStore.SanityCheck(signedTransaction, this.wallet, true));
             }
         }
 

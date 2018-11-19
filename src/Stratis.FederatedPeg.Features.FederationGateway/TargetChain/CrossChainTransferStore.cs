@@ -228,7 +228,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
                     foreach (CrossChainTransfer partialTransfer in partialTransfers)
                     {
                         // Verify that the transaction input UTXO's have been reserved by the wallet.
-                        if (!SanityCheck(partialTransfer.PartialTransaction, wallet))
+                        if (!SanityCheck(partialTransfer.PartialTransaction, wallet, partialTransfer.Status == CrossChainTransferStatus.FullySigned))
                         {
                             tracker.SetTransferStatus(partialTransfer, CrossChainTransferStatus.Rejected);
                             this.PutTransfer(dbreezeTransaction, partialTransfer);
@@ -405,23 +405,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
 
                         this.UpdateSpendingDetailsInWallet(oldTransactionId, transfer.PartialTransaction, wallet);
 
-                        PayToMultiSigTemplateParameters payToMultisigScriptParams = PayToMultiSigTemplate.Instance.ExtractScriptPubKeyParameters(wallet.MultiSigAddress.RedeemScript);
-
-                        int signaturesRequired = payToMultisigScriptParams.SignatureCount;
-
-                        bool fullySigned = true;
-                        foreach (TxIn txIn in transfer.PartialTransaction.Inputs)
-                        {
-                            PayToScriptHashSigParameters args = PayToScriptHashTemplate.Instance.ExtractScriptSigParameters(this.network, txIn.ScriptSig);
-                            TransactionSignature[] signatures = args.GetMultisigSignatures(this.network).Where(s => s != null).ToArray();
-                            if (signatures.Length < signaturesRequired)
-                            {
-                                fullySigned = false;
-                                break;
-                            }
-                        }
-
-                        if (fullySigned)
+                        if (SanityCheck(transfer.PartialTransaction, wallet, true))
                         {
                             transfer.SetStatus(CrossChainTransferStatus.FullySigned);
                         }
@@ -951,10 +935,13 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
         /// </summary>
         /// <param name="transaction">The transaction to check.</param>
         /// <param name="wallet">The wallet to check.</param>
+        /// <param name="checkSignature">Indictes whether to check the signature.</param>
         /// <returns><c>True</c> if all's well and <c>false</c> otherwise.</returns>
-        public static bool SanityCheck(Transaction transaction, Wallet.FederationWallet wallet)
+        public static bool SanityCheck(Transaction transaction, Wallet.FederationWallet wallet, bool checkSignature = false)
         {
             // All the input UTXO's should be present in spending details of the multi-sig address.
+            List<Coin> coins = checkSignature ? new List<Coin>() : null;
+
             foreach (TxIn input in transaction.Inputs)
             {
                 foreach (Wallet.TransactionData transactionData in wallet.MultiSigAddress.Transactions
@@ -963,6 +950,18 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
                     // Check that the previous outputs are only spent by this transaction.
                     if (transactionData == null || transactionData.SpendingDetails.TransactionId != transaction.GetHash())
                         return false;
+
+                    coins?.Add(new Coin(transactionData.Id, (uint)transactionData.Index, transactionData.Amount, transactionData.ScriptPubKey));
+                }
+            }
+
+            // Verify that all inputs are signed.
+            if (checkSignature)
+            {
+                TransactionBuilder builder = new TransactionBuilder(wallet.Network).AddCoins(coins);
+                if (!builder.Verify(transaction, new Money(0.01m, MoneyUnit.BTC), out NBitcoin.Policy.TransactionPolicyError[] errors))
+                {
+                    return false;
                 }
             }
 
