@@ -429,8 +429,8 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
                         try
                         {
                             this.PutTransfer(dbreezeTransaction, transfer);
-
                             dbreezeTransaction.Commit();
+                            this.federationWalletManager.SaveWallet();
 
                             // Do this last to maintain DB integrity. We are assuming that this won't throw.
                             this.TransferStatusUpdated(transfer, CrossChainTransferStatus.Partial);
@@ -856,7 +856,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
         }
 
         /// <summary>
-        /// Forgets transfer information from the blocks being removed.
+        /// Forgets transfer information for the blocks being removed and returns information for updating the transient lookups.
         /// </summary>
         /// <param name="dbreezeTransaction">The DBreeze transaction context to use.</param>
         /// <param name="lastBlockHeight">The last block to retain.</param>
@@ -890,7 +890,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
         }
 
         /// <summary>
-        /// Updates the status lookup based on the transfer and its previous status.
+        /// Updates the status lookup based on a transfer and its previous status.
         /// </summary>
         /// <param name="transfer">The cross-chain transfer that was update.</param>
         /// <param name="oldStatus">The old status.</param>
@@ -904,6 +904,10 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
             this.depositsIdsByStatus[transfer.Status].Add(transfer.DepositTransactionId);
         }
 
+        /// <summary>
+        /// Update the transient lookups after changes have been committed to the store.
+        /// </summary>
+        /// <param name="tracker">Information about how to update the lookups.</param>
         public void UpdateLookups(StatusChangeTracker tracker)
         {
             foreach (uint256 hash in tracker.UniqueBlockHashes())
@@ -924,6 +928,10 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
             }
         }
 
+        /// <summary>
+        /// Undoes the transient lookups after block removals have been committed to the store.
+        /// </summary>
+        /// <param name="tracker">Information about how to undo the lookups.</param>
         public void UndoLookups(StatusChangeTracker tracker)
         {
             foreach (KeyValuePair<ICrossChainTransfer, CrossChainTransferStatus?> kv in tracker)
@@ -949,7 +957,6 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
             // All the input UTXO's should be present in spending details of the multi-sig address.
             foreach (TxIn input in transaction.Inputs)
             {
-                // Only check inputs that the wallet could have seen...
                 foreach (Wallet.TransactionData transactionData in wallet.MultiSigAddress.Transactions
                     .Where(t => t.SpendingDetails != null && t.Id == input.PrevOut.Hash && t.Index == input.PrevOut.N))
                 {
@@ -970,10 +977,9 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
         /// <param name="wallet">The wallet to update.</param>
         private void UpdateSpendingDetailsInWallet(uint256 oldTransactionId, Transaction transaction, Wallet.FederationWallet wallet)
         {
-            // All the input UTXO's should be present in spending details of the multi-sig address.
+            // Find spends to the old transaction id and update with the new transaction details.
             foreach (TxIn input in transaction.Inputs)
             {
-                // Only check inputs that the wallet could have seen...
                 foreach (Recipient.SpendingDetails spendingDetails in wallet.MultiSigAddress.Transactions
                     .Select(t => t.SpendingDetails)
                     .Where(s => s != null && s.TransactionId == oldTransactionId))
