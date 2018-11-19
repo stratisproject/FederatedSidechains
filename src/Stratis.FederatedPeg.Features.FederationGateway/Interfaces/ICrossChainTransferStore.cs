@@ -3,7 +3,6 @@ using System.Threading.Tasks;
 using NBitcoin;
 using Stratis.Bitcoin.Utilities;
 
-
 namespace Stratis.FederatedPeg.Features.FederationGateway.Interfaces
 {
     /// <summary>
@@ -29,6 +28,8 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.Interfaces
         /// <remarks>
         /// The transfers are set to <see cref="CrossChainTransfer.Status"/> of <see cref="CrossChainTransferStatus.Partial"/>
         /// or <see cref="CrossChainTransferStatus.Rejected"/> depending on whether enough funds are available in the federation wallet.
+        /// New partial transactions are recorded in the wallet to ensure that future transactions will not
+        /// attempt to re-use UTXO's.
         /// </remarks>
         Task RecordLatestMatureDepositsAsync(IDeposit[] deposits);
 
@@ -36,6 +37,9 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.Interfaces
         /// Returns all partial transactions still in need of signatures.
         /// </summary>
         /// <returns>An array of fully signed transactions.</returns>
+        /// <remarks>
+        /// The caller can order this list by looking at the corresponsing transaction order in the wallet.
+        /// </remarks>
         Task<Transaction[]> GetPartialTransactionsAsync();
 
         /// <summary>
@@ -44,6 +48,11 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.Interfaces
         /// </summary>
         /// <param name="depositId">The deposit transaction to update.</param>
         /// <param name="partialTransactions">Partial transactions received from other federation members.</param>
+        /// <remarks>
+        /// Changes to the transaction id caused by this operation will also be synchronised with the partial
+        /// transaction that has been recorded in the wallet.
+        /// </remarks>
+
         Task MergeTransactionSignaturesAsync(uint256 depositId, Transaction[] partialTransactions);
 
         /// <summary>
@@ -51,6 +60,9 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.Interfaces
         /// not re-broadcasting transactions unneccessarily.
         /// </summary>
         /// <returns>An array of fully signed transactions.</returns>
+        /// <remarks>
+        /// The caller can order this list by looking at the corresponsing transaction order in the wallet.
+        /// </remarks>
         Task<Transaction[]> GetSignedTransactionsAsync();
 
         /// <summary>
