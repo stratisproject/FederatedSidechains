@@ -54,7 +54,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
         /// <param name="partialTransaction">The unsigned partial transaction containing a full set of available UTXO's.</param>
         /// <param name="blockHash">The hash of the block where the transaction resides.</param>
         /// <param name="blockHeight">The height (in our chain) of the block where the transaction resides.</param>
-        public CrossChainTransfer(CrossChainTransferStatus status, uint256 depositTransactionId, int depositBlockHeight, Script depositTargetAddress, Money depositAmount,
+        public CrossChainTransfer(CrossChainTransferStatus status, uint256 depositTransactionId, Script depositTargetAddress, Money depositAmount,
             Transaction partialTransaction, uint256 blockHash, int blockHeight)
         {
             this.status = status;

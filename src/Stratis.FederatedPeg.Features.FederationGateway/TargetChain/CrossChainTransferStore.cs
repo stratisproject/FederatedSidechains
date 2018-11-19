@@ -338,7 +338,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
                                     throw new Exception("Failed to build transaction");
 
                                 transfers[i] = new CrossChainTransfer((transaction != null) ? CrossChainTransferStatus.Partial : CrossChainTransferStatus.Rejected,
-                                    deposit.Id, deposit.BlockNumber, scriptPubKey, deposit.Amount, transaction, 0, -1 /* Unknown */);
+                                    deposit.Id, scriptPubKey, deposit.Amount, transaction, 0, -1 /* Unknown */);
 
                                 this.PutTransfer(dbreezeTransaction, transfers[i]);
 
@@ -478,7 +478,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
                                 Script scriptPubKey = BitcoinAddress.Create(withdrawal.TargetAddress, this.network).ScriptPubKey;
                                 Transaction transaction = block.Transactions.Single(t => t.GetHash() == withdrawal.Id);
 
-                                crossChainTransfers[i] = new CrossChainTransfer(CrossChainTransferStatus.SeenInBlock, withdrawal.DepositId, 0 /* Unknown */,
+                                crossChainTransfers[i] = new CrossChainTransfer(CrossChainTransferStatus.SeenInBlock, withdrawal.DepositId,
                                     scriptPubKey, withdrawal.Amount, transaction, block.GetHash(), blockHeight);
 
                                 tracker.SetTransferStatus(crossChainTransfers[i]);
