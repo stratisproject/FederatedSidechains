@@ -20,7 +20,6 @@ using Stratis.FederatedPeg.Features.FederationGateway.Wallet;
 using Stratis.Sidechains.Networks;
 using Xunit;
 using Stratis.Bitcoin.Features.Wallet;
-using Recipient = Stratis.FederatedPeg.Features.FederationGateway.Wallet;
 
 namespace Stratis.FederatedPeg.Tests
 {
@@ -313,7 +312,7 @@ namespace Stratis.FederatedPeg.Tests
 
                 crossChainTransferStore.RecordLatestMatureDepositsAsync(new[] { deposit1, deposit2 }).GetAwaiter().GetResult();
 
-                Transaction[] transactions = crossChainTransferStore.GetPartialTransactionsAsync().GetAwaiter().GetResult();
+                Transaction[] transactions = crossChainTransferStore.GetTransactionsByStatusAsync(CrossChainTransferStatus.Partial).GetAwaiter().GetResult().Values.ToArray();
 
                 Assert.Equal(2, transactions.Length);
 
@@ -445,7 +444,7 @@ namespace Stratis.FederatedPeg.Tests
                 Assert.Equal(CrossChainTransferStatus.FullySigned, crossChainTransfer.Status);
 
                 // Should be returned as signed.
-                Transaction signedTransaction = crossChainTransferStore.GetSignedTransactionsAsync().GetAwaiter().GetResult().SingleOrDefault();
+                Transaction signedTransaction = crossChainTransferStore.GetTransactionsByStatusAsync(CrossChainTransferStatus.FullySigned).GetAwaiter().GetResult().Values.SingleOrDefault();
                 Assert.NotNull(signedTransaction);
 
                 // Check ths signature.

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using NBitcoin;
 using Stratis.Bitcoin.Utilities;
@@ -40,7 +41,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.Interfaces
         /// <remarks>
         /// The caller can order this list by looking at the corresponsing transaction order in the wallet.
         /// </remarks>
-        Task<Transaction[]> GetPartialTransactionsAsync();
+        Task<Dictionary<uint256, Transaction>> GetTransactionsByStatusAsync(CrossChainTransferStatus status);
 
         /// <summary>
         /// Updates partial transactions in the store with signatures obtained from the passed transactions.
@@ -54,16 +55,6 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.Interfaces
         /// </remarks>
 
         Task MergeTransactionSignaturesAsync(uint256 depositId, Transaction[] partialTransactions);
-
-        /// <summary>
-        /// Returns all fully signed transactions ready to broadcast. The caller is responsible for checking the memory pool and
-        /// not re-broadcasting transactions unneccessarily.
-        /// </summary>
-        /// <returns>An array of fully signed transactions.</returns>
-        /// <remarks>
-        /// The caller can order this list by looking at the corresponsing transaction order in the wallet.
-        /// </remarks>
-        Task<Transaction[]> GetSignedTransactionsAsync();
 
         /// <summary>
         /// Get the cross-chain transfer information from the database, identified by the deposit transaction ids.

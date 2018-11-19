@@ -805,42 +805,21 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
         }
 
         /// <inheritdoc />
-        public Task<Transaction[]> GetSignedTransactionsAsync()
+        public Task<Dictionary<uint256, Transaction>> GetTransactionsByStatusAsync(CrossChainTransferStatus status)
         {
             return Task.Run(() =>
             {
                 this.logger.LogTrace("()");
 
-                uint256[] partialTransferHashes = this.depositsIdsByStatus[CrossChainTransferStatus.FullySigned].ToArray();
+                uint256[] partialTransferHashes = this.depositsIdsByStatus[status].ToArray();
 
                 ICrossChainTransfer[] partialTransfers = this.Get(partialTransferHashes).ToArray();
 
                 this.SanityCheck(partialTransfers);
 
-                Transaction[] res = partialTransfers.Where(t => t.Status == CrossChainTransferStatus.FullySigned).Select(t => t.PartialTransaction).ToArray();
+                var res = partialTransfers.Where(t => t.Status == status).ToDictionary(t => t.DepositTransactionId, t => t.PartialTransaction);
 
-                this.logger.LogTrace("(-){0}", res);
-
-                return res;
-            });
-        }
-
-        /// <inheritdoc />
-        public Task<Transaction[]> GetPartialTransactionsAsync()
-        {
-            return Task.Run(() =>
-            {
-                this.logger.LogTrace("()");
-
-                uint256[] partialTransferHashes = this.depositsIdsByStatus[CrossChainTransferStatus.Partial].ToArray();
-
-                ICrossChainTransfer[] partialTransfers = this.Get(partialTransferHashes).ToArray();
-
-                this.SanityCheck(partialTransfers);
-
-                Transaction[] res = partialTransfers.Where(t => t.Status == CrossChainTransferStatus.Partial).Select(t => t.PartialTransaction).ToArray();
-
-                this.logger.LogTrace("(-){0}", res);
+                this.logger.LogTrace("(-)");
 
                 return res;
             });
