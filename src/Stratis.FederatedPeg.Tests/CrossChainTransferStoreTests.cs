@@ -20,6 +20,7 @@ using Stratis.FederatedPeg.Features.FederationGateway.Wallet;
 using Stratis.Sidechains.Networks;
 using Xunit;
 using Stratis.Bitcoin.Features.Wallet;
+using Recipient = Stratis.FederatedPeg.Features.FederationGateway.Wallet;
 
 namespace Stratis.FederatedPeg.Tests
 {
@@ -442,6 +443,24 @@ namespace Stratis.FederatedPeg.Tests
                 // Should be returned as signed.
                 Transaction signedTransaction = crossChainTransferStore.GetSignedTransactionsAsync().GetAwaiter().GetResult().SingleOrDefault();
                 Assert.NotNull(signedTransaction);
+
+                // Get the list of coins.
+                var coins = new List<Coin>();
+                foreach (TxIn input in signedTransaction.Inputs)
+                {
+                    foreach (Recipient.TransactionData transactionData in this.wallet.MultiSigAddress.Transactions
+                        .Where(t => t.SpendingDetails != null && t.Id == input.PrevOut.Hash && t.Index == input.PrevOut.N))
+                    {
+                        // Check that the previous outputs are only spent by this transaction.
+                        Assert.Equal(transactionData.SpendingDetails.TransactionId, signedTransaction.GetHash());
+
+                        coins.Add(new Coin(transactionData.Id, (uint)transactionData.Index, transactionData.Amount, transactionData.ScriptPubKey));
+                    }
+                }
+
+                // Verify that all inputs are signed.
+                TransactionBuilder builder = new TransactionBuilder(this.network).AddCoins(coins);
+                Assert.True(builder.Verify(signedTransaction, new Money(0.01m, MoneyUnit.BTC), out NBitcoin.Policy.TransactionPolicyError[] errors));
             }
         }
 
