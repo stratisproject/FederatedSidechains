@@ -213,7 +213,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
         /// </summary>
         /// <param name="crossChainTransfers">The transfers to check. If not supplied then all partial and fully signed transfers are checked.</param>
         /// <returns>Returns the list of transfers, possible with updated statuses.</returns>
-        private ICrossChainTransfer[] SanityCheck(ICrossChainTransfer[] crossChainTransfers = null)
+        private ICrossChainTransfer[] ValidateCrossChainTransfers(ICrossChainTransfer[] crossChainTransfers = null)
         {
             FederationWallet wallet = this.federationWalletManager.GetWallet();
 
@@ -230,7 +230,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
                 // Verify that the transaction input UTXO's have been reserved by the wallet.
                 if (partialTransfer.Status == CrossChainTransferStatus.Partial || partialTransfer.Status == CrossChainTransferStatus.FullySigned)
                 {
-                    if (!SanityCheck(partialTransfer.PartialTransaction, wallet, partialTransfer.Status == CrossChainTransferStatus.FullySigned))
+                    if (!ValidateTransaction(partialTransfer.PartialTransaction, wallet, partialTransfer.Status == CrossChainTransferStatus.FullySigned))
                     {
                         tracker.SetTransferStatus(partialTransfer, CrossChainTransferStatus.Rejected);
                     }
@@ -422,7 +422,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
 
                         this.UpdateSpendingDetailsInWallet(oldTransaction.GetHash(), transfer.PartialTransaction, wallet);
 
-                        if (SanityCheck(transfer.PartialTransaction, wallet, true))
+                        if (ValidateTransaction(transfer.PartialTransaction, wallet, true))
                         {
                             transfer.SetStatus(CrossChainTransferStatus.FullySigned);
                         }
@@ -619,7 +619,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
             {
                 if (this.RewindIfRequired())
                 {
-                    this.SanityCheck();
+                    this.ValidateCrossChainTransfers();
                 }
 
                 if (this.SynchronizeBatch())
@@ -743,7 +743,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
 
                 this.Synchronize();
 
-                ICrossChainTransfer[] res = this.SanityCheck(this.Get(depositIds));
+                ICrossChainTransfer[] res = this.ValidateCrossChainTransfers(this.Get(depositIds));
 
                 this.logger.LogTrace("(-)");
                 return res;
@@ -821,14 +821,14 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
                 this.Synchronize();
 
                 if (status == CrossChainTransferStatus.Rejected)
-                    this.SanityCheck();
+                    this.ValidateCrossChainTransfers();
 
                 uint256[] partialTransferHashes = this.depositsIdsByStatus[status].ToArray();
 
                 ICrossChainTransfer[] partialTransfers = this.Get(partialTransferHashes).ToArray();
 
                 if (status == CrossChainTransferStatus.Partial || status == CrossChainTransferStatus.FullySigned)
-                    this.SanityCheck(partialTransfers);
+                    this.ValidateCrossChainTransfers(partialTransfers);
 
                 partialTransfers = partialTransfers.Where(t => t.Status == status).ToArray();
 
@@ -961,7 +961,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
         /// <param name="wallet">The wallet to check.</param>
         /// <param name="checkSignature">Indictes whether to check the signature.</param>
         /// <returns><c>True</c> if all's well and <c>false</c> otherwise.</returns>
-        public static bool SanityCheck(Transaction transaction, FederationWallet wallet, bool checkSignature = false)
+        public static bool ValidateTransaction(Transaction transaction, FederationWallet wallet, bool checkSignature = false)
         {
             // All the input UTXO's should be present in spending details of the multi-sig address.
             List<Coin> coins = checkSignature ? new List<Coin>() : null;

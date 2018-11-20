@@ -374,7 +374,7 @@ namespace Stratis.FederatedPeg.Tests
 
                 Transaction transaction = crossChainTransfer.PartialTransaction;
 
-                Assert.True(CrossChainTransferStore.SanityCheck(transaction, this.wallet));
+                Assert.True(CrossChainTransferStore.ValidateTransaction(transaction, this.wallet));
 
                 // Create a separate instance to generate another transaction.
                 Transaction transaction2;
@@ -404,7 +404,7 @@ namespace Stratis.FederatedPeg.Tests
 
                     transaction2 = crossChainTransfer2.PartialTransaction;
 
-                    Assert.True(CrossChainTransferStore.SanityCheck(transaction2, newTest.wallet));
+                    Assert.True(CrossChainTransferStore.ValidateTransaction(transaction2, newTest.wallet));
                 }
 
                 // Merges the transaction signatures.
@@ -421,7 +421,7 @@ namespace Stratis.FederatedPeg.Tests
                 Assert.NotNull(signedTransaction);
 
                 // Check ths signature.
-                Assert.True(CrossChainTransferStore.SanityCheck(signedTransaction, this.wallet, true));
+                Assert.True(CrossChainTransferStore.ValidateTransaction(signedTransaction, this.wallet, true));
             }
         }
 
