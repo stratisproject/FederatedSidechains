@@ -2,6 +2,8 @@
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using Stratis.FederatedPeg.Features.FederationGateway.Interfaces;
+using Stratis.Bitcoin.Features.MemoryPool;
+using Stratis.Bitcoin.Features.Wallet.Interfaces;
 
 namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
 {
@@ -10,16 +12,22 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
         private readonly ILogger logger;
         private readonly IDisposable leaderReceiverSubscription;
         private readonly ICrossChainTransferStore store;
-        private readonly string publicKey;
+        private readonly string thisLeadersPublicKey;
+        private readonly MempoolManager mempoolManager;
+        private readonly IBroadcasterManager broadcasterManager;
 
         public SignedMultisigTransactionBroadcaster(ILoggerFactory loggerFactory,
                                                     ICrossChainTransferStore store,
                                                     ILeaderReceiver leaderReceiver,
-                                                    IFederationGatewaySettings settings)
+                                                    IFederationGatewaySettings settings,
+                                                    MempoolManager mempoolManager,
+                                                    IBroadcasterManager broadcasterManager)
         {
             this.logger = loggerFactory.CreateLogger(this.GetType().FullName);
             this.store = store;
-            this.publicKey = settings.PublicKey;
+            this.thisLeadersPublicKey = settings.PublicKey;
+            this.mempoolManager = mempoolManager;
+            this.broadcasterManager = broadcasterManager;
 
             this.leaderReceiverSubscription = leaderReceiver.LeaderProvidersStream.Subscribe(async m => await BroadcastTransactionsAsync(m));
             this.logger.LogDebug("Subscribed to {0}", nameof(leaderReceiver), nameof(leaderReceiver.LeaderProvidersStream));
@@ -27,15 +35,22 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
 
         public async Task BroadcastTransactionsAsync(ILeaderProvider leaderProvider)
         {
-            if (this.publicKey != leaderProvider.CurrentLeader.ToString()) return;
+            if (this.thisLeadersPublicKey != leaderProvider.CurrentLeader.ToString()) return;
 
             var transactions = await this.store.GetSignedTransactionsAsync().ConfigureAwait(false);
 
-            foreach(var transaction in transactions)
+            foreach (var transaction in transactions)
             {
-                // TODO ignore transaction if it's in the mempool
+                var transactionHash = transaction.GetHash();
+                var txInfo = await this.mempoolManager.InfoAsync(transactionHash).ConfigureAwait(false);
 
-                // Otherwise send the transaction
+                if (txInfo != null)
+                {
+                    this.logger.LogTrace("Transaction ID '{0}' already in the mempool.", transactionHash);
+                    continue;
+                }
+
+                await this.broadcasterManager.BroadcastTransactionAsync(transaction).ConfigureAwait(false);
             }
         }
 
