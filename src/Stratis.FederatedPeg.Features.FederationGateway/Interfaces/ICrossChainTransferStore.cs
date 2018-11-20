@@ -37,7 +37,8 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.Interfaces
         /// <summary>
         /// Returns all partial transactions still in need of signatures.
         /// </summary>
-        /// <returns>An array of fully signed transactions.</returns>
+        /// <param name="status">The status to get the transactions for.</param>
+        /// <returns>An array of transactions.</returns>
         /// <remarks>
         /// The caller can order this list by looking at the corresponsing transaction order in the wallet.
         /// </remarks>
