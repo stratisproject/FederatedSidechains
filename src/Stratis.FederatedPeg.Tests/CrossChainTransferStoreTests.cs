@@ -524,15 +524,24 @@ namespace Stratis.FederatedPeg.Tests
         /// Create a block and add it to the dictionary used by the mock block repository.
         /// </summary>
         /// <param name="chain">Chains to add the block to.</param>
-        /// <param name="transaction">An optional transaction to add to the block.</param>
+        /// <param name="transactions">Additional transactions to add to the block.</param>
         /// <returns>The last chained header.</returns>
-        private ChainedHeader AppendBlock(ConcurrentChain chain, Transaction transaction = null)
+        private ChainedHeader AppendBlock(ConcurrentChain chain, params Transaction[] transactions)
         {
             ChainedHeader last = null;
             uint nonce = RandomUtils.GetUInt32();
 
             Block block = this.network.CreateBlock();
-            block.AddTransaction(transaction ?? this.network.CreateTransaction());
+
+            // Create coinbase.
+            block.AddTransaction(this.network.CreateTransaction());
+
+            // Add additional transactions if any.
+            foreach (Transaction transaction in transactions)
+            {
+                block.AddTransaction(transaction);
+            }
+
             block.UpdateMerkleRoot();
             block.Header.HashPrevBlock = chain.Tip.HashBlock;
             block.Header.Nonce = nonce;
