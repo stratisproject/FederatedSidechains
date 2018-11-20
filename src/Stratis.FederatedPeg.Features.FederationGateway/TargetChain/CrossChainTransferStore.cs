@@ -98,6 +98,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
         private readonly CancellationTokenSource cancellation;
         private readonly IFederationWalletManager federationWalletManager;
         private readonly IFederationWalletTransactionHandler federationWalletTransactionHandler;
+        private readonly IFederationGatewaySettings federationGatewaySettings;
 
         /// <summary>Provider of time functions.</summary>
         private readonly IDateTimeProvider dateTimeProvider;
@@ -124,6 +125,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
             this.blockRepository = blockRepository;
             this.federationWalletManager = federationWalletManager;
             this.federationWalletTransactionHandler = federationWalletTransactionHandler;
+            this.federationGatewaySettings = settings;
             this.withdrawalExtractor = withdrawalExtractor;
 
             this.logger = loggerFactory.CreateLogger(this.GetType().FullName);
@@ -262,20 +264,21 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
             }
         }
 
-        public static Transaction BuildDeterministicTransaction(uint256 depositId, Recipient recipient,
-            IFederationWalletTransactionHandler federationWalletTransactionHandler, string walletPassword = "", ILogger logger = null)
+        private Transaction BuildDeterministicTransaction(uint256 depositId, Recipient recipient)
         {
+            string walletPassword = this.federationWalletManager.Secret.WalletPassword;
+
             try
             {
-                logger?.LogTrace("()");
+                this.logger.LogTrace("()");
 
                 uint256 opReturnData = depositId;
 
                 // Build the multisig transaction template.
                 var multiSigContext = new TransactionBuildContext(new[] { recipient }.ToList(), opReturnData: opReturnData.ToBytes())
                 {
-                    TransactionFee = Money.Coins(0.01m), // TODO: Configurable?
-                    MinConfirmations = 1,                // TODO: This may have to be zero to allow multiple deposits spending a single UTXO.
+                    TransactionFee = this.federationGatewaySettings.TransactionFee,
+                    MinConfirmations = this.federationGatewaySettings.MinCoinMaturity,
                     Shuffle = false,
                     IgnoreVerify = true,
                     WalletPassword = walletPassword,
@@ -283,15 +286,15 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
                 };
 
                 // Build the transaction.
-                Transaction transaction = federationWalletTransactionHandler.BuildTransaction(multiSigContext);
+                Transaction transaction = this.federationWalletTransactionHandler.BuildTransaction(multiSigContext);
 
-                logger?.LogTrace("(-)");
+                this.logger.LogTrace("(-)");
 
                 return transaction;
             }
             catch (Exception error)
             {
-                logger?.LogTrace("Could not create transaction for deposit {0}: {1}", depositId, error.Message);
+                this.logger.LogTrace("Could not create transaction for deposit {0}: {1}", depositId, error.Message);
             }
 
             return null;
@@ -349,8 +352,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
 
                             if (transfers[i] == null)
                             {
-                                Transaction transaction = BuildDeterministicTransaction(deposit.Id, recipient,
-                                    this.federationWalletTransactionHandler, this.federationWalletManager.Secret.WalletPassword, this.logger);
+                                Transaction transaction = BuildDeterministicTransaction(deposit.Id, recipient);
 
                                 if (transaction == null)
                                     throw new Exception("Failed to build transaction");
@@ -734,6 +736,8 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
             {
                 this.logger.LogTrace("()");
 
+                this.Synchronize();
+
                 ICrossChainTransfer[] res = this.SanityCheck(this.Get(depositIds));
 
                 this.logger.LogTrace("(-)");
@@ -743,33 +747,11 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
 
         private ICrossChainTransfer[] Get(uint256[] depositId)
         {
-            this.Synchronize();
-
             using (DBreeze.Transactions.Transaction dbreezeTransaction = this.DBreeze.GetTransaction())
             {
                 dbreezeTransaction.ValuesLazyLoadingIsOn = false;
 
-                FederationWallet wallet = this.federationWalletManager.GetWallet();
-
-                ICrossChainTransfer[] crossChainTransfers = Get(dbreezeTransaction, depositId);
-
-                for (int i = 0; i < crossChainTransfers.Length; i++)
-                {
-                    ICrossChainTransfer transfer = crossChainTransfers[i];
-
-                    if (transfer == null)
-                        continue;
-
-                    if (transfer.Status != CrossChainTransferStatus.FullySigned && transfer.Status != CrossChainTransferStatus.Partial)
-                        continue;
-
-                    if (SanityCheck(transfer.PartialTransaction, wallet, transfer.Status == CrossChainTransferStatus.FullySigned))
-                        continue;
-
-                    crossChainTransfers[i].SetStatus(CrossChainTransferStatus.Rejected);
-                }
-
-                return crossChainTransfers;
+                return Get(dbreezeTransaction, depositId);
             }
         }
 
@@ -830,6 +812,8 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
             return Task.Run(() =>
             {
                 this.logger.LogTrace("()");
+
+                this.Synchronize();
 
                 if (status == CrossChainTransferStatus.Rejected)
                     this.SanityCheck();
