@@ -50,6 +50,11 @@ namespace Stratis.FederatedPeg.Features.FederationGateway
         int MinCoinMaturity { get; }
 
         /// <summary>
+        /// The transaction fee required for withdrawals.
+        /// </summary>
+        Money TransactionFee { get; }
+
+        /// <summary>
         /// Address for the MultiSig script.
         /// </summary>
         BitcoinAddress MultiSigAddress { get; }
