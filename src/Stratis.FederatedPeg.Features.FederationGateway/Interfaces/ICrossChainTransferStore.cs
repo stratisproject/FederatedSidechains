@@ -35,13 +35,10 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.Interfaces
         Task RecordLatestMatureDepositsAsync(IDeposit[] deposits);
 
         /// <summary>
-        /// Returns all partial transactions still in need of signatures.
+        /// Returns transactions by status. Orders the results by UTXO selection order.
         /// </summary>
         /// <param name="status">The status to get the transactions for.</param>
         /// <returns>An array of transactions.</returns>
-        /// <remarks>
-        /// The caller can order this list by looking at the corresponsing transaction order in the wallet.
-        /// </remarks>
         Task<Dictionary<uint256, Transaction>> GetTransactionsByStatusAsync(CrossChainTransferStatus status);
 
         /// <summary>
