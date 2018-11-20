@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Reactive.Linq;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
@@ -113,7 +114,7 @@ namespace Stratis.FederatedPeg.Tests
         }
 
         [Fact]
-        public async Task When_CurrentLeader_Calls_GetSignedTransactionsAsync()
+        public async Task When_CurrentLeader_Call_GetSignedTransactionsAsync()
         {
             this.federationGatewaySettings.PublicKey.Returns(PublicKey);
             this.leaderProvider.CurrentLeader.Returns(new PubKey(PublicKey));
@@ -130,15 +131,21 @@ namespace Stratis.FederatedPeg.Tests
                 this.broadcasterManager);
 
             await this.signedMultisigTransactionBroadcaster.BroadcastTransactionsAsync(this.leaderProvider).ConfigureAwait(false);
-            await this.store.Received().GetSignedTransactionsAsync().ConfigureAwait(false);
+            await this.store.Received().GetTransactionsByStatusAsync(CrossChainTransferStatus.FullySigned).ConfigureAwait(false);
         }
 
         [Fact]
         public async Task When_CurrentLeader_BroadcastsTransactionAsync()
         {
             this.federationGatewaySettings.PublicKey.Returns(PublicKey);
-            this.leaderProvider.CurrentLeader.Returns(new PubKey(PublicKey));        
-            this.store.GetSignedTransactionsAsync().Returns(new Transaction[] { new Transaction() });
+            this.leaderProvider.CurrentLeader.Returns(new PubKey(PublicKey));
+
+            var transactionPair = new Dictionary<uint256, Transaction>
+            {
+                { new uint256(), new Transaction() }
+            };
+
+            this.store.GetTransactionsByStatusAsync(CrossChainTransferStatus.FullySigned).Returns(transactionPair);
 
             IObservable<ILeaderProvider> leaderStream = new[] { this.leaderProvider }.ToObservable();
             this.leaderReceiver.LeaderProvidersStream.Returns(leaderStream);
@@ -152,7 +159,7 @@ namespace Stratis.FederatedPeg.Tests
                 this.broadcasterManager);
 
             await this.signedMultisigTransactionBroadcaster.BroadcastTransactionsAsync(this.leaderProvider).ConfigureAwait(false);
-            await this.store.Received().GetSignedTransactionsAsync().ConfigureAwait(false);
+            await this.store.Received().GetTransactionsByStatusAsync(CrossChainTransferStatus.FullySigned).ConfigureAwait(false);
             await this.broadcasterManager.Received().BroadcastTransactionAsync(Arg.Any<Transaction>());
         }
 

@@ -38,20 +38,25 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
         {
             if (this.publicKey != leaderProvider.CurrentLeader.ToString()) return;
 
-            var transactions = await this.store.GetSignedTransactionsAsync().ConfigureAwait(false);
+            var transactions = await this.store.GetTransactionsByStatusAsync(CrossChainTransferStatus.FullySigned).ConfigureAwait(false);
+
+            if (transactions == null)
+            {
+                this.logger.LogTrace("Signed multisig transactions do not exist in the CrossChainTransfer store.");
+                return;
+            }
 
             foreach (var transaction in transactions)
             {
-                var transactionHash = transaction.GetHash();
-                var txInfo = await this.mempoolManager.InfoAsync(transactionHash).ConfigureAwait(false);
+                var txInfo = await this.mempoolManager.InfoAsync(transaction.Key).ConfigureAwait(false);
 
                 if (txInfo != null)
                 {
-                    this.logger.LogTrace("Transaction ID '{0}' already in the mempool.", transactionHash);
+                    this.logger.LogTrace("Transaction ID '{0}' already in the mempool.", transaction.Key);
                     continue;
                 }
 
-                await this.broadcasterManager.BroadcastTransactionAsync(transaction).ConfigureAwait(false);
+                await this.broadcasterManager.BroadcastTransactionAsync(transaction.Value).ConfigureAwait(false);
             }
         }
 
