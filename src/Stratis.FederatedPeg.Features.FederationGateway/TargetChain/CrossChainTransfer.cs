@@ -98,17 +98,21 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
         /// <inheritdoc />
         public bool IsValid()
         {
-            if (this.status == CrossChainTransferStatus.Partial || this.status == CrossChainTransferStatus.SeenInBlock)
-            {
-                if (this.status != CrossChainTransferStatus.Partial)
-                {
-                    return this.blockHash != null;
-                }
+            if (this.depositTransactionId == null)
+                return false;
 
-                return this.partialTransaction != null;
+            if (this.status == CrossChainTransferStatus.Rejected)
+                return true;
+
+            if (this.PartialTransaction == null)
+                return false;
+
+            if (this.status == CrossChainTransferStatus.SeenInBlock && this.blockHash == null)
+            {
+                return false;
             }
 
-            return this.depositTransactionId != null;
+             return true;
         }
 
         /// <inheritdoc />
