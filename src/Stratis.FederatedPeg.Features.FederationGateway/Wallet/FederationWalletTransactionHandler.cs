@@ -246,7 +246,9 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.Wallet
             long sum = 0;
             int index = 0;
             var coins = new List<Coin>();
-            foreach (UnspentOutputReference item in this.GetOrderedUnspentOutputs(context))
+
+            foreach (UnspentOutputReference item in context.OrderCoinsDeterministic ?
+                this.GetOrderedUnspentOutputs(context) : context.UnspentOutputs.OrderByDescending(a => a.Transaction.Amount))
             {
                 coins.Add(ScriptCoin.Create(this.network, item.Transaction.Id, (uint)item.Transaction.Index, item.Transaction.Amount, item.Transaction.ScriptPubKey, this.walletManager.GetWallet().MultiSigAddress.RedeemScript));
                 sum += item.Transaction.Amount;
@@ -417,6 +419,11 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.Wallet
         /// If false, allows unselected inputs, but requires all selected inputs be used
         /// </summary>
         public bool AllowOtherInputs { get; set; }
+
+        /// <summary>
+        /// If <c>true</c> coins will be ordered using (block height + transaction id + output index) ordering.
+        /// </summary>
+        public bool OrderCoinsDeterministic { get; set; }
 
         /// <summary>
         /// Specify whether to sign the transaction.

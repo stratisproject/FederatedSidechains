@@ -98,13 +98,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
         /// <inheritdoc />
         public bool IsValid()
         {
-            if (this.depositTransactionId == null)
-                return false;
-
-            if (this.status == CrossChainTransferStatus.Rejected)
-                return true;
-
-            if (this.PartialTransaction == null)
+            if (this.depositTransactionId == null || this.PartialTransaction == null || this.depositTargetAddress == null || this.depositAmount == 0)
                 return false;
 
             if (this.status == CrossChainTransferStatus.SeenInBlock && this.blockHash == null)

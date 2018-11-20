@@ -28,6 +28,10 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
         /// <param name="status">The new status.</param>
         /// <param name="blockHash">The block hash of the partialTranction.</param>
         /// <param name="blockHeight">The block height of the partialTransaction.</param>
+        /// <remarks>
+        /// Within the store the earliest status is <see cref="CrossChainTransferStatus.Partial"/>. In this case <c>null</c>
+        /// is used to flag a new transfer - a transfer with no earlier status. <c>null</c> is not written to the DB.
+        /// </remarks>
         public void SetTransferStatus(ICrossChainTransfer transfer, CrossChainTransferStatus? status = null, uint256 blockHash = null, int blockHeight = 0)
         {
             if (status != null)
@@ -277,6 +281,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
                 // Build the multisig transaction template.
                 var multiSigContext = new TransactionBuildContext(new[] { recipient }.ToList(), opReturnData: opReturnData.ToBytes())
                 {
+                    OrderCoinsDeterministic = true,
                     TransactionFee = this.federationGatewaySettings.TransactionFee,
                     MinConfirmations = this.federationGatewaySettings.MinCoinMaturity,
                     Shuffle = false,
