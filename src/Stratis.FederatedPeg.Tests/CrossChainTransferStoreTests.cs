@@ -27,6 +27,7 @@ namespace Stratis.FederatedPeg.Tests
     {
         private const string walletPassword = "123";
         private Network network;
+        private ConcurrentChain chain;
         private ILoggerFactory loggerFactory;
         private ILogger logger;
         private IDateTimeProvider dateTimeProvider;
@@ -78,6 +79,7 @@ namespace Stratis.FederatedPeg.Tests
             this.walletFeePolicy = Substitute.For<IWalletFeePolicy>();
             this.wallet = null;
             this.federationGatewaySettings = Substitute.For<IFederationGatewaySettings>();
+            this.chain = new ConcurrentChain(this.network);
 
             // Generate the keys used by the federation members for our tests.
             this.federationKeys = new[]
@@ -92,6 +94,7 @@ namespace Stratis.FederatedPeg.Tests
             SetExtendedKey(0);
 
             this.blockDict = new Dictionary<uint256, Block>();
+            this.blockDict[this.network.GenesisHash] = this.network.GetGenesis();
 
             this.blockRepository.GetBlocksAsync(Arg.Any<List<uint256>>()).ReturnsForAnyArgs((x) => {
                 List<uint256> hashes = x.ArgAt<List<uint256>>(0);
@@ -120,18 +123,35 @@ namespace Stratis.FederatedPeg.Tests
             this.withdrawalExtractor = new WithdrawalExtractor(this.loggerFactory, this.federationGatewaySettings, this.opReturnDataReader, this.network);
         }
 
+        private void AddFunding()
+        {
+            Transaction tran1 = this.network.CreateTransaction();
+            Transaction tran2 = this.network.CreateTransaction();
+
+            tran1.Outputs.Add(new TxOut(Money.COIN * 90, this.wallet.MultiSigAddress.ScriptPubKey));
+            tran1.Outputs.Add(new TxOut(Money.COIN * 80, this.wallet.MultiSigAddress.ScriptPubKey));
+            tran2.Outputs.Add(new TxOut(Money.COIN * 70, this.wallet.MultiSigAddress.ScriptPubKey));
+
+            tran1.AddInput(new TxIn(new OutPoint(0, 0), new Script(OpcodeType.OP_1)));
+            tran2.AddInput(new TxIn(new OutPoint(0, 0), new Script(OpcodeType.OP_1)));
+
+            this.fundingTransactions = new[] { tran1, tran2 };
+
+            this.AppendBlock(tran1);
+            this.AppendBlock(tran2);
+        }
+
         /// <summary>
         /// Create the wallet manager and wallet transaction handler.
         /// </summary>
-        /// <param name="chain">The chain.</param>
         /// <param name="dataFolder">The data folder.</param>
-        private void CreateWalletManagerAndTransactionHandler(ConcurrentChain chain, DataFolder dataFolder)
+        private void CreateWalletManagerAndTransactionHandler(DataFolder dataFolder)
         {
             // Create the wallet manager.
             this.federationWalletManager = new FederationWalletManager(
                 this.loggerFactory,
                 this.network,
-                chain,
+                this.chain,
                 dataFolder,
                 this.walletFeePolicy,
                 this.asyncLoopFactory,
@@ -142,69 +162,14 @@ namespace Stratis.FederatedPeg.Tests
             // Starts and creates the wallet.
             this.federationWalletManager.Start();
             this.wallet = this.federationWalletManager.GetWallet();
-
-            if (this.wallet.MultiSigAddress.Transactions.Count == 0)
-            {
-                Transaction tran1 = this.network.CreateTransaction();
-                Transaction tran2 = this.network.CreateTransaction();
-
-                tran1.Outputs.Add(new TxOut(Money.COIN * 90, this.wallet.MultiSigAddress.ScriptPubKey));
-                tran1.Outputs.Add(new TxOut(Money.COIN * 80, this.wallet.MultiSigAddress.ScriptPubKey));
-                tran2.Outputs.Add(new TxOut(Money.COIN * 70, this.wallet.MultiSigAddress.ScriptPubKey));
-
-                tran1.AddInput(new TxIn(new OutPoint(0, 0), new Script(OpcodeType.OP_1)));
-                tran2.AddInput(new TxIn(new OutPoint(0, 0), new Script(OpcodeType.OP_1)));
-
-                this.wallet.MultiSigAddress.Transactions.Add(new Features.FederationGateway.Wallet.TransactionData()
-                {
-                    Amount = tran1.Outputs[0].Value,
-                    Id = tran1.GetHash(),
-                    Hex = tran1.ToHex(this.network),
-                    Index = 0,
-                    ScriptPubKey = this.wallet.MultiSigAddress.ScriptPubKey,
-                    BlockHeight = 1
-                });
-
-                this.wallet.MultiSigAddress.Transactions.Add(new Features.FederationGateway.Wallet.TransactionData()
-                {
-                    Amount = tran1.Outputs[1].Value,
-                    Id = tran1.GetHash(),
-                    Hex = tran1.ToHex(this.network),
-                    Index = 1,
-                    ScriptPubKey = this.wallet.MultiSigAddress.ScriptPubKey,
-                    BlockHeight = 1
-                });
-
-                this.wallet.MultiSigAddress.Transactions.Add(new Features.FederationGateway.Wallet.TransactionData()
-                {
-                    Amount = tran2.Outputs[0].Value,
-                    Id = tran2.GetHash(),
-                    Hex = tran2.ToHex(this.network),
-                    Index = 0,
-                    ScriptPubKey = this.wallet.MultiSigAddress.ScriptPubKey,
-                    BlockHeight = 2
-                });
-
-                this.fundingTransactions = new[] { tran1, tran2 };
-            }
-
-            (this.federationWalletManager as FederationWalletManager).LoadKeysLookupLock();
-
             this.federationWalletTransactionHandler = new FederationWalletTransactionHandler(this.loggerFactory, this.federationWalletManager, this.walletFeePolicy, this.network);
 
             var storeSettings = (StoreSettings)FormatterServices.GetUninitializedObject(typeof(StoreSettings));
 
-            this.federationWalletSyncManager = new FederationWalletSyncManager(this.loggerFactory, this.federationWalletManager, chain, this.network,
+            this.federationWalletSyncManager = new FederationWalletSyncManager(this.loggerFactory, this.federationWalletManager, this.chain, this.network,
                 this.blockRepository, storeSettings, Substitute.For<INodeLifetime>());
 
             this.federationWalletSyncManager.Start();
-
-            List<Block> blocks = this.blockRepository.GetBlocksAsync(chain.EnumerateAfter(this.network.GenesisHash).Select(h => h.HashBlock).ToList()).GetAwaiter().GetResult();
-
-            foreach (Block block in blocks)
-            {
-                this.federationWalletSyncManager.ProcessBlock(block);
-            }
 
             // Set up the encrypted seed on the wallet.
             string encryptedSeed = this.extendedKey.PrivateKey.GetEncryptedBitcoinSecret(walletPassword, this.network).ToWif();
@@ -219,12 +184,12 @@ namespace Stratis.FederatedPeg.Tests
         [Fact]
         public void StartSynchronizesWithWallet()
         {
-            ConcurrentChain chain = BuildChain(5);
             var dataFolder = new DataFolder(CreateTestDir(this));
 
-            this.CreateWalletManagerAndTransactionHandler(chain, dataFolder);
+            this.CreateWalletManagerAndTransactionHandler(dataFolder);
+            this.AppendBlocks(5);
 
-            using (var crossChainTransferStore = new CrossChainTransferStore(this.network, dataFolder, chain, this.federationGatewaySettings, this.dateTimeProvider,
+            using (var crossChainTransferStore = new CrossChainTransferStore(this.network, dataFolder, this.chain, this.federationGatewaySettings, this.dateTimeProvider,
                 this.loggerFactory, this.withdrawalExtractor, this.fullNode, this.blockRepository, this.federationWalletManager, this.federationWalletTransactionHandler))
             {
                 crossChainTransferStore.Initialize();
@@ -241,12 +206,12 @@ namespace Stratis.FederatedPeg.Tests
         [Fact]
         public void StartSynchronizesWithWalletAndSurvivesRestart()
         {
-            ConcurrentChain chain = BuildChain(5);
             var dataFolder = new DataFolder(CreateTestDir(this));
 
-            this.CreateWalletManagerAndTransactionHandler(chain, dataFolder);
+            this.CreateWalletManagerAndTransactionHandler(dataFolder);
+            this.AppendBlocks(5);
 
-            using (var crossChainTransferStore = new CrossChainTransferStore(this.network, dataFolder, chain, this.federationGatewaySettings, this.dateTimeProvider,
+            using (var crossChainTransferStore = new CrossChainTransferStore(this.network, dataFolder, this.chain, this.federationGatewaySettings, this.dateTimeProvider,
                 this.loggerFactory, this.withdrawalExtractor, this.fullNode, this.blockRepository, this.federationWalletManager, this.federationWalletTransactionHandler))
             {
                 crossChainTransferStore.Initialize();
@@ -261,11 +226,11 @@ namespace Stratis.FederatedPeg.Tests
             // Create a new instance of this test that loads from the persistence that we created in the step before.
             var newTest = new CrossChainTransferStoreTests();
 
-            // Force a form by creating a new chain that only has genesis in common.
-            ConcurrentChain newChain = newTest.BuildChain(3);
-            newTest.CreateWalletManagerAndTransactionHandler(newChain, dataFolder);
+            // Force a reorg by creating a new chain that only has genesis in common.
+            newTest.CreateWalletManagerAndTransactionHandler(dataFolder);
+            newTest.AppendBlocks(3);
 
-            using (var crossChainTransferStore2 = new CrossChainTransferStore(newTest.network, dataFolder, newChain, newTest.federationGatewaySettings, newTest.dateTimeProvider,
+            using (var crossChainTransferStore2 = new CrossChainTransferStore(newTest.network, dataFolder, newTest.chain, newTest.federationGatewaySettings, newTest.dateTimeProvider,
                 newTest.loggerFactory, newTest.withdrawalExtractor, newTest.fullNode, newTest.blockRepository, newTest.federationWalletManager, newTest.federationWalletTransactionHandler))
             {
                 crossChainTransferStore2.Initialize();
@@ -288,21 +253,22 @@ namespace Stratis.FederatedPeg.Tests
         [Fact]
         public void StoringDepositsWhenWalletBalanceSufficientSucceedsWithDeterministicTransactions()
         {
-            ConcurrentChain chain = BuildChain(5);
             var dataFolder = new DataFolder(CreateTestDir(this));
 
-            this.CreateWalletManagerAndTransactionHandler(chain, dataFolder);
+            this.CreateWalletManagerAndTransactionHandler(dataFolder);
+            this.AddFunding();
+            this.AppendBlocks(5);
 
             MultiSigAddress multiSigAddress = this.wallet.MultiSigAddress;
 
-            using (var crossChainTransferStore = new CrossChainTransferStore(this.network, dataFolder, chain, this.federationGatewaySettings, this.dateTimeProvider,
+            using (var crossChainTransferStore = new CrossChainTransferStore(this.network, dataFolder, this.chain, this.federationGatewaySettings, this.dateTimeProvider,
                 this.loggerFactory, this.withdrawalExtractor, this.fullNode, this.blockRepository, this.federationWalletManager, this.federationWalletTransactionHandler))
             {
                 crossChainTransferStore.Initialize();
                 crossChainTransferStore.Start();
 
-                Assert.Equal(chain.Tip.HashBlock, crossChainTransferStore.TipHashAndHeight.Hash);
-                Assert.Equal(chain.Tip.Height, crossChainTransferStore.TipHashAndHeight.Height);
+                Assert.Equal(this.chain.Tip.HashBlock, crossChainTransferStore.TipHashAndHeight.Hash);
+                Assert.Equal(this.chain.Tip.Height, crossChainTransferStore.TipHashAndHeight.Height);
 
                 BitcoinAddress address1 = (new Key()).PubKey.Hash.GetAddress(this.network);
                 BitcoinAddress address2 = (new Key()).PubKey.Hash.GetAddress(this.network);
@@ -376,21 +342,22 @@ namespace Stratis.FederatedPeg.Tests
         [Fact]
         public void StoreMergesSignaturesAsExpected()
         {
-            ConcurrentChain chain = BuildChain(5);
             var dataFolder = new DataFolder(CreateTestDir(this));
 
-            this.CreateWalletManagerAndTransactionHandler(chain, dataFolder);
+            this.CreateWalletManagerAndTransactionHandler(dataFolder);
+            this.AddFunding();
+            this.AppendBlocks(5);
 
             MultiSigAddress multiSigAddress = this.wallet.MultiSigAddress;
 
-            using (var crossChainTransferStore = new CrossChainTransferStore(this.network, dataFolder, chain, this.federationGatewaySettings, this.dateTimeProvider,
+            using (var crossChainTransferStore = new CrossChainTransferStore(this.network, dataFolder, this.chain, this.federationGatewaySettings, this.dateTimeProvider,
                 this.loggerFactory, this.withdrawalExtractor, this.fullNode, this.blockRepository, this.federationWalletManager, this.federationWalletTransactionHandler))
             {
                 crossChainTransferStore.Initialize();
                 crossChainTransferStore.Start();
 
-                Assert.Equal(chain.Tip.HashBlock, crossChainTransferStore.TipHashAndHeight.Hash);
-                Assert.Equal(chain.Tip.Height, crossChainTransferStore.TipHashAndHeight.Height);
+                Assert.Equal(this.chain.Tip.HashBlock, crossChainTransferStore.TipHashAndHeight.Hash);
+                Assert.Equal(this.chain.Tip.Height, crossChainTransferStore.TipHashAndHeight.Height);
 
                 BitcoinAddress address = (new Key()).PubKey.Hash.GetAddress(this.network);
 
@@ -409,19 +376,22 @@ namespace Stratis.FederatedPeg.Tests
                 // Create a separate instance to generate another transaction.
                 Transaction transaction2;
                 var newTest = new CrossChainTransferStoreTests();
+                DataFolder dataFolder2 = new DataFolder(CreateTestDir(this));
+
                 newTest.federationKeys = this.federationKeys;
                 newTest.SetExtendedKey(1);
-                ConcurrentChain newChain = newTest.BuildChain(3);
-                DataFolder dataFolder2 = new DataFolder(CreateTestDir(this));
-                newTest.CreateWalletManagerAndTransactionHandler(newChain, dataFolder2);
-                using (var crossChainTransferStore2 = new CrossChainTransferStore(newTest.network, dataFolder2, newChain, newTest.federationGatewaySettings, newTest.dateTimeProvider,
+                newTest.CreateWalletManagerAndTransactionHandler(dataFolder2);
+                newTest.AddFunding();
+                newTest.AppendBlocks(3);
+
+                using (var crossChainTransferStore2 = new CrossChainTransferStore(newTest.network, dataFolder2, newTest.chain, newTest.federationGatewaySettings, newTest.dateTimeProvider,
                     newTest.loggerFactory, newTest.withdrawalExtractor, newTest.fullNode, newTest.blockRepository, newTest.federationWalletManager, newTest.federationWalletTransactionHandler))
                 {
                     crossChainTransferStore2.Initialize();
                     crossChainTransferStore2.Start();
 
-                    Assert.Equal(newChain.Tip.HashBlock, crossChainTransferStore2.TipHashAndHeight.Hash);
-                    Assert.Equal(newChain.Tip.Height, crossChainTransferStore2.TipHashAndHeight.Height);
+                    Assert.Equal(newTest.chain.Tip.HashBlock, crossChainTransferStore2.TipHashAndHeight.Hash);
+                    Assert.Equal(newTest.chain.Tip.Height, crossChainTransferStore2.TipHashAndHeight.Height);
 
                     crossChainTransferStore2.RecordLatestMatureDepositsAsync(new[] { deposit }).GetAwaiter().GetResult();
 
@@ -452,27 +422,31 @@ namespace Stratis.FederatedPeg.Tests
             }
         }
 
+        /// <summary>
+        /// Tests that the store can recover from the chain and handle a re-org.
+        /// </summary>
         [Fact]
         public void StoreRecoversFromChain()
         {
-            ConcurrentChain chain = BuildChain(5);
             var dataFolder = new DataFolder(CreateTestDir(this));
 
-            Transaction transaction = this.network.CreateTransaction("0100000002d2eefdc21fb0598664f8fcc8e7866969b9d7bb53f9f8dfb7823ee3eeadb33cbf00000000fd410100473044022038e16c1d58982bf964c186e4d72d372d16a3a63883fa7608261cdb0fdef519e50220149791d4956f0d6ddd61f754274513b2d5ad5fc1df1bed02b1f0f1c7df5322cd01483045022100eb553d5f199cd0aad40b7dd5773741f136e23cf681cc2fb7c2d66a07c2110c3d02207ccbe4547b92ba0ea2e1a01811325ee406c11e5bc832df9c40df9e0bfac59d0a014cad52210332195438ff52eb495321ffb598054e95c8b9aced0238ecf389a55e87f9d26c732103b1af6922b8fc1cc05bec47fdb54f2f85d00a3b4152c7d4bdb5a1e62fea558a362102c426f49fbf65601d7e59bf39cb69a1d488c098aa36caf99cd6ec236830279cdc2102b6128cc9fd484cb2024693e2afbcabecabf44faaa10306459c51a70bb8f510f62103b40dd94129f50521d38b7014295a5c48f2be01eceef2336cc44f321cc613a0c655aeffffffffd2eefdc21fb0598664f8fcc8e7866969b9d7bb53f9f8dfb7823ee3eeadb33cbf01000000fd420100483045022100e232b626ca289b6fe76b4ed011430d67a0243f5a135d5342ea3cd6b02f6bdb780220679de7791bba313373ea906d4236b48358fb00934ac658ad889a7f0e5654c4a301483045022100b698390a1d0c67495be0e14f56e75520e39fa6b01e60e82cc19be32b63b8cc0602206f146ce0324ab795faf19e0802d03c8f036c5cf7ce25d8a70b9b3f17438c2fbf014cad52210332195438ff52eb495321ffb598054e95c8b9aced0238ecf389a55e87f9d26c732103b1af6922b8fc1cc05bec47fdb54f2f85d00a3b4152c7d4bdb5a1e62fea558a362102c426f49fbf65601d7e59bf39cb69a1d488c098aa36caf99cd6ec236830279cdc2102b6128cc9fd484cb2024693e2afbcabecabf44faaa10306459c51a70bb8f510f62103b40dd94129f50521d38b7014295a5c48f2be01eceef2336cc44f321cc613a0c655aeffffffff03c0878b3b0000000017a914623b4eab628d77b96c41df080122ac2c037954138700a0acb9030000001976a914b79f48d2e34702cf134bfbbd3f7787c1db4acd3688ac0000000000000000226a20000000000000000000000000000000000000000000000000000000000000000000000000");
-            AppendBlock(chain, transaction);
+            this.CreateWalletManagerAndTransactionHandler(dataFolder);
+            this.AddFunding();
+            this.AppendBlocks(3);
 
-            this.CreateWalletManagerAndTransactionHandler(chain, dataFolder);
+            Transaction transaction = this.network.CreateTransaction("0100000002d2eefdc21fb0598664f8fcc8e7866969b9d7bb53f9f8dfb7823ee3eeadb33cbf00000000fd410100473044022038e16c1d58982bf964c186e4d72d372d16a3a63883fa7608261cdb0fdef519e50220149791d4956f0d6ddd61f754274513b2d5ad5fc1df1bed02b1f0f1c7df5322cd01483045022100eb553d5f199cd0aad40b7dd5773741f136e23cf681cc2fb7c2d66a07c2110c3d02207ccbe4547b92ba0ea2e1a01811325ee406c11e5bc832df9c40df9e0bfac59d0a014cad52210332195438ff52eb495321ffb598054e95c8b9aced0238ecf389a55e87f9d26c732103b1af6922b8fc1cc05bec47fdb54f2f85d00a3b4152c7d4bdb5a1e62fea558a362102c426f49fbf65601d7e59bf39cb69a1d488c098aa36caf99cd6ec236830279cdc2102b6128cc9fd484cb2024693e2afbcabecabf44faaa10306459c51a70bb8f510f62103b40dd94129f50521d38b7014295a5c48f2be01eceef2336cc44f321cc613a0c655aeffffffffd2eefdc21fb0598664f8fcc8e7866969b9d7bb53f9f8dfb7823ee3eeadb33cbf01000000fd420100483045022100e232b626ca289b6fe76b4ed011430d67a0243f5a135d5342ea3cd6b02f6bdb780220679de7791bba313373ea906d4236b48358fb00934ac658ad889a7f0e5654c4a301483045022100b698390a1d0c67495be0e14f56e75520e39fa6b01e60e82cc19be32b63b8cc0602206f146ce0324ab795faf19e0802d03c8f036c5cf7ce25d8a70b9b3f17438c2fbf014cad52210332195438ff52eb495321ffb598054e95c8b9aced0238ecf389a55e87f9d26c732103b1af6922b8fc1cc05bec47fdb54f2f85d00a3b4152c7d4bdb5a1e62fea558a362102c426f49fbf65601d7e59bf39cb69a1d488c098aa36caf99cd6ec236830279cdc2102b6128cc9fd484cb2024693e2afbcabecabf44faaa10306459c51a70bb8f510f62103b40dd94129f50521d38b7014295a5c48f2be01eceef2336cc44f321cc613a0c655aeffffffff03c0878b3b0000000017a914623b4eab628d77b96c41df080122ac2c037954138700a0acb9030000001976a914b79f48d2e34702cf134bfbbd3f7787c1db4acd3688ac0000000000000000226a20000000000000000000000000000000000000000000000000000000000000000000000000");
+            this.AppendBlock(transaction);
 
             MultiSigAddress multiSigAddress = this.wallet.MultiSigAddress;
 
-            using (var crossChainTransferStore = new CrossChainTransferStore(this.network, dataFolder, chain, this.federationGatewaySettings, this.dateTimeProvider,
+            using (var crossChainTransferStore = new CrossChainTransferStore(this.network, dataFolder, this.chain, this.federationGatewaySettings, this.dateTimeProvider,
                 this.loggerFactory, this.withdrawalExtractor, this.fullNode, this.blockRepository, this.federationWalletManager, this.federationWalletTransactionHandler))
             {
                 crossChainTransferStore.Initialize();
                 crossChainTransferStore.Start();
 
-                Assert.Equal(chain.Tip.HashBlock, crossChainTransferStore.TipHashAndHeight.Hash);
-                Assert.Equal(chain.Tip.Height, crossChainTransferStore.TipHashAndHeight.Height);
+                Assert.Equal(this.chain.Tip.HashBlock, crossChainTransferStore.TipHashAndHeight.Hash);
+                Assert.Equal(this.chain.Tip.Height, crossChainTransferStore.TipHashAndHeight.Height);
 
                 ICrossChainTransfer transfer = crossChainTransferStore.GetAsync(new uint256[] { 0 }).GetAwaiter().GetResult().SingleOrDefault();
 
@@ -481,8 +455,8 @@ namespace Stratis.FederatedPeg.Tests
                 Assert.Equal(CrossChainTransferStatus.SeenInBlock, transfer.Status);
 
                 // Re-org the chain.
-                chain.SetTip(chain.Tip.Previous);
-                this.federationWalletManager.UpdateLastBlockSyncedHeight(chain.Tip);
+                this.chain.SetTip(this.chain.Tip.Previous);
+                this.federationWalletManager.UpdateLastBlockSyncedHeight(this.chain.Tip);
 
                 transfer = crossChainTransferStore.GetAsync(new uint256[] { 0 }).GetAwaiter().GetResult().SingleOrDefault();
 
@@ -490,8 +464,8 @@ namespace Stratis.FederatedPeg.Tests
                 Assert.Equal(CrossChainTransferStatus.FullySigned, transfer.Status);
 
                 // Restore the chain.
-                AppendBlock(chain, transaction);
-                this.federationWalletManager.UpdateLastBlockSyncedHeight(chain.Tip);
+                AppendBlock(transaction);
+                this.federationWalletManager.UpdateLastBlockSyncedHeight(this.chain.Tip);
 
                 transfer = crossChainTransferStore.GetAsync(new uint256[] { 0 }).GetAwaiter().GetResult().SingleOrDefault();
 
@@ -504,29 +478,20 @@ namespace Stratis.FederatedPeg.Tests
         /// Builds a chain with the requested number of blocks.
         /// </summary>
         /// <param name="blocks">The number of blocks.</param>
-        /// <returns>A chain with the requested number of blocks.</returns>
-        private ConcurrentChain BuildChain(int blocks)
+        private void AppendBlocks(int blocks)
         {
-            ConcurrentChain chain = new ConcurrentChain(this.network);
-
-            this.blockDict.Clear();
-            this.blockDict[this.network.GenesisHash] = this.network.GetGenesis();
-
-            for (int i = 0; i < blocks - 1; i++)
+            for (int i = 0; i < blocks; i++)
             {
-                this.AppendBlock(chain);
+                this.AppendBlock();
             }
-
-            return chain;
         }
 
         /// <summary>
         /// Create a block and add it to the dictionary used by the mock block repository.
         /// </summary>
-        /// <param name="chain">Chains to add the block to.</param>
         /// <param name="transactions">Additional transactions to add to the block.</param>
         /// <returns>The last chained header.</returns>
-        private ChainedHeader AppendBlock(ConcurrentChain chain, params Transaction[] transactions)
+        private ChainedHeader AppendBlock(params Transaction[] transactions)
         {
             ChainedHeader last = null;
             uint nonce = RandomUtils.GetUInt32();
@@ -543,11 +508,13 @@ namespace Stratis.FederatedPeg.Tests
             }
 
             block.UpdateMerkleRoot();
-            block.Header.HashPrevBlock = chain.Tip.HashBlock;
+            block.Header.HashPrevBlock = this.chain.Tip.HashBlock;
             block.Header.Nonce = nonce;
-            if (!chain.TrySetTip(block.Header, out last))
+            if (!this.chain.TrySetTip(block.Header, out last))
                 throw new InvalidOperationException("Previous not existing");
             this.blockDict[block.GetHash()] = block;
+
+            this.federationWalletSyncManager.ProcessBlock(block);
 
             return last;
         }
