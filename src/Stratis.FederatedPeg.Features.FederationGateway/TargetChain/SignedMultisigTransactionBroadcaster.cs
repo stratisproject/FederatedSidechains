@@ -12,7 +12,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
         private readonly ILogger logger;
         private readonly IDisposable leaderReceiverSubscription;
         private readonly ICrossChainTransferStore store;
-        private readonly string thisLeadersPublicKey;
+        private readonly string publicKey;
         private readonly MempoolManager mempoolManager;
         private readonly IBroadcasterManager broadcasterManager;
 
@@ -25,7 +25,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
         {
             this.logger = loggerFactory.CreateLogger(this.GetType().FullName);
             this.store = store;
-            this.thisLeadersPublicKey = settings.PublicKey;
+            this.publicKey = settings.PublicKey;
             this.mempoolManager = mempoolManager;
             this.broadcasterManager = broadcasterManager;
 
@@ -33,9 +33,10 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
             this.logger.LogDebug("Subscribed to {0}", nameof(leaderReceiver), nameof(leaderReceiver.LeaderProvidersStream));
         }
 
+        /// <inheritdoc />
         public async Task BroadcastTransactionsAsync(ILeaderProvider leaderProvider)
         {
-            if (this.thisLeadersPublicKey != leaderProvider.CurrentLeader.ToString()) return;
+            if (this.publicKey != leaderProvider.CurrentLeader.ToString()) return;
 
             var transactions = await this.store.GetSignedTransactionsAsync().ConfigureAwait(false);
 

@@ -19,8 +19,10 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
             this.LeaderProvidersStream = this.leaderProvidersStream.AsObservable();
         }
 
+        /// <inheritdoc />
         public IObservable<ILeaderProvider> LeaderProvidersStream { get; }
 
+        /// <inheritdoc />
         public void ReceiveLeader(ILeaderProvider leaderProvider)
         {
             this.logger.LogDebug("Received new leaderProvider for{0}{1}", Environment.NewLine, this.leaderProvidersStream);
