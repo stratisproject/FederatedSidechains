@@ -140,5 +140,11 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
 
             this.partialTransaction = builder.CombineSignatures(allPartials);
         }
+
+        /// <inheritdoc />
+        public void SetPartialTransaction(Transaction partialTransaction)
+        {
+            this.partialTransaction = partialTransaction;
+        }
     }
 }

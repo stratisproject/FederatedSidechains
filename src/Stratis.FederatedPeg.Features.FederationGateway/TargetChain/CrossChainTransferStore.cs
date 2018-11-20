@@ -403,17 +403,17 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
                 {
                     dbreezeTransaction.SynchronizeTables(transferTableName, commonTableName);
 
-                    CrossChainTransfer transfer = this.Get(dbreezeTransaction, new[] { depositId }).FirstOrDefault();
+                    ICrossChainTransfer transfer = this.Get(dbreezeTransaction, new[] { depositId }).FirstOrDefault();
 
                     if (transfer != null && transfer.Status == CrossChainTransferStatus.Partial)
                     {
                         var builder = new TransactionBuilder(this.network);
 
-                        uint256 oldTransactionId = transfer.PartialTransaction.GetHash();
+                        Transaction oldTransaction = transfer.PartialTransaction;
 
                         transfer.CombineSignatures(builder, partialTransactions);
 
-                        this.UpdateSpendingDetailsInWallet(oldTransactionId, transfer.PartialTransaction, wallet);
+                        this.UpdateSpendingDetailsInWallet(oldTransaction.GetHash(), transfer.PartialTransaction, wallet);
 
                         if (SanityCheck(transfer.PartialTransaction, wallet, true))
                         {
@@ -432,6 +432,8 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
                         catch (Exception err)
                         {
                             // Restore expected store state in case the calling code retries / continues using the store.
+                            this.UpdateSpendingDetailsInWallet(transfer.PartialTransaction.GetHash(), oldTransaction, wallet);
+                            transfer.SetPartialTransaction(oldTransaction);
                             this.RollbackAndThrowTransactionError(dbreezeTransaction, err, "MERGE_ERROR");
                         }
                     }
@@ -1010,15 +1012,12 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
         private void UpdateSpendingDetailsInWallet(uint256 oldTransactionId, Transaction transaction, FederationWallet wallet)
         {
             // Find spends to the old transaction id and update with the new transaction details.
-            foreach (TxIn input in transaction.Inputs)
+            foreach (SpendingDetails spendingDetails in wallet.MultiSigAddress.Transactions
+                .Select(t => t.SpendingDetails)
+                .Where(s => s != null && s.TransactionId == oldTransactionId))
             {
-                foreach (SpendingDetails spendingDetails in wallet.MultiSigAddress.Transactions
-                    .Select(t => t.SpendingDetails)
-                    .Where(s => s != null && s.TransactionId == oldTransactionId))
-                {
-                    spendingDetails.TransactionId = transaction.GetHash();
-                    spendingDetails.Hex = transaction.ToHex(this.network);
-                }
+                spendingDetails.TransactionId = transaction.GetHash();
+                spendingDetails.Hex = transaction.ToHex(this.network);
             }
         }
 
