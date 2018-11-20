@@ -71,8 +71,6 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
 
         private bool IsTargetAddressCandidate(TxOut output)
         {
-            // TODO: Currently implemented for new multisig. Revert for old multisig.
-            // return output.ScriptPubKey.Hash.GetAddress(this.network) != this.multisigAddress && !output.ScriptPubKey.IsUnspendable;
             return output.ScriptPubKey != this.multisigAddress.ScriptPubKey && !output.ScriptPubKey.IsUnspendable;
         }
 
