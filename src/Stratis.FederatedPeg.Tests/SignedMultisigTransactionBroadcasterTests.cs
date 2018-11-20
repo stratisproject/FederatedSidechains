@@ -1,49 +1,160 @@
 ﻿using System;
-using System.Linq;
 using System.Reactive.Linq;
+using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
+using NBitcoin;
 using NSubstitute;
+using Stratis.Bitcoin.Configuration;
+using Stratis.Bitcoin.Features.Consensus.CoinViews;
+using Stratis.Bitcoin.Features.MemoryPool;
+using Stratis.Bitcoin.Features.MemoryPool.Fee;
+using Stratis.Bitcoin.Features.Wallet.Interfaces;
+using Stratis.Bitcoin.Utilities;
 using Stratis.FederatedPeg.Features.FederationGateway;
 using Stratis.FederatedPeg.Features.FederationGateway.Interfaces;
 using Stratis.FederatedPeg.Features.FederationGateway.TargetChain;
+using Stratis.Sidechains.Networks;
 using Xunit;
 
 namespace Stratis.FederatedPeg.Tests
 {
-    public class SignedMultisigTransactionBroadcasterTests : IDisposable
+    public class SignedMultisigTransactionBroadcasterTests
     {
-        private readonly ILeaderReceiver leaderReceiver;
-
+        private readonly ILogger logger;
         private readonly ILoggerFactory loggerFactory;
+        private readonly IDisposable leaderReceiverSubscription;
+        private readonly ICrossChainTransferStore store;
+        private readonly ILeaderReceiver leaderReceiver;
+        private readonly IFederationGatewaySettings federationGatewaySettings;
+        private readonly IBroadcasterManager broadcasterManager;
+        private ISignedMultisigTransactionBroadcaster signedMultisigTransactionBroadcaster;
+        private readonly ILeaderProvider leaderProvider;
 
-        private IDisposable streamSubscription;
+        private readonly MempoolManager mempoolManager;
+        private readonly IDateTimeProvider dateTimeProvider;
+        private readonly MempoolSettings mempoolSettings;
+        private readonly NodeSettings nodeSettings;
+        private readonly BlockPolicyEstimator blockPolicyEstimator;
+        private readonly TxMempool txMempool;
+        private readonly IMempoolValidator mempoolValidator;
+        private readonly IMempoolPersistence mempoolPersistence;
+        private readonly ICoinView coinView;
 
-        private IFederationGatewaySettings federationGatewaySettings;
+        private const string PublicKey = "026ebcbf6bfe7ce1d957adbef8ab2b66c788656f35896a170257d6838bda70b95c";
 
         public SignedMultisigTransactionBroadcasterTests()
         {
-            this.leaderReceiver = new LeaderReceiver(this.loggerFactory);
             this.loggerFactory = Substitute.For<ILoggerFactory>();
+            this.logger = Substitute.For<ILogger>();
+            this.leaderReceiver = Substitute.For<ILeaderReceiver>();
             this.federationGatewaySettings = Substitute.For<IFederationGatewaySettings>();
+            this.loggerFactory.CreateLogger(null).ReturnsForAnyArgs(this.logger);
+            this.leaderReceiverSubscription = Substitute.For<IDisposable>();
+            this.store = Substitute.For<ICrossChainTransferStore>();
+            this.broadcasterManager = Substitute.For<IBroadcasterManager>();
+            this.leaderProvider = Substitute.For<ILeaderProvider>();
+
+            // Setup MempoolManager.
+            this.dateTimeProvider = Substitute.For<IDateTimeProvider>();
+            this.nodeSettings = NodeSettings.Default(ApexNetwork.Test);
+
+            this.mempoolSettings = new MempoolSettings(this.nodeSettings)
+            {
+                MempoolExpiry = MempoolValidator.DefaultMempoolExpiry
+            };
+
+            this.blockPolicyEstimator = new BlockPolicyEstimator(
+                this.mempoolSettings, 
+                this.loggerFactory, 
+                this.nodeSettings);
+
+            this.txMempool = new TxMempool(
+                this.dateTimeProvider, 
+                this.blockPolicyEstimator, 
+                this.loggerFactory, 
+                this.nodeSettings);
+
+            this.mempoolValidator = Substitute.For<IMempoolValidator>();
+            this.mempoolPersistence = Substitute.For<IMempoolPersistence>();
+            this.coinView = Substitute.For<ICoinView>();
+
+            this.mempoolManager = new MempoolManager(
+                new MempoolSchedulerLock(), 
+                this.txMempool, 
+                this.mempoolValidator, 
+                this.dateTimeProvider,
+                this.mempoolSettings, 
+                this.mempoolPersistence, 
+                this.coinView, 
+                this.loggerFactory, 
+                this.nodeSettings.Network);
         }
 
         [Fact]
-        public void TODO()
+        public async Task When_Not_The_CurrentLeader_Dont_Call_GetSignedTransactionsAsync()
         {
-            // TODO : Similar test in EventsPersisterTests
+            this.federationGatewaySettings.PublicKey.Returns("dummykey");
+            this.leaderProvider.CurrentLeader.Returns(new PubKey(PublicKey));
 
-            var leaderProvider = new LeaderProvider(this.federationGatewaySettings);
+            IObservable<ILeaderProvider> leaderStream = new[] { this.leaderProvider }.ToObservable();
+            this.leaderReceiver.LeaderProvidersStream.Returns(leaderStream);
 
-            IObservable<ILeaderProvider> leaderProvidersStream = new[] { leaderProvider }.ToObservable();
+            this.signedMultisigTransactionBroadcaster = new SignedMultisigTransactionBroadcaster(
+                this.loggerFactory,
+                this.store,
+                this.leaderReceiver,
+                this.federationGatewaySettings,
+                this.mempoolManager,
+                this.broadcasterManager);
 
-            this.leaderReceiver.LeaderProvidersStream.Returns(leaderProvidersStream);
+            await this.signedMultisigTransactionBroadcaster.BroadcastTransactionsAsync(this.leaderProvider).ConfigureAwait(false);
+
+            this.store.DidNotReceive();
         }
 
-        /// <inheritdoc />
-        public void Dispose()
+        [Fact]
+        public async Task When_CurrentLeader_Calls_GetSignedTransactionsAsync()
         {
-            this.streamSubscription?.Dispose();
-            this.leaderReceiver?.Dispose();
+            this.federationGatewaySettings.PublicKey.Returns(PublicKey);
+            this.leaderProvider.CurrentLeader.Returns(new PubKey(PublicKey));
+
+            IObservable<ILeaderProvider> leaderStream = new[] { this.leaderProvider }.ToObservable();
+            this.leaderReceiver.LeaderProvidersStream.Returns(leaderStream);
+
+            this.signedMultisigTransactionBroadcaster = new SignedMultisigTransactionBroadcaster(
+                this.loggerFactory,
+                this.store,
+                this.leaderReceiver,
+                this.federationGatewaySettings,
+                this.mempoolManager,
+                this.broadcasterManager);
+
+            await this.signedMultisigTransactionBroadcaster.BroadcastTransactionsAsync(this.leaderProvider).ConfigureAwait(false);
+            await this.store.Received().GetSignedTransactionsAsync().ConfigureAwait(false);
         }
+
+        [Fact]
+        public async Task When_CurrentLeader_BroadcastsTransactionAsync()
+        {
+            this.federationGatewaySettings.PublicKey.Returns(PublicKey);
+            this.leaderProvider.CurrentLeader.Returns(new PubKey(PublicKey));        
+            this.store.GetSignedTransactionsAsync().Returns(new Transaction[] { new Transaction() });
+
+            IObservable<ILeaderProvider> leaderStream = new[] { this.leaderProvider }.ToObservable();
+            this.leaderReceiver.LeaderProvidersStream.Returns(leaderStream);
+
+            this.signedMultisigTransactionBroadcaster = new SignedMultisigTransactionBroadcaster(
+                this.loggerFactory,
+                this.store,
+                this.leaderReceiver,
+                this.federationGatewaySettings,
+                this.mempoolManager,
+                this.broadcasterManager);
+
+            await this.signedMultisigTransactionBroadcaster.BroadcastTransactionsAsync(this.leaderProvider).ConfigureAwait(false);
+            await this.store.Received().GetSignedTransactionsAsync().ConfigureAwait(false);
+            await this.broadcasterManager.Received().BroadcastTransactionAsync(Arg.Any<Transaction>());
+        }
+
     }
 }
