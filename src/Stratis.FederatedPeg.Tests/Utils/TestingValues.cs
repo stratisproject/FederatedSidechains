@@ -1,6 +1,12 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using NBitcoin;
+
+using Stratis.Bitcoin.Utilities;
+using Stratis.FederatedPeg.Features.FederationGateway.Models;
+using Stratis.FederatedPeg.Features.FederationGateway.SourceChain;
+using Stratis.FederatedPeg.Features.FederationGateway.TargetChain;
 
 namespace Stratis.FederatedPeg.Tests.Utils
 {
@@ -36,16 +42,50 @@ namespace Stratis.FederatedPeg.Tests.Utils
             return result;
         }
 
-        public static IMaturedBlockDeposits GetMaturedBlockDeposit(int depositCount)
+        public static HashHeightPair GetHashHeightPair(uint256 blockHash = null, int blockHeight = -1)
         {
-            var maturedBlockDeposits = MaturedBlockDepositModelTests.PrepareMaturedBlockDeposits(depositCount);
+            blockHash = blockHash ?? GetUint256();
+            if (blockHeight == -1) blockHeight = GetPositiveInt();
+            var hashHeightPair = new HashHeightPair(blockHash, blockHeight);
+            return hashHeightPair;
+        }
+
+        public static IDeposit GetDeposit(HashHeightPair hashHeightPair = null)
+        {
+            hashHeightPair = hashHeightPair ?? GetHashHeightPair();
+            var depositId = GetUint256();
+            var depositAmount = GetMoney();
+            var targetAddress = GetString();
+
+            return new Deposit(depositId, depositAmount, targetAddress, hashHeightPair.Height, hashHeightPair.Hash);
+        }
+
+        public static IMaturedBlockDeposits GetMaturedBlockDeposits(int depositCount = 0)
+        {
+            var hashHeightPair = GetHashHeightPair();
+            var deposits = Enumerable.Range(0, depositCount).Select(_ => GetDeposit(hashHeightPair));
+
+            var maturedBlockDeposits = new MaturedBlockDepositsModel(
+                new MaturedBlockModel() { BlockHash = hashHeightPair.Hash, BlockHeight = hashHeightPair.Height },
+                deposits.ToList());
             return maturedBlockDeposits;
         }
 
-        public static IWithdrawal GetWithdrawal()
+        public static IWithdrawal GetWithdrawal(HashHeightPair hashHeightPair = null)
         {
-            var withdrawal = WithdrawalTests.PrepareWithdrawal();
-            return withdrawal;
+            hashHeightPair = hashHeightPair ?? GetHashHeightPair();
+            var depositId = GetUint256();
+            var id = GetUint256();
+            var amount = GetMoney();
+            var targetAddress = GetString();
+
+            return new Withdrawal(depositId, id, amount, targetAddress, hashHeightPair.Height, hashHeightPair.Hash);
+        }
+
+
+        public static IReadOnlyList<IWithdrawal> GetWithdrawals(int count)
+        {
+            return Enumerable.Range(0, count).Select(_ => GetWithdrawal()).ToList().AsReadOnly();
         }
     }
 }

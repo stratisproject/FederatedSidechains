@@ -18,9 +18,7 @@ using Stratis.Bitcoin.P2P.Protocol.Payloads;
 using Stratis.Bitcoin.Signals;
 using Stratis.Bitcoin.Utilities;
 using Stratis.FederatedPeg.Features.FederationGateway.Controllers;
-using Stratis.FederatedPeg.Features.FederationGateway.CounterChain;
 using Stratis.FederatedPeg.Features.FederationGateway.Interfaces;
-using Stratis.FederatedPeg.Features.FederationGateway.MonitorChain;
 using Stratis.FederatedPeg.Features.FederationGateway.Notifications;
 using Stratis.FederatedPeg.Features.FederationGateway.SourceChain;
 using Stratis.FederatedPeg.Features.FederationGateway.TargetChain;
@@ -41,8 +39,6 @@ namespace Stratis.FederatedPeg.Features.FederationGateway
 
         public const string FederationGatewayFeatureNamespace = "federationgateway";
 
-        private readonly ICrossChainTransactionMonitor crossChainTransactionMonitor;
-
         private readonly IMaturedBlockReceiver maturedBlockReceiver;
 
         private readonly IMaturedBlockSender maturedBlockSender;
@@ -54,6 +50,8 @@ namespace Stratis.FederatedPeg.Features.FederationGateway
         private readonly IDepositExtractor depositExtractor;
 
         private readonly IWithdrawalExtractor withdrawalExtractor;
+
+        private readonly IWithdrawalReceiver withdrawalReceiver;
 
         private readonly ILeaderProvider leaderProvider;
 
@@ -77,21 +75,17 @@ namespace Stratis.FederatedPeg.Features.FederationGateway
 
         private readonly Network network;
 
-        private readonly IMonitorChainSessionManager monitorChainSessionManager;
-
-        private readonly ICounterChainSessionManager counterChainSessionManager;
-
         private readonly ICrossChainTransferStore crossChainTransferStore;
 
         public FederationGatewayFeature(
             ILoggerFactory loggerFactory,
-            ICrossChainTransactionMonitor crossChainTransactionMonitor,
             IMaturedBlockReceiver maturedBlockReceiver,
             IMaturedBlockSender maturedBlockSender,
             IBlockTipSender blockTipSender,
             Signals signals,
             IDepositExtractor depositExtractor,
             IWithdrawalExtractor withdrawalExtractor,
+            IWithdrawalReceiver withdrawalReceiver,
             ILeaderProvider leaderProvider,
             IConnectionManager connectionManager,
             IFederationGatewaySettings federationGatewaySettings,
@@ -100,19 +94,17 @@ namespace Stratis.FederatedPeg.Features.FederationGateway
             IFederationWalletSyncManager walletSyncManager,
             Network network,
             ConcurrentChain chain,
-            IMonitorChainSessionManager monitorChainSessionManager,
-            ICounterChainSessionManager counterChainSessionManager,
             INodeStats nodeStats,
             ICrossChainTransferStore crossChainTransferStore)
         {
             this.loggerFactory = loggerFactory;
-            this.crossChainTransactionMonitor = crossChainTransactionMonitor;
             this.maturedBlockReceiver = maturedBlockReceiver;
             this.maturedBlockSender = maturedBlockSender;
             this.blockTipSender = blockTipSender;
             this.signals = signals;
             this.depositExtractor = depositExtractor;
             this.withdrawalExtractor = withdrawalExtractor;
+            this.withdrawalReceiver = withdrawalReceiver;
             this.leaderProvider = leaderProvider;
             this.connectionManager = connectionManager;
             this.federationGatewaySettings = federationGatewaySettings;
@@ -122,9 +114,6 @@ namespace Stratis.FederatedPeg.Features.FederationGateway
             this.walletSyncManager = walletSyncManager;
             this.network = network;
             this.crossChainTransferStore = crossChainTransferStore;
-
-            this.counterChainSessionManager = counterChainSessionManager;
-            this.monitorChainSessionManager = monitorChainSessionManager;
 
             // add our payload
             var payloadProvider = (PayloadProvider)this.fullNode.Services.ServiceProvider.GetService(typeof(PayloadProvider));
@@ -140,16 +129,14 @@ namespace Stratis.FederatedPeg.Features.FederationGateway
             this.blockSubscriberDisposable = this.signals.SubscribeForBlocksConnected(
                 new BlockObserver(
                     this.walletSyncManager,
-                    this.crossChainTransactionMonitor,
                     this.depositExtractor,
                     this.withdrawalExtractor,
+                    this.withdrawalReceiver,
                     this.maturedBlockSender,
                     this.blockTipSender));
 
             this.transactionSubscriberDisposable = this.signals.SubscribeForTransactions(new TransactionObserver(this.walletSyncManager));
 
-            this.crossChainTransactionMonitor.Initialize(this.federationGatewaySettings);
-            this.monitorChainSessionManager.Initialize();
             this.crossChainTransferStore.Initialize();
 
             this.federationWalletManager.Start();
@@ -163,15 +150,13 @@ namespace Stratis.FederatedPeg.Features.FederationGateway
             }
 
             var networkPeerConnectionParameters = this.connectionManager.Parameters;
-            networkPeerConnectionParameters.TemplateBehaviors.Add(new PartialTransactionsBehavior(this.loggerFactory, this.crossChainTransactionMonitor, this.federationWalletManager, this.counterChainSessionManager, this.network, this.federationGatewaySettings));
+            networkPeerConnectionParameters.TemplateBehaviors.Add(new PartialTransactionsBehavior(this.loggerFactory, this.federationWalletManager, this.network, this.federationGatewaySettings));
         }
 
         public override void Dispose()
         {
             this.blockSubscriberDisposable.Dispose();
             this.transactionSubscriberDisposable.Dispose();
-            this.crossChainTransactionMonitor.Dispose();
-            this.monitorChainSessionManager.Dispose();
             this.crossChainTransferStore.Dispose();
         }
 
@@ -223,11 +208,9 @@ namespace Stratis.FederatedPeg.Features.FederationGateway
                         services.AddSingleton<IOpReturnDataReader, OpReturnDataReader>();
                         services.AddSingleton<IDepositExtractor, DepositExtractor>();
                         services.AddSingleton<IWithdrawalExtractor, WithdrawalExtractor>();
+                        services.AddSingleton<IWithdrawalReceiver, WithdrawalReceiver>();
+                        services.AddSingleton<IEventPersister, EventsPersister>();
                         services.AddSingleton<FederationGatewayController>();
-                        services.AddSingleton<ICrossChainTransactionMonitor, CrossChainTransactionMonitor>();
-                        services.AddSingleton<ICrossChainTransactionAuditor, JsonCrossChainTransactionAuditor>();
-                        services.AddSingleton<IMonitorChainSessionManager, MonitorChainSessionManager>();
-                        services.AddSingleton<ICounterChainSessionManager, CounterChainSessionManager>();
                         services.AddSingleton<IFederationWalletSyncManager, FederationWalletSyncManager>();
                         services.AddSingleton<IFederationWalletTransactionHandler, FederationWalletTransactionHandler>();
                         services.AddSingleton<IFederationWalletManager, FederationWalletManager>();

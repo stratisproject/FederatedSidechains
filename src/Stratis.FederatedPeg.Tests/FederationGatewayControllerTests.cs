@@ -5,7 +5,6 @@ using Microsoft.Extensions.Logging;
 using NBitcoin;
 using NSubstitute;
 using Stratis.FederatedPeg.Features.FederationGateway.Controllers;
-using Stratis.FederatedPeg.Features.FederationGateway.CounterChain;
 using Stratis.FederatedPeg.Features.FederationGateway.Interfaces;
 using Stratis.FederatedPeg.Features.FederationGateway.Models;
 using Stratis.FederatedPeg.Tests.Utils;
@@ -23,8 +22,6 @@ namespace Stratis.FederatedPeg.Tests
         private readonly ILoggerFactory loggerFactory;
 
         private readonly ILogger logger;
-
-        private readonly ICounterChainSessionManager counterChainSessionManager;
 
         private readonly IMaturedBlockReceiver maturedBlockReceiver;
 
@@ -45,7 +42,6 @@ namespace Stratis.FederatedPeg.Tests
             this.loggerFactory = Substitute.For<ILoggerFactory>();
             this.logger = Substitute.For<ILogger>();
             this.loggerFactory.CreateLogger(null).ReturnsForAnyArgs(this.logger);
-            this.counterChainSessionManager = Substitute.For<ICounterChainSessionManager>();
             this.maturedBlockReceiver = Substitute.For<IMaturedBlockReceiver>();
             this.leaderProvider = Substitute.For<ILeaderProvider>();
             this.maturedBlockSender = Substitute.For<IMaturedBlockSender>();
@@ -60,7 +56,6 @@ namespace Stratis.FederatedPeg.Tests
 
             var controller = new FederationGatewayController(
                 this.loggerFactory,
-                this.counterChainSessionManager,
                 this.maturedBlockReceiver,
                 this.leaderProvider,
                 this.chain,
@@ -101,7 +96,6 @@ namespace Stratis.FederatedPeg.Tests
 
             var controller = new FederationGatewayController(
                 this.loggerFactory,
-                this.counterChainSessionManager,
                 this.maturedBlockReceiver,
                 this.leaderProvider,
                 this.chain,
@@ -149,7 +143,6 @@ namespace Stratis.FederatedPeg.Tests
 
             var controller = new FederationGatewayController(
                 this.loggerFactory,
-                this.counterChainSessionManager,
                 this.maturedBlockReceiver,
                 this.leaderProvider,
                 this.chain,
@@ -195,7 +188,6 @@ namespace Stratis.FederatedPeg.Tests
         {
             var controller = new FederationGatewayController(
                 this.loggerFactory,
-                this.counterChainSessionManager,
                 this.maturedBlockReceiver,
                 this.leaderProvider,
                 this.chain,
