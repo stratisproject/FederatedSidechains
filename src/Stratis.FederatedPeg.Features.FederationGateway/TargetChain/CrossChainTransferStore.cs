@@ -14,6 +14,7 @@ using Stratis.Bitcoin.Configuration;
 using Stratis.Bitcoin.Features.BlockStore;
 using Stratis.Bitcoin.Utilities;
 using Stratis.FederatedPeg.Features.FederationGateway.Interfaces;
+using Stratis.FederatedPeg.Features.FederationGateway.Wallet;
 using Recipient = Stratis.FederatedPeg.Features.FederationGateway.Wallet;
 
 namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
@@ -220,9 +221,12 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
             foreach (CrossChainTransfer partialTransfer in crossChainTransfers)
             {
                 // Verify that the transaction input UTXO's have been reserved by the wallet.
-                if (!SanityCheck(partialTransfer.PartialTransaction, wallet, partialTransfer.Status == CrossChainTransferStatus.FullySigned))
+                if (partialTransfer.Status == CrossChainTransferStatus.Partial || partialTransfer.Status == CrossChainTransferStatus.FullySigned)
                 {
-                    tracker.SetTransferStatus(partialTransfer, CrossChainTransferStatus.Rejected);
+                    if (!SanityCheck(partialTransfer.PartialTransaction, wallet, partialTransfer.Status == CrossChainTransferStatus.FullySigned))
+                    {
+                        tracker.SetTransferStatus(partialTransfer, CrossChainTransferStatus.Rejected);
+                    }
                 }
             }
 
@@ -257,7 +261,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
         }
 
         public static Transaction BuildDeterministicTransaction(uint256 depositId, Recipient.Recipient recipient, Network network,
-            IFederationWalletTransactionHandler federationWalletTransactionHandler, string walletPassword = "", Transaction[] partials = null, ILogger logger = null)
+            IFederationWalletTransactionHandler federationWalletTransactionHandler, string walletPassword = "", ILogger logger = null)
         {
             try
             {
@@ -278,11 +282,6 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
 
                 // Build the transaction.
                 Transaction transaction = federationWalletTransactionHandler.BuildTransaction(multiSigContext);
-
-                if (partials?.Any() ?? false)
-                {
-                    multiSigContext.TransactionBuilder.CombineSignatures(partials);
-                }
 
                 logger?.LogTrace("(-)");
 
@@ -804,6 +803,27 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
             return res;
         }
 
+        /// <summary>
+        /// Identifies the earliest multisig transaction data input associated with a transaction.
+        /// </summary>
+        /// <param name="wallet">The wallet to look in.</param>
+        /// <param name="transaction">The transaction to find the earliest multisig transaction data input for.</param>
+        /// <returns>The earliest multisig transaction data input.</returns>
+        private TransactionData MultiSigInput(Recipient.FederationWallet wallet, Transaction transaction)
+        {
+            foreach (TxIn input in transaction.Inputs)
+            {
+                Wallet.TransactionData transactionData = wallet.MultiSigAddress.Transactions
+                    .Where(t => t?.SpendingDetails.TransactionId == transaction.GetHash() && t.Id == input.PrevOut.Hash && t.Index == input.PrevOut.N)
+                    .FirstOrDefault();
+
+                if (transactionData != null)
+                    return transactionData;
+            }
+
+            return null;
+        }
+
         /// <inheritdoc />
         public Task<Dictionary<uint256, Transaction>> GetTransactionsByStatusAsync(CrossChainTransferStatus status)
         {
@@ -811,13 +831,26 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
             {
                 this.logger.LogTrace("()");
 
+                if (status == CrossChainTransferStatus.Rejected)
+                    this.SanityCheck();
+
                 uint256[] partialTransferHashes = this.depositsIdsByStatus[status].ToArray();
 
                 ICrossChainTransfer[] partialTransfers = this.Get(partialTransferHashes).ToArray();
 
-                this.SanityCheck(partialTransfers);
+                if (status == CrossChainTransferStatus.Partial || status == CrossChainTransferStatus.FullySigned)
+                    this.SanityCheck(partialTransfers);
 
-                var res = partialTransfers.Where(t => t.Status == status).ToDictionary(t => t.DepositTransactionId, t => t.PartialTransaction);
+                partialTransfers = partialTransfers.Where(t => t.Status == status).ToArray();
+
+                Recipient.FederationWallet wallet = this.federationWalletManager.GetWallet();
+
+                var inputs = partialTransfers.ToDictionary(t => t.DepositTransactionId, t => this.MultiSigInput(wallet, t.PartialTransaction));
+
+                var res = partialTransfers
+                    .OrderBy(a => a, Comparer<ICrossChainTransfer>.Create((x, y) =>
+                        FederationWalletTransactionHandler.CompareTransactionData(inputs[x.DepositTransactionId], inputs[y.DepositTransactionId])))
+                    .ToDictionary(t => t.DepositTransactionId, t => t.PartialTransaction);
 
                 this.logger.LogTrace("(-)");
 
