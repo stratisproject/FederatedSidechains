@@ -59,7 +59,7 @@ namespace Stratis.FederatedPeg.Tests
         /// </summary>
         public CrossChainTransferStoreTests()
         {
-            this.network = ApexNetwork.RegTest;
+            this.network = ApexNetworks.Apex.Regtest();
             NetworkRegistration.Register(this.network);
 
             DBreezeSerializer serializer = new DBreezeSerializer();

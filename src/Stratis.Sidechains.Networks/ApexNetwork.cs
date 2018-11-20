@@ -11,17 +11,7 @@ namespace Stratis.Sidechains.Networks
         public const string MainNetworkName = ChainName + "Main";
         public const string TestNetworkName = ChainName + "Test";
         public const string RegTestNetworkName = ChainName + "RegTest";
-
-        private static Lazy<Network> main = new Lazy<Network>(() => new ApexMain(), LazyThreadSafetyMode.PublicationOnly);
-        private static Lazy<Network> test = new Lazy<Network>(() => new ApexTest(), LazyThreadSafetyMode.PublicationOnly);
-        private static Lazy<Network> regTest = new Lazy<Network>(() => new ApexRegTest(), LazyThreadSafetyMode.PublicationOnly);
-
-        public static Network Main => main.Value;
-
-        public static Network Test => test.Value;
-
-        public static Network RegTest => regTest.Value;
-
+        
         public static Block CreateGenesisBlock(ConsensusFactory consensusFactory, uint nTime, uint nNonce, uint nBits, int nVersion, Money genesisReward)
         {
             string pszTimestamp = "https://www.coindesk.com/apple-co-founder-backs-dorsey-bitcoin-become-webs-currency/";

@@ -128,7 +128,7 @@ namespace FedKeyPairGen
             Script payToMultiSig = PayToMultiSigTemplate.Instance.GenerateScriptPubKey(mComponent, pubKeys);
             Console.WriteLine("Redeem script: " + payToMultiSig.ToString());
 
-            BitcoinAddress sidechainMultisigAddress = payToMultiSig.Hash.GetAddress(ApexNetwork.Test);
+            BitcoinAddress sidechainMultisigAddress = payToMultiSig.Hash.GetAddress(ApexNetworks.Apex.Testnet());
             Console.WriteLine("Sidechan P2SH: " + sidechainMultisigAddress.ScriptPubKey);
             Console.WriteLine("Sidechain Multisig address: " + sidechainMultisigAddress);
 
