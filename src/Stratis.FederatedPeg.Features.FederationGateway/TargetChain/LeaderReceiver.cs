@@ -2,6 +2,7 @@
 using System.Reactive.Linq;
 using System.Reactive.Subjects;
 using Microsoft.Extensions.Logging;
+using Stratis.Bitcoin.Utilities;
 using Stratis.FederatedPeg.Features.FederationGateway.Interfaces;
 
 namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
@@ -14,6 +15,8 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
 
         public LeaderReceiver(ILoggerFactory loggerFactory)
         {
+            Guard.NotNull(loggerFactory, nameof(loggerFactory));
+
             this.logger = loggerFactory.CreateLogger(this.GetType().FullName);
             this.leaderProvidersStream = new ReplaySubject<ILeaderProvider>(1);
             this.LeaderProvidersStream = this.leaderProvidersStream.AsObservable();

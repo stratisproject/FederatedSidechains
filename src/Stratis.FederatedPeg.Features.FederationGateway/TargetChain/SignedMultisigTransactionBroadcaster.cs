@@ -5,6 +5,7 @@ using Microsoft.Extensions.Logging;
 using Stratis.FederatedPeg.Features.FederationGateway.Interfaces;
 using Stratis.Bitcoin.Features.MemoryPool;
 using Stratis.Bitcoin.Features.Wallet.Interfaces;
+using Stratis.Bitcoin.Utilities;
 
 namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
 {
@@ -24,6 +25,13 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
                                                     MempoolManager mempoolManager,
                                                     IBroadcasterManager broadcasterManager)
         {
+            Guard.NotNull(loggerFactory, nameof(loggerFactory));
+            Guard.NotNull(store, nameof(store));
+            Guard.NotNull(leaderReceiver, nameof(leaderReceiver));
+            Guard.NotNull(settings, nameof(settings));
+            Guard.NotNull(mempoolManager, nameof(mempoolManager));
+            Guard.NotNull(broadcasterManager, nameof(broadcasterManager));
+
             this.logger = loggerFactory.CreateLogger(this.GetType().FullName);
             this.store = store;
             this.publicKey = settings.PublicKey;
