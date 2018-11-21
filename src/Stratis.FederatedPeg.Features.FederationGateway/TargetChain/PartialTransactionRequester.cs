@@ -12,6 +12,7 @@ using Stratis.FederatedPeg.Features.FederationGateway.NetworkHelpers;
 
 namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
 {
+    /// <inheritdoc />
     public class PartialTransactionRequester : IPartialTransactionRequester
     {
         private readonly ILoggerFactory loggerFactory;
@@ -47,11 +48,8 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
             this.federationGatewaySettings = federationGatewaySettings;
         }
 
-        /// <summary>
-        /// Broadcast the partial transaction request to federation members.
-        /// </summary>
-        /// <param name="payload">The payload to broadcast.</param>
-        async Task BroadcastAsync(RequestPartialTransactionPayload payload)
+        /// <inheritdoc />
+        public async Task BroadcastAsync(RequestPartialTransactionPayload payload)
         {
             this.logger.LogTrace("({0}:'{1}',{2}:'{3}')", nameof(payload.Command), payload.Command, nameof(payload.DepositId), payload.DepositId);
 
@@ -76,6 +74,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
             this.logger.LogTrace("(-)");
         }
 
+        /// <inheritdoc />
         public void Start()
         {
             this.asyncLoop = this.asyncLoopFactory.Run("Get partial templates job", token =>
@@ -98,6 +97,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
             }, this.nodeLifetime.ApplicationStopping, repeatEvery: TimeSpans.TenSeconds, startAfter: TimeSpans.TenSeconds);
         }
 
+        /// <inheritdoc />
         public void Stop()
         {
             if (this.asyncLoop != null)
