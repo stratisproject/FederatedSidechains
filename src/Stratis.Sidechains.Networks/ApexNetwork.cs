@@ -12,7 +12,15 @@ namespace Stratis.Sidechains.Networks
         public const string MainNetworkName = ChainName + "Main";
         public const string TestNetworkName = ChainName + "Test";
         public const string RegTestNetworkName = ChainName + "RegTest";
-        
+
+        public static NetworksSelector NetworksSelector
+        {
+            get
+            {
+                return new NetworksSelector(() => new ApexMain(), () => new ApexTest(), () => new ApexRegTest());
+            }
+        }
+
         public static Block CreateGenesisBlock(ConsensusFactory consensusFactory, uint nTime, uint nNonce, uint nBits, int nVersion, Money genesisReward)
         {
             string pszTimestamp = "https://www.coindesk.com/apple-co-founder-backs-dorsey-bitcoin-become-webs-currency/";

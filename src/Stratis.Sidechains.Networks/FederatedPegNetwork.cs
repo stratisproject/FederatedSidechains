@@ -10,6 +10,17 @@ namespace Stratis.Sidechains.Networks
         public const string TestNetworkName = ChainName + "Test";
         public const string RegTestNetworkName = ChainName + "RegTest";
 
+        public const string CoinSymbol = "FPG";
+        public const string TestCoinSymbol = "T" + CoinSymbol;
+
+        public static NetworksSelector NetworksSelector
+        {
+            get
+            {
+                return new NetworksSelector(() => new FederatedPegMain(), () => new FederatedPegTest(), () => new FederatedPegRegTest());
+            }
+        }
+
         public static Block CreateGenesis(ConsensusFactory consensusFactory, uint genesisTime, uint nonce, uint bits, int version, Money reward)
         {
             string timeStamp = "https://news.bitcoin.com/markets-update-cryptocurrencies-shed-billions-in-bloody-sell-off/";

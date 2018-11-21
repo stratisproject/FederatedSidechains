@@ -10,7 +10,7 @@ namespace Stratis.Sidechains.Networks
     [Obsolete("Please use FederatedPegNetwork")]
     public class ApexTest : ApexMain
     {
-        public ApexTest()
+        internal ApexTest()
         {
             this.Name = ApexNetwork.TestNetworkName;
             this.RootFolderName = ApexNetwork.ChainName.ToLowerInvariant();

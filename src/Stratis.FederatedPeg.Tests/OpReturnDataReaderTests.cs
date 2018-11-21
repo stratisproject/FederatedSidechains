@@ -26,7 +26,7 @@ namespace Stratis.FederatedPeg.Tests
         public OpReturnDataReaderTests()
         {
             this.loggerFactory = Substitute.For<ILoggerFactory>();
-            this.network = FederatedPegNetworks.FederatedPeg.Regtest();
+            this.network = FederatedPegNetwork.NetworksSelector.Regtest();
             this.opReturnDataReader = new OpReturnDataReader(this.loggerFactory, this.network);
 
             this.transactionBuilder = new TestTransactionBuilder();

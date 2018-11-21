@@ -44,7 +44,7 @@ namespace Stratis.FederationGatewayD
                     throw new ArgumentException($"Gateway node needs to be started specifying either a {SidechainArgument} or a {MainchainArgument} argument");
                 }
 
-                var nodeSettings = new NodeSettings(networksSelector: isMainchainNode ? Networks.Stratis : FederatedPegNetworks.FederatedPeg, protocolVersion: ProtocolVersion.ALT_PROTOCOL_VERSION, args: args);
+                var nodeSettings = new NodeSettings(networksSelector: isMainchainNode ? Networks.Stratis : FederatedPegNetwork.NetworksSelector, protocolVersion: ProtocolVersion.ALT_PROTOCOL_VERSION, args: args);
                 Network network = nodeSettings.Network;
 
                 IFullNode node = isMainchainNode

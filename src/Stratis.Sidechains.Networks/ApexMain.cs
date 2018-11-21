@@ -12,7 +12,7 @@ namespace Stratis.Sidechains.Networks
     [Obsolete("Please use FederatedPegNetwork")]
     public class ApexMain : StratisMain
     {
-        public ApexMain()
+        internal ApexMain()
         {
             this.Name = ApexNetwork.MainNetworkName;
             this.RootFolderName = ApexNetwork.ChainName.ToLowerInvariant();

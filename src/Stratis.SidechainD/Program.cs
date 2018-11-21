@@ -39,7 +39,7 @@ namespace Stratis.SidechainD
                     args = args.Concat(new[] { "apiport=38225" }).ToArray();
                 }
 
-                NodeSettings nodeSettings = new NodeSettings(networksSelector: FederatedPegNetworks.FederatedPeg, protocolVersion: ProtocolVersion.ALT_PROTOCOL_VERSION, args: args);
+                NodeSettings nodeSettings = new NodeSettings(networksSelector: FederatedPegNetwork.NetworksSelector, protocolVersion: ProtocolVersion.ALT_PROTOCOL_VERSION, args: args);
 
                 Network network = nodeSettings.Network;
                 string[] seedNodes = { };

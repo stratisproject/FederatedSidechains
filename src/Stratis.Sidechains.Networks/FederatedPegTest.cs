@@ -12,14 +12,12 @@ namespace Stratis.Sidechains.Networks
     /// </summary>
     public class FederatedPegTest : PoANetwork
     {
-        public const string NetworkName = "FederatedPegTest";
-
         public Key[] FederationKeys { get; private set; }
 
-        public FederatedPegTest()
+        internal FederatedPegTest()
         {
-            this.Name = NetworkName;
-            this.CoinTicker = "TFPG";
+            this.Name = FederatedPegNetwork.TestNetworkName;
+            this.CoinTicker = FederatedPegNetwork.TestCoinSymbol;
 
             var consensusFactory = new PoAConsensusFactory();
 

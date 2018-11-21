@@ -35,7 +35,7 @@ namespace Stratis.FederatedPeg.Tests
 
         public FederationGatewayControllerTests()
         {
-            this.network = FederatedPegNetworks.FederatedPeg.Regtest();
+            this.network = FederatedPegNetwork.NetworksSelector.Regtest();
 
             this.loggerFactory = Substitute.For<ILoggerFactory>();
             this.logger = Substitute.For<ILogger>();

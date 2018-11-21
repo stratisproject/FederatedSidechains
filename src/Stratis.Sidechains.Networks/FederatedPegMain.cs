@@ -14,10 +14,10 @@ namespace Stratis.Sidechains.Networks
     {
         public Key[] FederationKeys { get; private set; }
 
-        public FederatedPegMain()
+        internal FederatedPegMain()
         {
-            this.Name = "FederatedPegMain";
-            this.CoinTicker = "FPG";
+            this.Name = FederatedPegNetwork.MainNetworkName;
+            this.CoinTicker = FederatedPegNetwork.CoinSymbol;
 
             var consensusFactory = new PoAConsensusFactory();
 
