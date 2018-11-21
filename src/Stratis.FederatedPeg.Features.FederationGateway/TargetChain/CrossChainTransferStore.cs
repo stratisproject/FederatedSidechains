@@ -306,6 +306,11 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
                     {
                         var tracker = new StatusChangeTracker();
 
+                        // Deposits are assumed to be in order of occurrence on the source chain.
+                        // If we fail to build a transacion the transfer will be set to suspended
+                        // and subsequent transfers marked as new only.
+                        bool haveSuspendedTransfers = false;
+
                         for (int i = 0; i < deposits.Length; i++)
                         {
                             IDeposit deposit = deposits[i];
@@ -317,27 +322,51 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
                                 ScriptPubKey = scriptPubKey
                             };
 
-                            if (transfers[i] == null)
+                            if (transfers[i] == null || transfers[i].Status == CrossChainTransferStatus.Suspended)
                             {
-                                Transaction transaction = BuildDeterministicTransaction(deposit.Id, recipient);
+                                Transaction transaction = null;
+                                CrossChainTransferStatus status = CrossChainTransferStatus.Suspended;
 
-                                if (transaction == null)
-                                    throw new Exception("Failed to build transaction");
+                                if (!haveSuspendedTransfers)
+                                {
+                                    transaction = BuildDeterministicTransaction(deposit.Id, recipient);
 
-                                transfers[i] = new CrossChainTransfer((transaction != null) ? CrossChainTransferStatus.Partial : CrossChainTransferStatus.Rejected,
-                                    deposit.Id, scriptPubKey, deposit.Amount, transaction, 0, -1 /* Unknown */);
+                                    status = (transaction == null) ? CrossChainTransferStatus.Suspended : CrossChainTransferStatus.Partial;
 
-                                tracker.SetTransferStatus(transfers[i]);
+                                    haveSuspendedTransfers = status == CrossChainTransferStatus.Suspended;
+                                }
+
+                                if (transfers[i] == null)
+                                {
+                                    transfers[i] = new CrossChainTransfer(status, deposit.Id, scriptPubKey, deposit.Amount, transaction, 0, -1 /* Unknown */);
+
+                                    tracker.SetTransferStatus(transfers[i]);
+                                }
+                                else if (transaction != null)
+                                {
+                                    tracker.SetTransferStatus(transfers[i], CrossChainTransferStatus.Partial);
+                                }
+                                else
+                                {
+                                    // If we can't fix suspended transfers then exit this loop now.
+                                    break;
+                                }
 
                                 this.PutTransfer(dbreezeTransaction, transfers[i]);
 
                                 // Reserve the UTXOs before building the next transaction.
                                 this.federationWalletManager.ProcessTransaction(transaction, isPropagated: false);
                             }
+
+                            haveSuspendedTransfers |= transfers[i].Status == CrossChainTransferStatus.Suspended;
                         }
 
-                        // Commit additions
-                        this.SaveNextMatureHeight(dbreezeTransaction, this.NextMatureDepositHeight + 1);
+                        // Ensure we get called for a retry by NOT advancing the chain A tip if the block
+                        // contained any suspended transfers.
+                        if (!haveSuspendedTransfers)
+                        {
+                            this.SaveNextMatureHeight(dbreezeTransaction, this.NextMatureDepositHeight + 1);
+                        }
 
                         dbreezeTransaction.Commit();
 
