@@ -61,19 +61,7 @@ namespace Stratis.FederationGatewayD
                         .UseApi()
                         .AddRPC()
                         .Build()
-                    : new FullNodeBuilder()
-                        .UseNodeSettings(nodeSettings)
-                        .UseBlockStore()
-                        .UsePowConsensus()
-                        .UseMempool()
-                        .UseWallet()
-                        .UseTransactionNotification()
-                        .UseBlockNotification()
-                        .AddMining()
-                        .AddFederationGateway()
-                        .UseApi()
-                        .AddRPC()
-                        .Build();
+                    : GetFederatedPegFullNode(nodeSettings);
 
                 if (node != null)
                     await node.RunAsync();

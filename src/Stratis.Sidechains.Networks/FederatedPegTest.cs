@@ -85,7 +85,7 @@ namespace Stratis.Sidechains.Networks
                 defaultAssumeValid: null,
                 maxMoney: Money.Coins(20_000_000),
                 coinbaseMaturity: 1,
-                premineHeight: 5,
+                premineHeight: 2,
                 premineReward: Money.Coins(20_000_000),
                 proofOfWorkReward: Money.Coins(0),
                 powTargetTimespan: TimeSpan.FromDays(14), // two weeks
