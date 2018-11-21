@@ -7,6 +7,7 @@ using Stratis.Bitcoin.Networks.Deployments;
 
 namespace Stratis.Sidechains.Networks
 {
+    [Obsolete("Please use FederatedPegNetwork")]
     public class ApexRegTest : ApexMain
     {
         public ApexRegTest()

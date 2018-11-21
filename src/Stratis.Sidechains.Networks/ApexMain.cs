@@ -9,6 +9,7 @@ using Stratis.Bitcoin.Networks.Deployments;
 
 namespace Stratis.Sidechains.Networks
 {
+    [Obsolete("Please use FederatedPegNetwork")]
     public class ApexMain : StratisMain
     {
         public ApexMain()

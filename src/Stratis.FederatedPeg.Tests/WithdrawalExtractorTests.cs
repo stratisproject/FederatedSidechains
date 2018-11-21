@@ -35,7 +35,7 @@ namespace Stratis.FederatedPeg.Tests
 
         public WithdrawalExtractorTests()
         {
-            this.network = new ApexRegTest();
+            this.network = FederatedPegNetworks.FederatedPeg.Regtest();
 
             this.loggerFactory = Substitute.For<ILoggerFactory>();
             this.settings = Substitute.For<IFederationGatewaySettings>();

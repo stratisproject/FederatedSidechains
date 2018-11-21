@@ -1,7 +1,10 @@
-﻿using NBitcoin;
+﻿using System;
+
+using NBitcoin;
 
 namespace Stratis.Sidechains.Networks
 {
+    [Obsolete("Please use FederatedPegNetwork")]
     public static class ApexNetworks
     {
         public static NetworksSelector Apex

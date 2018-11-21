@@ -5,6 +5,7 @@ using NBitcoin.DataEncoders;
 
 namespace Stratis.Sidechains.Networks
 {
+    [Obsolete("Please use FederatedPegNetwork")]
     public class ApexNetwork
     {
         public const string ChainName = "Apex";

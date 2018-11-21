@@ -3,20 +3,16 @@ using NBitcoin.DataEncoders;
 
 namespace Stratis.Sidechains.Networks
 {
-    public static class FederatedPegPoANetwork
+    public static class FederatedPegNetwork
     {
-        /// <summary> The name of the root folder containing the different Stratis blockchains (StratisMain, StratisTest, StratisRegTest). </summary>
-        public const string StratisRootFolderName = "stratis";
-
-        /// <summary> The default name used for the Stratis configuration file. </summary>
-        public const string StratisDefaultConfigFilename = "stratis.conf";
-
-        /// <summary> Bitcoin default value for the maximum tip age in seconds to consider the node in initial block download (24 hours). </summary>
-        public const int BitcoinDefaultMaxTipAgeInSeconds = 24 * 60 * 60;
+        public const string ChainName = "FederatedPeg";
+        public const string MainNetworkName = ChainName + "Main";
+        public const string TestNetworkName = ChainName + "Test";
+        public const string RegTestNetworkName = ChainName + "RegTest";
 
         public static Block CreateGenesis(ConsensusFactory consensusFactory, uint genesisTime, uint nonce, uint bits, int version, Money reward)
         {
-            string timeStamp = "The Times 03/Jan/2009 Chancellor on brink of second bailout for banks";
+            string timeStamp = "https://news.bitcoin.com/markets-update-cryptocurrencies-shed-billions-in-bloody-sell-off/";
             var genesisOutputScript = new Script(Op.GetPushOp(Encoders.Hex.DecodeData("04678afdb0fe5548271967f1a67130b7105cd6a828e03909a67962e0ea1f61deb649f6bc3f4cef38c4f35504e51ec112de5c384df7ba0b8d578a4c702b6bf11d5f")), OpcodeType.OP_CHECKSIG);
 
             NBitcoin.Transaction genesisTransaction = consensusFactory.CreateTransaction();
