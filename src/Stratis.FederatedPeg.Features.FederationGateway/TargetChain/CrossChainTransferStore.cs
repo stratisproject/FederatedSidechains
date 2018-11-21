@@ -189,12 +189,15 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
             var tracker = new StatusChangeTracker();
             foreach (CrossChainTransfer partialTransfer in crossChainTransfers)
             {
-                // Verify that the transaction input UTXO's have been reserved by the wallet.
-                if (partialTransfer.Status == CrossChainTransferStatus.Partial || partialTransfer.Status == CrossChainTransferStatus.FullySigned)
+                if (partialTransfer != null)
                 {
-                    if (!ValidateTransaction(partialTransfer.PartialTransaction, wallet, partialTransfer.Status == CrossChainTransferStatus.FullySigned))
+                    // Verify that the transaction input UTXO's have been reserved by the wallet.
+                    if (partialTransfer.Status == CrossChainTransferStatus.Partial || partialTransfer.Status == CrossChainTransferStatus.FullySigned)
                     {
-                        tracker.SetTransferStatus(partialTransfer, CrossChainTransferStatus.Rejected);
+                        if (!ValidateTransaction(partialTransfer.PartialTransaction, wallet, partialTransfer.Status == CrossChainTransferStatus.FullySigned))
+                        {
+                            tracker.SetTransferStatus(partialTransfer, CrossChainTransferStatus.Rejected);
+                        }
                     }
                 }
             }
@@ -216,6 +219,17 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
                     dbreezeTransaction.Commit();
 
                     this.UpdateLookups(tracker);
+
+                    // Remove any remnants of the transaction from the wallet.
+                    foreach (KeyValuePair<ICrossChainTransfer, CrossChainTransferStatus?> kv in tracker)
+                    {
+                        if (kv.Value == CrossChainTransferStatus.Rejected)
+                        {
+                            this.federationWalletManager.RemoveTransaction(kv.Key.PartialTransaction);
+                        }
+                    }
+
+                    this.federationWalletManager.SaveWallet();
 
                     return crossChainTransfers;
                 }
@@ -290,18 +304,20 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
 
             return Task.Run(() =>
             {
-                FederationWallet wallet = this.federationWalletManager.GetWallet();
-
                 this.logger.LogTrace("()");
 
-                ICrossChainTransfer[] transfers = this.Get(deposits.Select(d => d.Id).ToArray());
+                this.Synchronize();
+
+                FederationWallet wallet = this.federationWalletManager.GetWallet();
+
+                ICrossChainTransfer[] transfers = this.ValidateCrossChainTransfers(this.Get(deposits.Select(d => d.Id).ToArray()));
 
                 var tracker = new StatusChangeTracker();
                 bool walletUpdated = false;
 
                 // Deposits are assumed to be in order of occurrence on the source chain.
-                // If we fail to build a transacion the transfer will be set to suspended
-                // and subsequent transfers marked as new only.
+                // If we fail to build a transacion the transfer and subsequent transfers
+                // in the orderd list will be set to suspended.
                 bool haveSuspendedTransfers = false;
 
                 for (int i = 0; i < deposits.Length; i++)
