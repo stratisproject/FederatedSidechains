@@ -88,6 +88,9 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
             stream.ReadWrite(ref this.depositAmount);
             stream.ReadWrite(ref this.partialTransaction);
 
+            if (!stream.Serializing && this.partialTransaction.Inputs.Count == 0 && this.partialTransaction.Outputs.Count == 0)
+                this.partialTransaction = null;
+
             if (this.status == CrossChainTransferStatus.SeenInBlock)
             {
                 stream.ReadWrite(ref this.blockHash);

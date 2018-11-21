@@ -370,8 +370,6 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
                             break;
                         }
                     }
-
-                    haveSuspendedTransfers |= transfers[i].Status == CrossChainTransferStatus.Suspended;
                 }
 
                 if (tracker.Count != 0)
