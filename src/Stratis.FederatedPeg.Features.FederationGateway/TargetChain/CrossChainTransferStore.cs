@@ -357,7 +357,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
         }
 
         /// <inheritdoc />
-        public Task MergeTransactionSignaturesAsync(uint256 depositId, Transaction[] partialTransactions)
+        public Task<Transaction> MergeTransactionSignaturesAsync(uint256 depositId, Transaction[] partialTransactions)
         {
             Guard.NotNull(depositId, nameof(depositId));
             Guard.NotNull(partialTransactions, nameof(partialTransactions));
@@ -406,9 +406,10 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
                             this.RollbackAndThrowTransactionError(dbreezeTransaction, err, "MERGE_ERROR");
                         }
                     }
-                }
 
-                this.logger.LogTrace("(-)");
+                    this.logger.LogTrace("(-)");
+                    return transfer?.PartialTransaction;
+                }
             });
         }
 
@@ -417,7 +418,6 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
         /// Sets the <see cref="CrossChainTransferStatus.SeenInBlock"/> status for transfers
         /// identified in the blocks.
         /// </summary>
-        /// <param name="newTip">The new <see cref="ChainTip"/>.</param>
         /// <param name="blocks">The blocks used to update the store. Must be sorted by ascending height leading up to the new tip.</param>
         private void Put(List<Block> blocks)
         {
