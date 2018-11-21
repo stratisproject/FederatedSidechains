@@ -19,7 +19,7 @@ using Xunit;
 
 namespace Stratis.FederatedPeg.Tests
 {
-    public class SignedMultisigTransactionBroadcasterTests
+    public class SignedMultisigTransactionBroadcasterTests : IDisposable
     {
         private readonly ILogger logger;
         private readonly ILoggerFactory loggerFactory;
@@ -65,14 +65,14 @@ namespace Stratis.FederatedPeg.Tests
             };
 
             this.blockPolicyEstimator = new BlockPolicyEstimator(
-                this.mempoolSettings, 
-                this.loggerFactory, 
+                this.mempoolSettings,
+                this.loggerFactory,
                 this.nodeSettings);
 
             this.txMempool = new TxMempool(
-                this.dateTimeProvider, 
-                this.blockPolicyEstimator, 
-                this.loggerFactory, 
+                this.dateTimeProvider,
+                this.blockPolicyEstimator,
+                this.loggerFactory,
                 this.nodeSettings);
 
             this.mempoolValidator = Substitute.For<IMempoolValidator>();
@@ -80,14 +80,14 @@ namespace Stratis.FederatedPeg.Tests
             this.coinView = Substitute.For<ICoinView>();
 
             this.mempoolManager = new MempoolManager(
-                new MempoolSchedulerLock(), 
-                this.txMempool, 
-                this.mempoolValidator, 
+                new MempoolSchedulerLock(),
+                this.txMempool,
+                this.mempoolValidator,
                 this.dateTimeProvider,
-                this.mempoolSettings, 
-                this.mempoolPersistence, 
-                this.coinView, 
-                this.loggerFactory, 
+                this.mempoolSettings,
+                this.mempoolPersistence,
+                this.coinView,
+                this.loggerFactory,
                 this.nodeSettings.Network);
         }
 
@@ -122,6 +122,10 @@ namespace Stratis.FederatedPeg.Tests
             IObservable<ILeaderProvider> leaderStream = new[] { this.leaderProvider }.ToObservable();
             this.leaderReceiver.LeaderProvidersStream.Returns(leaderStream);
 
+            var emptyTransactionPair = new Dictionary<uint256, Transaction>();
+
+            this.store.GetTransactionsByStatusAsync(CrossChainTransferStatus.FullySigned).Returns(emptyTransactionPair);
+
             this.signedMultisigTransactionBroadcaster = new SignedMultisigTransactionBroadcaster(
                 this.loggerFactory,
                 this.store,
@@ -131,7 +135,14 @@ namespace Stratis.FederatedPeg.Tests
                 this.broadcasterManager);
 
             await this.signedMultisigTransactionBroadcaster.BroadcastTransactionsAsync(this.leaderProvider).ConfigureAwait(false);
+
             await this.store.Received().GetTransactionsByStatusAsync(CrossChainTransferStatus.FullySigned).ConfigureAwait(false);
+
+            this.logger.Received().Log(LogLevel.Trace,
+                Arg.Any<EventId>(),
+                Arg.Is<object>(o => o.ToString() == "Signed multisig transactions do not exist in the CrossChainTransfer store."),
+                null,
+                Arg.Any<Func<object, Exception, string>>());
         }
 
         [Fact]
@@ -163,5 +174,10 @@ namespace Stratis.FederatedPeg.Tests
             await this.broadcasterManager.Received().BroadcastTransactionAsync(Arg.Any<Transaction>());
         }
 
+        public void Dispose()
+        {
+            this.leaderReceiverSubscription?.Dispose();
+            this.leaderReceiver?.Dispose();
+        }
     }
 }

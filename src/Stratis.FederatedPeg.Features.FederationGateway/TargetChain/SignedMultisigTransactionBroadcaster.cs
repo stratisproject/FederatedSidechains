@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Threading.Tasks;
+using System.Linq;
 using Microsoft.Extensions.Logging;
 using Stratis.FederatedPeg.Features.FederationGateway.Interfaces;
 using Stratis.Bitcoin.Features.MemoryPool;
@@ -40,7 +41,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
 
             var transactions = await this.store.GetTransactionsByStatusAsync(CrossChainTransferStatus.FullySigned).ConfigureAwait(false);
 
-            if (transactions == null)
+            if (!transactions.Any())
             {
                 this.logger.LogTrace("Signed multisig transactions do not exist in the CrossChainTransfer store.");
                 return;

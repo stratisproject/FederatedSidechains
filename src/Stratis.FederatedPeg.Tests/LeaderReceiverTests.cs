@@ -2,7 +2,6 @@ using System;
 using FluentAssertions;
 using Microsoft.Extensions.Logging;
 using NSubstitute;
-using Stratis.FederatedPeg.Features.FederationGateway;
 using Stratis.FederatedPeg.Features.FederationGateway.Interfaces;
 using Stratis.FederatedPeg.Features.FederationGateway.TargetChain;
 using Xunit;
@@ -15,14 +14,16 @@ namespace Stratis.FederatedPeg.Tests
         private IDisposable streamSubscription;
         private readonly ILoggerFactory loggerFactory;
         private readonly ILogger logger;
-        private readonly IFederationGatewaySettings federationGatewaySettings;
+        private readonly ILeaderProvider leaderProvider;
+
+        private const string PublicKey = "026ebcbf6bfe7ce1d957adbef8ab2b66c788656f35896a170257d6838bda70b95c";
 
         public LeaderReceiverTests()
         {
             this.loggerFactory = Substitute.For<ILoggerFactory>();
             this.logger = Substitute.For<ILogger>();
             this.loggerFactory.CreateLogger(null).ReturnsForAnyArgs(this.logger);
-            this.federationGatewaySettings = Substitute.For<IFederationGatewaySettings>();
+            this.leaderProvider = Substitute.For<ILeaderProvider>();
         }
 
         [Fact]
@@ -32,20 +33,21 @@ namespace Stratis.FederatedPeg.Tests
 
             const int LeaderCount = 3;
             var receivedLeaderCount = 0;
-            
+
             this.streamSubscription = this.leaderReceiver.LeaderProvidersStream.Subscribe(
                 _ => { receivedLeaderCount++; });
 
+            this.leaderProvider.CurrentLeader.Returns(new NBitcoin.PubKey(PublicKey));
+
             for (var i = 0; i < LeaderCount; i++)
-                this.leaderReceiver.ReceiveLeader(new LeaderProvider(this.federationGatewaySettings));
+                this.leaderReceiver.ReceiveLeader(this.leaderProvider);
 
             receivedLeaderCount.Should().Be(LeaderCount);
 
-            var logMsg = string.Format("Received new leaderProvider for" + Environment.NewLine +
-                "System.Reactive.Subjects.ReplaySubject`1[Stratis.FederatedPeg.Features.FederationGateway.Interfaces.ILeaderProvider]");
+            var logMsg = string.Format("Received federated leader: {0}", PublicKey);
 
-            this.logger.Received(receivedLeaderCount).Log(LogLevel.Debug, 
-                Arg.Any<EventId>(), 
+            this.logger.Received(receivedLeaderCount).Log(LogLevel.Debug,
+                Arg.Any<EventId>(),
                 Arg.Is<object>(o => o.ToString() == logMsg),
                 null,
                 Arg.Any<Func<object, Exception, string>>());
