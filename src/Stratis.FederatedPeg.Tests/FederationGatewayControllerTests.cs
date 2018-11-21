@@ -90,7 +90,7 @@ namespace Stratis.FederatedPeg.Tests
         [Fact]
         public void ResyncMaturedBlockDeposits_Fails_When_Block_Height_Greater_Than_Minimum_Deposit_Confirmations()
         {
-            // Chain header height : 4 
+            // Chain header height : 4
             // 0 - 1 - 2 - 3 - 4
             this.chain = this.BuildChain(5);
 
@@ -119,7 +119,7 @@ namespace Stratis.FederatedPeg.Tests
             // Mature height = 2 (Chain header height (4) - Minimum deposit confirmations (2))
             IActionResult result = controller.ResyncMaturedBlockDeposits(model);
 
-            // Block height (3) > Mature height (2) - returns error message          
+            // Block height (3) > Mature height (2) - returns error message
             result.Should().BeOfType<ErrorResult>();
 
             var error = result as ErrorResult;

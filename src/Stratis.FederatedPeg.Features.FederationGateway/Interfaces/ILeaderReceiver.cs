@@ -3,7 +3,7 @@
 namespace Stratis.FederatedPeg.Features.FederationGateway.Interfaces
 {
     /// <summary>
-    /// This component is responsible for streaming a change in the federated leader that 
+    /// This component is responsible for streaming a change in the federated leader that
     /// other components can subscribe to.  Like <see cref="ISignedMultisigTransactionBroadcaster"/>.
     /// </summary>
     public interface ILeaderReceiver : IDisposable

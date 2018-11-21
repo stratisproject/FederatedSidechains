@@ -119,7 +119,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.Controllers
             }
 
             try
-            {             
+            {
                 ChainedHeader chainedHeader = this.chain.GetBlock(blockHashHeight.BlockHash);
 
                 if (chainedHeader == null)
@@ -132,7 +132,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.Controllers
 
                 if (currentHeight > matureHeight)
                 {
-                    return ErrorHelpers.BuildErrorResponse(HttpStatusCode.BadRequest, 
+                    return ErrorHelpers.BuildErrorResponse(HttpStatusCode.BadRequest,
                         $"Block height {blockHashHeight.BlockHeight} submitted is not mature enough. Blocks less than a height of {matureHeight} can be processed.", string.Empty);
                 }
 
