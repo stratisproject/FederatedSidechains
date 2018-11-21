@@ -454,11 +454,13 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.Wallet
         }
 
         /// <inheritdoc />
-        public void RemoveTransaction(Transaction transaction)
+        public bool RemoveTransaction(Transaction transaction)
         {
             Guard.NotNull(transaction, nameof(transaction));
             uint256 hash = transaction.GetHash();
             this.logger.LogTrace("({0}:'{1}')", nameof(transaction), hash);
+
+            bool updatedWallet = false;
 
             // Check the inputs - include those that have a reference to a transaction containing one of our scripts and the same index.
             foreach (TxIn input in transaction.Inputs)
@@ -468,21 +470,37 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.Wallet
                     continue;
                 }
 
-                // Get the transaction being spent.
+                // Get the transaction being spent and unspend it.
                 TransactionData spentTransaction = this.Wallet.MultiSigAddress.Transactions.SingleOrDefault(t => (t.Id == tTx.Id) && (t.Index == tTx.Index));
                 if (spentTransaction != null)
                 {
                     spentTransaction.SpendingDetails = null;
                     spentTransaction.MerkleProof = null;
+                    updatedWallet = true;
                 }
             }
 
-            // Remove transaction from wallet.
-            TransactionData foundTransaction = this.Wallet.MultiSigAddress.Transactions.FirstOrDefault(t => (t.Id == transactionHash) && (t.Index == index));
-            this.RemoveInputKeysLookupLock(foundTransaction);
-            this.Wallet.MultiSigAddress.Transactions.Remove(foundTransaction);
+            foreach (TxOut utxo in transaction.Outputs)
+            {
+                // Check if the outputs contain one of our addresses.
+                if (this.Wallet.MultiSigAddress.ScriptPubKey == utxo.ScriptPubKey)
+                {
+                    int index = transaction.Outputs.IndexOf(utxo);
+
+                    // Remove any UTXO's that were provided by this transaction from wallet.
+                    TransactionData foundTransaction = this.Wallet.MultiSigAddress.Transactions.FirstOrDefault(t => (t.Id == hash) && (t.Index == index));
+                    if (foundTransaction != null)
+                    {
+                        this.RemoveInputKeysLookupLock(foundTransaction);
+                        this.Wallet.MultiSigAddress.Transactions.Remove(foundTransaction);
+                        updatedWallet = true;
+                    }
+                }
+            }
 
             this.logger.LogTrace("(-)");
+
+            return updatedWallet;
         }
 
         /// <summary>

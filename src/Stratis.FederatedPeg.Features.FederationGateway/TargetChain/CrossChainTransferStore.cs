@@ -297,6 +297,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
                 ICrossChainTransfer[] transfers = this.Get(deposits.Select(d => d.Id).ToArray());
 
                 var tracker = new StatusChangeTracker();
+                bool walletUpdated = false;
 
                 // Deposits are assumed to be in order of occurrence on the source chain.
                 // If we fail to build a transacion the transfer will be set to suspended
@@ -327,7 +328,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
                             if (transaction != null)
                             {
                                 // Reserve the UTXOs before building the next transaction.
-                                this.federationWalletManager.ProcessTransaction(transaction, isPropagated: false);
+                                walletUpdated |= this.federationWalletManager.ProcessTransaction(transaction, isPropagated: false);
 
                                 status = CrossChainTransferStatus.Partial;
                             }
@@ -387,12 +388,17 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
                         catch (Exception err)
                         {
                             // Undo reserved UTXO's.
-                            foreach (KeyValuePair<ICrossChainTransfer, CrossChainTransferStatus?> kv in tracker)
+                            if (walletUpdated)
                             {
-                                if (kv.Value == CrossChainTransferStatus.Partial)
+                                foreach (KeyValuePair<ICrossChainTransfer, CrossChainTransferStatus?> kv in tracker)
                                 {
-                                    this.federationWalletManager.RemoveTransaction(kv.Key.PartialTransaction);
+                                    if (kv.Value == CrossChainTransferStatus.Partial)
+                                    {
+                                        this.federationWalletManager.RemoveTransaction(kv.Key.PartialTransaction);
+                                    }
                                 }
+
+                                this.federationWalletManager.SaveWallet();
                             }
 
                             // Restore expected store state in case the calling code retries / continues using the store.

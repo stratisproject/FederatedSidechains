@@ -65,7 +65,8 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.Interfaces
         /// Removes a transaction not yet broadcasted or included in a block.
         /// </summary>
         /// <param name="transaction">The transaction to remove.</param>
-        void RemoveTransaction(Transaction transaction);
+        /// <returns>A value indicating whether this transaction affects the wallet.</returns>
+        bool RemoveTransaction(Transaction transaction);
 
         /// <summary>
         /// Saves the wallet into the file system.
