@@ -42,7 +42,7 @@ namespace Stratis.FederatedPeg.Tests
         private IWalletFeePolicy walletFeePolicy;
         private IAsyncLoopFactory asyncLoopFactory;
         private Dictionary<uint256, Block> blockDict;
-        private Transaction[] fundingTransactions;
+        private List<Transaction> fundingTransactions;
         private FederationWallet wallet;
         private ExtKey[] federationKeys;
         private ExtKey extendedKey;
@@ -96,6 +96,8 @@ namespace Stratis.FederatedPeg.Tests
 
             SetExtendedKey(0);
 
+            this.fundingTransactions = new List<Transaction>();
+
             this.blockDict = new Dictionary<uint256, Block>();
             this.blockDict[this.network.GenesisHash] = this.network.GetGenesis();
 
@@ -126,22 +128,27 @@ namespace Stratis.FederatedPeg.Tests
             this.withdrawalExtractor = new WithdrawalExtractor(this.loggerFactory, this.federationGatewaySettings, this.opReturnDataReader, this.network);
         }
 
+        private Transaction AddFundingTransaction(Money[] amounts)
+        {
+            Transaction transaction = this.network.CreateTransaction();
+
+            foreach (Money amount in amounts)
+            {
+                transaction.Outputs.Add(new TxOut(amount, this.wallet.MultiSigAddress.ScriptPubKey));
+            }
+
+            transaction.AddInput(new TxIn(new OutPoint(0, 0), new Script(OpcodeType.OP_1)));
+
+            this.AppendBlock(transaction);
+            this.fundingTransactions.Add(transaction);
+
+            return transaction;
+        }
+
         private void AddFunding()
         {
-            Transaction tran1 = this.network.CreateTransaction();
-            Transaction tran2 = this.network.CreateTransaction();
-
-            tran1.Outputs.Add(new TxOut(Money.COIN * 90, this.wallet.MultiSigAddress.ScriptPubKey));
-            tran1.Outputs.Add(new TxOut(Money.COIN * 80, this.wallet.MultiSigAddress.ScriptPubKey));
-            tran2.Outputs.Add(new TxOut(Money.COIN * 70, this.wallet.MultiSigAddress.ScriptPubKey));
-
-            tran1.AddInput(new TxIn(new OutPoint(0, 0), new Script(OpcodeType.OP_1)));
-            tran2.AddInput(new TxIn(new OutPoint(0, 0), new Script(OpcodeType.OP_1)));
-
-            this.fundingTransactions = new[] { tran1, tran2 };
-
-            this.AppendBlock(tran1);
-            this.AppendBlock(tran2);
+            AddFundingTransaction(new Money[] { Money.COIN * 90, Money.COIN * 80 });
+            AddFundingTransaction(new Money[] { Money.COIN * 70 });
         }
 
         /// <summary>
@@ -406,6 +413,41 @@ namespace Stratis.FederatedPeg.Tests
                 Assert.Equal(deposit1.Amount, new Money(transfers[0].DepositAmount));
                 Assert.Equal(address1.ScriptPubKey, transfers[0].DepositTargetAddress);
                 Assert.Equal(CrossChainTransferStatus.Suspended, transfers[1].Status);
+
+                // Add more funds and resubmit the deposits.
+                AddFundingTransaction(new Money[] { Money.COIN * 1000 });
+                crossChainTransferStore.RecordLatestMatureDepositsAsync(new[] { deposit1, deposit2 }).GetAwaiter().GetResult();
+                transfers = crossChainTransferStore.GetAsync(new uint256[] { 0, 1 }).GetAwaiter().GetResult().ToArray();
+                transactions = transfers.Select(t => t.PartialTransaction).ToArray();
+
+                // Transactions[1] inputs.
+                Assert.Equal(2, transactions[1].Inputs.Count);
+                Assert.Equal(this.fundingTransactions[1].GetHash(), transactions[1].Inputs[0].PrevOut.Hash);
+                Assert.Equal((uint)0, transactions[1].Inputs[0].PrevOut.N);
+
+                // Transaction[1] outputs.
+                Assert.Equal(3, transactions[1].Outputs.Count);
+
+                // Transaction[1] output value - change.
+                Assert.Equal(new Money(969.99m, MoneyUnit.BTC), transactions[1].Outputs[0].Value);
+                Assert.Equal(multiSigAddress.ScriptPubKey, transactions[1].Outputs[0].ScriptPubKey);
+
+                // Transaction[1] output value - recipient 2.
+                Assert.Equal(new Money(100m, MoneyUnit.BTC), transactions[1].Outputs[1].Value);
+                Assert.Equal(address2.ScriptPubKey, transactions[1].Outputs[1].ScriptPubKey);
+
+                // Transaction[1] output value - op_return.
+                Assert.Equal(new Money(0m, MoneyUnit.BTC), transactions[1].Outputs[2].Value);
+                Assert.Equal(deposit2.Id.ToString(), new OpReturnDataReader(this.loggerFactory, this.network).TryGetTransactionId(transactions[1]));
+
+                Assert.Equal(2, transfers.Length);
+                Assert.Equal(CrossChainTransferStatus.Partial, transfers[1].Status);
+                Assert.Equal(deposit2.Amount, new Money(transfers[1].DepositAmount));
+                Assert.Equal(address2.ScriptPubKey, transfers[1].DepositTargetAddress);
+
+                (Money confirmed, Money unconfirmed) spendable = this.wallet.GetSpendableAmount();
+
+                Assert.Equal(new Money(979.98m, MoneyUnit.BTC), spendable.unconfirmed);
             }
         }
 

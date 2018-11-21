@@ -362,6 +362,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
                         }
                         else if (transaction != null)
                         {
+                            transfers[i].SetPartialTransaction(transaction);
                             tracker.SetTransferStatus(transfers[i], CrossChainTransferStatus.Partial);
                         }
                         else
@@ -959,7 +960,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
             {
                 this.TransferStatusUpdated(kv.Key, kv.Value);
 
-                if (kv.Key.BlockHash != 0)
+                if (kv.Key.BlockHash != null)
                 {
                     if (!this.depositIdsByBlockHash[kv.Key.BlockHash].Contains(kv.Key.DepositTransactionId))
                         this.depositIdsByBlockHash[kv.Key.BlockHash].Add(kv.Key.DepositTransactionId);
