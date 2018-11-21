@@ -27,6 +27,7 @@ namespace Stratis.Sidechains.Networks
             this.GenesisBits = 402691653;
             this.GenesisVersion = 1;
             this.GenesisReward = Money.Zero;
+            this.Magic = 0x522357B;
 
             NBitcoin.Block genesisBlock = CreatePoAGenesisBlock(consensusFactory, this.GenesisTime, this.GenesisNonce, this.GenesisBits, this.GenesisVersion, this.GenesisReward);
             //((SmartContractPoABlockHeader)genesisBlock.Header).HashStateRoot = new uint256("21B463E3B52F6201C0AD6C991BE0485B6EF8C092E64583FFA655CC1B171FE856"); // Set StateRoot to empty trie.
@@ -70,7 +71,7 @@ namespace Stratis.Sidechains.Networks
             this.Consensus = new Consensus(
                 consensusFactory: consensusFactory,
                 consensusOptions: consensusOptions,
-                coinType: 105,
+                coinType: 400,
                 hashGenesisBlock: genesisBlock.GetHash(),
                 subsidyHalvingInterval: 210000,
                 majorityEnforceBlockUpgrade: 750,
