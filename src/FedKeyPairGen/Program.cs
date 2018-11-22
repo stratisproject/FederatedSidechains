@@ -35,8 +35,7 @@ namespace FedKeyPairGen
                 if (help)
                 {
                     FedKeyPairGenManager.OutputUsage();
-
-                }
+                                  }
 
                 Mnemonic mnemonic = new Mnemonic(Wordlist.English, WordCount.Twelve);
                 var pubKey = mnemonic.DeriveExtKey().PrivateKey.PubKey;

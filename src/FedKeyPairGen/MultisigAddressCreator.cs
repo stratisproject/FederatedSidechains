@@ -26,7 +26,7 @@ namespace FedKeyPairGen
         public void Run_CreateMultisigAddresses()
         {
             var mainchainNetwork = Networks.Stratis.Testnet();
-            var sidechainNetwork = ApexNetworks.Apex.Testnet();
+            var sidechainNetwork = FederatedPegNetwork.NetworksSelector.Testnet();
 
             this.CreateMultisigAddresses(mainchainNetwork, sidechainNetwork);
         }
