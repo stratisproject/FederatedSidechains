@@ -2,23 +2,26 @@
 using System.Linq;
 using NBitcoin;
 using NBitcoin.DataEncoders;
+using Stratis.Bitcoin.Features.PoA;
+using Stratis.Bitcoin.Networks;
+using Stratis.Sidechains.Networks;
 
-namespace FedKeyPairGen
+namespace FederationSetup
 {
     /*
-        Stratis Federation KeyPair Generator v1.0.0.0 - Generates cryptographic key pairs for Sidechain Federation Members.
+        Stratis Federation set up v1.0.0.0 - Set-up genesis block, multisig addresses and generates cryptographic key pairs for Sidechain Federation Members.
         Copyright(c) 2018 Stratis Group Limited
 
-        usage:  fedkeypairgen [-name=<name>] [-folder=<output_folder>] [-pass=<password>] [-h]
+        usage:  federationsetup [-h]
          -h        This help message.
 
-        Example:  fedkeypairgen
+        Example:  federationsetup -g -a -p
     */
 
-    // The Stratis Federation KeyPair Generator is a console app that can be sent to Federation Members
-    // in order to generate their Private (and Public) keys without a need to run a Node at this stage.
+    // The Stratis Federation set-up is a console app that can be sent to Federation Members
+    // in order to set-up the network and generate their Private (and Public) keys without a need to run a Node at this stage.
     // See the "Use Case - Generate Federation Member Key Pairs" located in the Requirements folder in the
-    // project repo.
+    // project repository.
 
     class Program
     {
@@ -27,37 +30,53 @@ namespace FedKeyPairGen
             try
             {
                 // Start with the banner.
-                FedKeyPairGenManager.OutputHeader();
-
-                bool help = args.Contains("-h");
+                FederationSetup.OutputHeader();
 
                 // Help command output the usage and examples text.
-                if (help)
+                if (args.Contains("-h"))
                 {
-                    FedKeyPairGenManager.OutputUsage();
-                                  }
+                    FederationSetup.OutputUsage();
+                }
 
-                Mnemonic mnemonic = new Mnemonic(Wordlist.English, WordCount.Twelve);
-                var pubKey = mnemonic.DeriveExtKey().PrivateKey.PubKey;
+                if (args.Contains("-g"))
+                {
+                    Console.WriteLine(new GenesisMiner().MineGenesisBlocks(
+                        new PoAConsensusFactory(),
+                        "https://www.coindesk.com/apple-co-founder-backs-dorsey-bitcoin-become-webs-currency/"));
+                }
 
-                Console.WriteLine($"-- Mnemonic --");
-                Console.WriteLine($"Please keep the following 12 words for yourself and note them down in a secure place:");
-                Console.WriteLine($"{string.Join(" ", mnemonic.Words)}");
-                Console.WriteLine();
-                Console.WriteLine($"-- To share with the sidechain generator --");
-                Console.WriteLine($"1. Your pubkey: {Encoders.Hex.EncodeData((pubKey).ToBytes(false))}");
-                Console.WriteLine($"2. Your ip address: if you're willing to. This is required to help the nodes connect when bootstrapping the network.");
-                Console.WriteLine();
+                if (args.Contains("-a"))
+                {
+                    Console.WriteLine(new MultisigAddressCreator().CreateMultisigAddresses(
+                        Networks.Stratis.Testnet(),
+                        FederatedPegNetwork.NetworksSelector.Testnet()));
+                }
 
-                // Write success message including warnings to keep secret private keys safe.
-                FedKeyPairGenManager.OutputSuccess();
+                if (args.Contains("-p"))
+                {
+                    var mnemonic = new Mnemonic(Wordlist.English, WordCount.Twelve);
+                    var pubKey = mnemonic.DeriveExtKey().PrivateKey.PubKey;
+
+                    Console.WriteLine($"-- Mnemonic --");
+                    Console.WriteLine($"Please keep the following 12 words for yourself and note them down in a secure place:");
+                    Console.WriteLine($"{string.Join(" ", mnemonic.Words)}");
+                    Console.WriteLine();
+                    Console.WriteLine($"-- To share with the sidechain generator --");
+                    Console.WriteLine($"1. Your pubkey: {Encoders.Hex.EncodeData((pubKey).ToBytes(false))}");
+                    Console.WriteLine($"2. Your ip address: if you're willing to. This is required to help the nodes connect when bootstrapping the network.");
+                    Console.WriteLine();
+
+                    // Write success message including warnings to keep secret private keys safe.
+                    FederationSetup.OutputSuccess();
+                }
+
                 Console.ReadLine();
             }
             catch (Exception ex)
             {
-                FedKeyPairGenManager.OutputErrorLine($"An error occurred: {ex.Message}");
+                FederationSetup.OutputErrorLine($"An error occurred: {ex.Message}");
                 Console.WriteLine();
-                FedKeyPairGenManager.OutputUsage();
+                FederationSetup.OutputUsage();
             }
         }
     }
