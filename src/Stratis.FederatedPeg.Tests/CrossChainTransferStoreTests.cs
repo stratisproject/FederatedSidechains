@@ -20,6 +20,10 @@ using Stratis.FederatedPeg.Features.FederationGateway.Wallet;
 using Stratis.Sidechains.Networks;
 using Xunit;
 using Stratis.Bitcoin.Features.Wallet;
+using Stratis.Bitcoin.Connection;
+using System.Threading;
+using System.Diagnostics;
+using Stratis.Bitcoin.P2P.Peer;
 
 namespace Stratis.FederatedPeg.Tests
 {
@@ -41,8 +45,10 @@ namespace Stratis.FederatedPeg.Tests
         private IFederationWalletSyncManager federationWalletSyncManager;
         private IWalletFeePolicy walletFeePolicy;
         private IAsyncLoopFactory asyncLoopFactory;
+        private INodeLifetime nodeLifetime;
+        private IConnectionManager connectionManager;
         private Dictionary<uint256, Block> blockDict;
-        private Transaction[] fundingTransactions;
+        private List<Transaction> fundingTransactions;
         private FederationWallet wallet;
         private ExtKey[] federationKeys;
         private ExtKey extendedKey;
@@ -59,7 +65,7 @@ namespace Stratis.FederatedPeg.Tests
         /// </summary>
         public CrossChainTransferStoreTests()
         {
-            this.network = ApexNetwork.RegTest;
+            this.network = FederatedPegNetwork.NetworksSelector.Regtest();
             NetworkRegistration.Register(this.network);
 
             DBreezeSerializer serializer = new DBreezeSerializer();
@@ -67,7 +73,7 @@ namespace Stratis.FederatedPeg.Tests
 
             this.loggerFactory = Substitute.For<ILoggerFactory>();
             this.logger = Substitute.For<ILogger>();
-            this.asyncLoopFactory = Substitute.For<IAsyncLoopFactory>();
+            this.asyncLoopFactory = new AsyncLoopFactory(this.loggerFactory);
             this.loggerFactory.CreateLogger(null).ReturnsForAnyArgs(this.logger);
             this.dateTimeProvider = DateTimeProvider.Default;
             this.opReturnDataReader = new OpReturnDataReader(this.loggerFactory, this.network);
@@ -77,6 +83,9 @@ namespace Stratis.FederatedPeg.Tests
             this.federationWalletTransactionHandler = Substitute.For<IFederationWalletTransactionHandler>();
             this.federationWalletSyncManager = Substitute.For<IFederationWalletSyncManager>();
             this.walletFeePolicy = Substitute.For<IWalletFeePolicy>();
+            this.nodeLifetime = new NodeLifetime();
+            this.connectionManager = Substitute.For<IConnectionManager>();
+
             this.wallet = null;
             this.federationGatewaySettings = Substitute.For<IFederationGatewaySettings>();
             this.chain = new ConcurrentChain(this.network);
@@ -95,6 +104,8 @@ namespace Stratis.FederatedPeg.Tests
             }.Select(m => HdOperations.GetExtendedKey(m)).ToArray();
 
             SetExtendedKey(0);
+
+            this.fundingTransactions = new List<Transaction>();
 
             this.blockDict = new Dictionary<uint256, Block>();
             this.blockDict[this.network.GenesisHash] = this.network.GetGenesis();
@@ -126,22 +137,27 @@ namespace Stratis.FederatedPeg.Tests
             this.withdrawalExtractor = new WithdrawalExtractor(this.loggerFactory, this.federationGatewaySettings, this.opReturnDataReader, this.network);
         }
 
+        private Transaction AddFundingTransaction(Money[] amounts)
+        {
+            Transaction transaction = this.network.CreateTransaction();
+
+            foreach (Money amount in amounts)
+            {
+                transaction.Outputs.Add(new TxOut(amount, this.wallet.MultiSigAddress.ScriptPubKey));
+            }
+
+            transaction.AddInput(new TxIn(new OutPoint(0, 0), new Script(OpcodeType.OP_1)));
+
+            this.AppendBlock(transaction);
+            this.fundingTransactions.Add(transaction);
+
+            return transaction;
+        }
+
         private void AddFunding()
         {
-            Transaction tran1 = this.network.CreateTransaction();
-            Transaction tran2 = this.network.CreateTransaction();
-
-            tran1.Outputs.Add(new TxOut(Money.COIN * 90, this.wallet.MultiSigAddress.ScriptPubKey));
-            tran1.Outputs.Add(new TxOut(Money.COIN * 80, this.wallet.MultiSigAddress.ScriptPubKey));
-            tran2.Outputs.Add(new TxOut(Money.COIN * 70, this.wallet.MultiSigAddress.ScriptPubKey));
-
-            tran1.AddInput(new TxIn(new OutPoint(0, 0), new Script(OpcodeType.OP_1)));
-            tran2.AddInput(new TxIn(new OutPoint(0, 0), new Script(OpcodeType.OP_1)));
-
-            this.fundingTransactions = new[] { tran1, tran2 };
-
-            this.AppendBlock(tran1);
-            this.AppendBlock(tran2);
+            AddFundingTransaction(new Money[] { Money.COIN * 90, Money.COIN * 80 });
+            AddFundingTransaction(new Money[] { Money.COIN * 70 });
         }
 
         /// <summary>
@@ -339,6 +355,111 @@ namespace Stratis.FederatedPeg.Tests
             }
         }
 
+
+        /// <summary>
+        /// Recording deposits when the wallet UTXOs are sufficient succeeds with deterministic transactions.
+        /// </summary>
+        [Fact]
+        public void StoringDepositsWhenWalletBalanceInSufficientSucceedsWithSuspendStatus()
+        {
+            var dataFolder = new DataFolder(CreateTestDir(this));
+
+            this.CreateWalletManagerAndTransactionHandler(dataFolder);
+            this.AddFunding();
+            this.AppendBlocks(5);
+
+            MultiSigAddress multiSigAddress = this.wallet.MultiSigAddress;
+
+            using (var crossChainTransferStore = new CrossChainTransferStore(this.network, dataFolder, this.chain, this.federationGatewaySettings, this.dateTimeProvider,
+                this.loggerFactory, this.withdrawalExtractor, this.fullNode, this.blockRepository, this.federationWalletManager, this.federationWalletTransactionHandler))
+            {
+                crossChainTransferStore.Initialize();
+                crossChainTransferStore.Start();
+
+                Assert.Equal(this.chain.Tip.HashBlock, crossChainTransferStore.TipHashAndHeight.Hash);
+                Assert.Equal(this.chain.Tip.Height, crossChainTransferStore.TipHashAndHeight.Height);
+
+                BitcoinAddress address1 = (new Key()).PubKey.Hash.GetAddress(this.network);
+                BitcoinAddress address2 = (new Key()).PubKey.Hash.GetAddress(this.network);
+
+                Deposit deposit1 = new Deposit(0, new Money(160m, MoneyUnit.BTC), address1.ToString(), crossChainTransferStore.NextMatureDepositHeight, 1);
+                Deposit deposit2 = new Deposit(1, new Money(100m, MoneyUnit.BTC), address2.ToString(), crossChainTransferStore.NextMatureDepositHeight, 1);
+
+                crossChainTransferStore.RecordLatestMatureDepositsAsync(new[] { deposit1, deposit2 }).GetAwaiter().GetResult();
+
+                ICrossChainTransfer[] transfers = crossChainTransferStore.GetAsync(new uint256[] { 0, 1 }).GetAwaiter().GetResult().ToArray();
+
+                Transaction[] transactions = transfers.Select(t => t.PartialTransaction).ToArray();
+
+                Assert.Equal(2, transactions.Length);
+
+                // Transactions[0] inputs.
+                Assert.Equal(2, transactions[0].Inputs.Count);
+                Assert.Equal(this.fundingTransactions[0].GetHash(), transactions[0].Inputs[0].PrevOut.Hash);
+                Assert.Equal((uint)0, transactions[0].Inputs[0].PrevOut.N);
+                Assert.Equal(this.fundingTransactions[0].GetHash(), transactions[0].Inputs[1].PrevOut.Hash);
+                Assert.Equal((uint)1, transactions[0].Inputs[1].PrevOut.N);
+
+                // Transaction[0] outputs.
+                Assert.Equal(3, transactions[0].Outputs.Count);
+
+                // Transaction[0] output value - change.
+                Assert.Equal(new Money(9.99m, MoneyUnit.BTC), transactions[0].Outputs[0].Value);
+                Assert.Equal(multiSigAddress.ScriptPubKey, transactions[0].Outputs[0].ScriptPubKey);
+
+                // Transaction[0] output value - recipient 1.
+                Assert.Equal(new Money(160m, MoneyUnit.BTC), transactions[0].Outputs[1].Value);
+                Assert.Equal(address1.ScriptPubKey, transactions[0].Outputs[1].ScriptPubKey);
+
+                // Transaction[0] output value - op_return.
+                Assert.Equal(new Money(0m, MoneyUnit.BTC), transactions[0].Outputs[2].Value);
+                Assert.Equal(deposit1.Id.ToString(), new OpReturnDataReader(this.loggerFactory, this.network).TryGetTransactionId(transactions[0]));
+
+                Assert.Null(transactions[1]);
+
+                Assert.Equal(2, transfers.Length);
+                Assert.Equal(CrossChainTransferStatus.Partial, transfers[0].Status);
+                Assert.Equal(deposit1.Amount, new Money(transfers[0].DepositAmount));
+                Assert.Equal(address1.ScriptPubKey, transfers[0].DepositTargetAddress);
+                Assert.Equal(CrossChainTransferStatus.Suspended, transfers[1].Status);
+
+                // Add more funds and resubmit the deposits.
+                AddFundingTransaction(new Money[] { Money.COIN * 1000 });
+                crossChainTransferStore.RecordLatestMatureDepositsAsync(new[] { deposit1, deposit2 }).GetAwaiter().GetResult();
+                transfers = crossChainTransferStore.GetAsync(new uint256[] { 0, 1 }).GetAwaiter().GetResult().ToArray();
+                transactions = transfers.Select(t => t.PartialTransaction).ToArray();
+
+                // Transactions[1] inputs.
+                Assert.Equal(2, transactions[1].Inputs.Count);
+                Assert.Equal(this.fundingTransactions[1].GetHash(), transactions[1].Inputs[0].PrevOut.Hash);
+                Assert.Equal((uint)0, transactions[1].Inputs[0].PrevOut.N);
+
+                // Transaction[1] outputs.
+                Assert.Equal(3, transactions[1].Outputs.Count);
+
+                // Transaction[1] output value - change.
+                Assert.Equal(new Money(969.99m, MoneyUnit.BTC), transactions[1].Outputs[0].Value);
+                Assert.Equal(multiSigAddress.ScriptPubKey, transactions[1].Outputs[0].ScriptPubKey);
+
+                // Transaction[1] output value - recipient 2.
+                Assert.Equal(new Money(100m, MoneyUnit.BTC), transactions[1].Outputs[1].Value);
+                Assert.Equal(address2.ScriptPubKey, transactions[1].Outputs[1].ScriptPubKey);
+
+                // Transaction[1] output value - op_return.
+                Assert.Equal(new Money(0m, MoneyUnit.BTC), transactions[1].Outputs[2].Value);
+                Assert.Equal(deposit2.Id.ToString(), new OpReturnDataReader(this.loggerFactory, this.network).TryGetTransactionId(transactions[1]));
+
+                Assert.Equal(2, transfers.Length);
+                Assert.Equal(CrossChainTransferStatus.Partial, transfers[1].Status);
+                Assert.Equal(deposit2.Amount, new Money(transfers[1].DepositAmount));
+                Assert.Equal(address2.ScriptPubKey, transfers[1].DepositTargetAddress);
+
+                (Money confirmed, Money unconfirmed) spendable = this.wallet.GetSpendableAmount();
+
+                Assert.Equal(new Money(979.98m, MoneyUnit.BTC), spendable.unconfirmed);
+            }
+        }
+
         /// <summary>
         /// Tests whether the store merges signatures as expected.
         /// </summary>
@@ -478,6 +599,68 @@ namespace Stratis.FederatedPeg.Tests
         }
 
         /// <summary>
+        /// Check that partial transactions present in the store cause partial transaction requests made to peers.
+        /// </summary>
+        [Fact]
+        public void StoredPartialTransactionsTriggerSignatureRequests()
+        {
+            var dataFolder = new DataFolder(CreateTestDir(this));
+
+            this.CreateWalletManagerAndTransactionHandler(dataFolder);
+            this.AddFunding();
+            this.AppendBlocks(5);
+
+            MultiSigAddress multiSigAddress = this.wallet.MultiSigAddress;
+
+            using (var crossChainTransferStore = new CrossChainTransferStore(this.network, dataFolder, this.chain, this.federationGatewaySettings, this.dateTimeProvider,
+                this.loggerFactory, this.withdrawalExtractor, this.fullNode, this.blockRepository, this.federationWalletManager, this.federationWalletTransactionHandler))
+            {
+                crossChainTransferStore.Initialize();
+                crossChainTransferStore.Start();
+
+                Assert.Equal(this.chain.Tip.HashBlock, crossChainTransferStore.TipHashAndHeight.Hash);
+                Assert.Equal(this.chain.Tip.Height, crossChainTransferStore.TipHashAndHeight.Height);
+
+                BitcoinAddress address1 = (new Key()).PubKey.Hash.GetAddress(this.network);
+                BitcoinAddress address2 = (new Key()).PubKey.Hash.GetAddress(this.network);
+
+                Deposit deposit1 = new Deposit(0, new Money(160m, MoneyUnit.BTC), address1.ToString(), crossChainTransferStore.NextMatureDepositHeight, 1);
+                Deposit deposit2 = new Deposit(1, new Money(60m, MoneyUnit.BTC), address2.ToString(), crossChainTransferStore.NextMatureDepositHeight, 1);
+
+                crossChainTransferStore.RecordLatestMatureDepositsAsync(new[] { deposit1, deposit2 }).GetAwaiter().GetResult();
+
+                Dictionary<uint256, Transaction> transactions = crossChainTransferStore.GetTransactionsByStatusAsync(
+                    CrossChainTransferStatus.Partial).GetAwaiter().GetResult();
+
+                PartialTransactionRequester requester = new PartialTransactionRequester(this.loggerFactory, crossChainTransferStore, this.asyncLoopFactory,
+                    this.nodeLifetime, this.connectionManager, this.federationGatewaySettings);
+
+                System.Net.IPEndPoint peerEndPoint = new System.Net.IPEndPoint(System.Net.IPAddress.Parse("1.2.3.4"), 5);
+                INetworkPeer peer = Substitute.For<INetworkPeer>();
+                peer.RemoteSocketAddress.Returns(peerEndPoint.Address);
+                peer.RemoteSocketPort.Returns(peerEndPoint.Port);
+                peer.PeerEndPoint.Returns(peerEndPoint);
+
+                var peers = new NetworkPeerCollection();
+                peers.Add(peer);
+
+                this.federationGatewaySettings.FederationNodeIpEndPoints.Returns(new[] { peerEndPoint });
+
+                this.connectionManager.ConnectedPeers.Returns(peers);
+
+                requester.Start();
+
+                Thread.Sleep(100);
+
+                peer.Received().SendMessageAsync(Arg.Is<RequestPartialTransactionPayload>(o =>
+                    o.DepositId == 0 && o.PartialTransaction.GetHash() == transactions[0].GetHash())).GetAwaiter().GetResult();
+
+                peer.Received().SendMessageAsync(Arg.Is<RequestPartialTransactionPayload>(o =>
+                    o.DepositId == 1 && o.PartialTransaction.GetHash() == transactions[1].GetHash())).GetAwaiter().GetResult();
+            }
+        }
+
+        /// <summary>
         /// Builds a chain with the requested number of blocks.
         /// </summary>
         /// <param name="blocks">The number of blocks.</param>
@@ -520,6 +703,33 @@ namespace Stratis.FederatedPeg.Tests
             this.federationWalletSyncManager.ProcessBlock(block);
 
             return last;
+        }
+
+        /// <summary>
+        /// Waits for a function to return true.
+        /// </summary>
+        /// <param name="act">The function returning <c>true</c> or <c>false</c>.</param>
+        /// <param name="failureReason">The failure reason if any.</param>
+        /// <param name="retryDelayInMiliseconds">How often to retry in milliseconds.</param>
+        /// <param name="cancellationToken">Cancellation token.</param>
+        private static void WaitLoop(Func<bool> act, string failureReason = "Unknown Reason", int retryDelayInMiliseconds = 1000, CancellationToken cancellationToken = default(CancellationToken))
+        {
+            cancellationToken = cancellationToken == default(CancellationToken)
+                ? new CancellationTokenSource(Debugger.IsAttached ? 15 * 60 * 1000 : 60 * 1000).Token
+                : cancellationToken;
+
+            while (!act())
+            {
+                try
+                {
+                    cancellationToken.ThrowIfCancellationRequested();
+                    Thread.Sleep(retryDelayInMiliseconds);
+                }
+                catch (OperationCanceledException e)
+                {
+                    Assert.False(true, $"{failureReason}{Environment.NewLine}{e.Message}");
+                }
+            }
         }
 
         /// <summary>

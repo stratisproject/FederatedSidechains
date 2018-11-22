@@ -25,7 +25,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.Interfaces
         /// Records the mature deposits from <see cref="NextMatureDepositHeight"/> on the counter-chain.
         /// The value of <see cref="NextMatureDepositHeight"/> is incremented at the end of this call.
         /// </summary>
-        /// <param name="deposits">The deposits.</param>
+        /// <param name="deposits">The deposits in order of occurrence on the source chain.</param>
         /// <remarks>
         /// The transfers are set to <see cref="CrossChainTransfer.Status"/> of <see cref="CrossChainTransferStatus.Partial"/>
         /// or <see cref="CrossChainTransferStatus.Rejected"/> depending on whether enough funds are available in the federation wallet.
@@ -51,8 +51,8 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.Interfaces
         /// Changes to the transaction id caused by this operation will also be synchronised with the partial
         /// transaction that has been recorded in the wallet.
         /// </remarks>
-
-        Task MergeTransactionSignaturesAsync(uint256 depositId, Transaction[] partialTransactions);
+        /// <returns>The updated transaction.</returns>
+        Task<Transaction> MergeTransactionSignaturesAsync(uint256 depositId, Transaction[] partialTransactions);
 
         /// <summary>
         /// Get the cross-chain transfer information from the database, identified by the deposit transaction ids.
