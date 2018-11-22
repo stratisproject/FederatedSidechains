@@ -77,7 +77,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
         /// <inheritdoc />
         public void Start()
         {
-            this.asyncLoop = this.asyncLoopFactory.Run("Get partial templates job", token =>
+            this.asyncLoop = this.asyncLoopFactory.Run(nameof(PartialTransactionRequester), token =>
             {
                 Dictionary<uint256, Transaction> transactions = this.crossChainTransferStore.GetTransactionsByStatusAsync(
                     CrossChainTransferStatus.Partial).GetAwaiter().GetResult();
@@ -94,7 +94,9 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
 
                 this.logger.LogTrace("(-)[PARTIAL_TEMPLATES_JOB]");
                 return Task.CompletedTask;
-            }, this.nodeLifetime.ApplicationStopping, repeatEvery: TimeSpans.TenSeconds, startAfter: TimeSpans.TenSeconds);
+            },
+            this.nodeLifetime.ApplicationStopping,
+            TimeSpans.TenSeconds);
         }
 
         /// <inheritdoc />
