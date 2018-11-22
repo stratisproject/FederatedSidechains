@@ -8,7 +8,7 @@ using Xunit.Abstractions;
 
 namespace FedKeyPairGen
 {
-    public class GenesisMiner 
+    public class GenesisMiner
     {
         private readonly ITestOutputHelper output;
 
@@ -29,7 +29,7 @@ namespace FedKeyPairGen
         public void MineGenesisBlocks(ConsensusFactory consensusFactory, string coinbaseText)
         {
             this.output.WriteLine("Looking for genesis blocks  for the 3 networks, this might take a while.");
-            
+
             Block genesisMain = Network.MineGenesisBlock(consensusFactory, coinbaseText, new Target(new uint256("00000fffffffffffffffffffffffffffffffffffffffffffffffffffffffffff")), Money.Coins(50m));
             BlockHeader headerMain = genesisMain.Header;
 

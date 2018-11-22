@@ -12,7 +12,7 @@ namespace FedKeyPairGen
         usage:  fedkeypairgen [-name=<name>] [-folder=<output_folder>] [-pass=<password>] [-h]
          -h        This help message.
 
-        Example:  fedkeypairgen 
+        Example:  fedkeypairgen
     */
 
     // The Stratis Federation KeyPair Generator is a console app that can be sent to Federation Members
@@ -35,7 +35,7 @@ namespace FedKeyPairGen
                 if (help)
                 {
                     FedKeyPairGenManager.OutputUsage();
-                   
+
                 }
 
                 Mnemonic mnemonic = new Mnemonic(Wordlist.English, WordCount.Twelve);
