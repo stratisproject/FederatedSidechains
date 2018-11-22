@@ -368,43 +368,63 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
 
                 this.logger.LogTrace("()");
 
+                this.Synchronize();
+
+                ICrossChainTransfer transfer = this.ValidateCrossChainTransfers(this.Get(new[] { depositId })).FirstOrDefault();
+
+                if (transfer == null)
+                {
+                    this.logger.LogTrace("(-)[MERGE_NOTFOUND]");
+                    return null;
+                }
+
+                if (transfer.Status != CrossChainTransferStatus.Partial)
+                {
+                    this.logger.LogTrace("(-)[MERGE_BADSTATUS]");
+                    return transfer.PartialTransaction;
+                }
+
+                var builder = new TransactionBuilder(this.network);
+
+                Transaction oldTransaction = transfer.PartialTransaction;
+
+                transfer.CombineSignatures(builder, partialTransactions);
+
+                if (transfer.PartialTransaction.GetHash() == oldTransaction.GetHash())
+                {
+                    this.logger.LogTrace("(-)[MERGE_UNCHANGED]");
+                    return transfer.PartialTransaction;
+                }
+
                 using (DBreeze.Transactions.Transaction dbreezeTransaction = this.DBreeze.GetTransaction())
                 {
-                    dbreezeTransaction.SynchronizeTables(transferTableName, commonTableName);
-
-                    ICrossChainTransfer transfer = this.Get(dbreezeTransaction, new[] { depositId }).FirstOrDefault();
-
-                    if (transfer != null && transfer.Status == CrossChainTransferStatus.Partial)
+                    try
                     {
-                        var builder = new TransactionBuilder(this.network);
-
-                        Transaction oldTransaction = transfer.PartialTransaction;
-
-                        transfer.CombineSignatures(builder, partialTransactions);
+                        dbreezeTransaction.SynchronizeTables(transferTableName, commonTableName);
 
                         this.UpdateSpendingDetailsInWallet(oldTransaction.GetHash(), transfer.PartialTransaction, wallet);
+                        this.federationWalletManager.SaveWallet();
 
                         if (ValidateTransaction(transfer.PartialTransaction, wallet, true))
                         {
                             transfer.SetStatus(CrossChainTransferStatus.FullySigned);
                         }
 
-                        try
-                        {
-                            this.PutTransfer(dbreezeTransaction, transfer);
-                            dbreezeTransaction.Commit();
-                            this.federationWalletManager.SaveWallet();
+                        this.PutTransfer(dbreezeTransaction, transfer);
+                        dbreezeTransaction.Commit();
 
-                            // Do this last to maintain DB integrity. We are assuming that this won't throw.
-                            this.TransferStatusUpdated(transfer, CrossChainTransferStatus.Partial);
-                        }
-                        catch (Exception err)
-                        {
-                            // Restore expected store state in case the calling code retries / continues using the store.
-                            this.UpdateSpendingDetailsInWallet(transfer.PartialTransaction.GetHash(), oldTransaction, wallet);
-                            transfer.SetPartialTransaction(oldTransaction);
-                            this.RollbackAndThrowTransactionError(dbreezeTransaction, err, "MERGE_ERROR");
-                        }
+                        // Do this last to maintain DB integrity. We are assuming that this won't throw.
+                        this.TransferStatusUpdated(transfer, CrossChainTransferStatus.Partial);
+                    }
+                    catch (Exception err)
+                    {
+                        // Restore expected store state in case the calling code retries / continues using the store.
+                        transfer.SetPartialTransaction(oldTransaction);
+
+                        this.UpdateSpendingDetailsInWallet(transfer.PartialTransaction.GetHash(), oldTransaction, wallet);
+                        this.federationWalletManager.SaveWallet();
+
+                        this.RollbackAndThrowTransactionError(dbreezeTransaction, err, "MERGE_ERROR");
                     }
 
                     this.logger.LogTrace("(-)");
