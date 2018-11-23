@@ -11,7 +11,7 @@ namespace FederationSetup
 {
     /*
         Stratis Federation set up v1.0.0.0 - Set-up genesis block, multisig addresses and generates cryptographic key pairs for Sidechain Federation Members.
-        Copyright(c) 2018 Stratis Group Limitedmspaint
+        Copyright(c) 2018 Stratis Group Limited
 
         usage:  federationsetup [-h]
          -h        This help message.
@@ -70,13 +70,14 @@ namespace FederationSetup
 
                 if (args.Contains("-m"))
                 {
-                    (Network mainChain, Network sideChain) = GetMainAndSideChainNetworks();
-                    int quorum = ConfigReader.GetOrDefault("quorum", 2);
+                    int federatedPublicKeysCount = GetFederatedPublicKeysFromArguments();
 
-                    Console.WriteLine(new MultisigAddressCreator().CreateMultisigAddresses(mainChain, sideChain, quorum));
+                    int quorum = GetQuorumFromArguments(federatedPublicKeysCount);
+
+                    (Network mainChain, Network sideChain) = GetMainAndSideChainNetworksFromArguments();
+
+                    Console.WriteLine(new MultisigAddressCreator().CreateMultisigAddresses(mainChain, sideChain, quorum, federatedPublicKeysCount));
                 }
-
-                Console.ReadLine();
             }
             catch (Exception ex)
             {
@@ -84,9 +85,42 @@ namespace FederationSetup
                 Console.WriteLine();
                 FederationSetup.OutputUsage();
             }
+            finally
+            {
+                Console.ReadLine();
+            }
         }
 
-        private static (Network mainChain, Network sideChain) GetMainAndSideChainNetworks()
+        private static int GetQuorumFromArguments(int federatedPublicKeysCount)
+        {
+            int quorum = ConfigReader.GetOrDefault("quorum", 2);
+
+            if (quorum < federatedPublicKeysCount / 2)
+                throw new ArgumentException("Quorum has to be greater than half of the members within the federation.", "-m -quorum");
+
+            return quorum;
+        }
+
+        private static int GetFederatedPublicKeysFromArguments()
+        {
+            int federatedPublicKeyCount = 0;
+
+            if (ConfigReader.GetAll("keys").FirstOrDefault() != null)
+                federatedPublicKeyCount = ConfigReader.GetAll("keys").FirstOrDefault().Split(',').Count();
+
+            if (federatedPublicKeyCount == 0)
+                throw new ArgumentException("Federated member public keys do not exist.", "-m -keys");
+
+            if (federatedPublicKeyCount % 2 == 0)
+                throw new ArgumentException("Federation must have an odd number of members.", "-m -keys");
+
+            if (federatedPublicKeyCount > 15)
+                throw new ArgumentException("Federation can only have up to fifteen members.", "-m -keys");
+
+            return federatedPublicKeyCount;
+        }
+
+        private static (Network mainChain, Network sideChain) GetMainAndSideChainNetworksFromArguments()
         {
             Network mainchainNetwork = Networks.Stratis.Mainnet();
             Network sideChainNetwork = FederatedPegNetwork.NetworksSelector.Mainnet();
