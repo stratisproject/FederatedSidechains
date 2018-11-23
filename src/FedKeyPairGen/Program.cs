@@ -2,6 +2,7 @@
 using System.Linq;
 using NBitcoin;
 using NBitcoin.DataEncoders;
+using Stratis.Bitcoin.Configuration;
 using Stratis.Bitcoin.Features.PoA;
 using Stratis.Bitcoin.Networks;
 using Stratis.Sidechains.Networks;
@@ -10,7 +11,7 @@ namespace FederationSetup
 {
     /*
         Stratis Federation set up v1.0.0.0 - Set-up genesis block, multisig addresses and generates cryptographic key pairs for Sidechain Federation Members.
-        Copyright(c) 2018 Stratis Group Limited
+        Copyright(c) 2018 Stratis Group Limitedmspaint
 
         usage:  federationsetup [-h]
          -h        This help message.
@@ -25,10 +26,14 @@ namespace FederationSetup
 
     class Program
     {
+        private static TextFileConfiguration ConfigReader;
+
         static void Main(string[] args)
         {
             try
             {
+                ConfigReader = new TextFileConfiguration(args ?? new string[] { });
+
                 // Start with the banner.
                 FederationSetup.OutputHeader();
 
@@ -43,13 +48,6 @@ namespace FederationSetup
                     Console.WriteLine(new GenesisMiner().MineGenesisBlocks(
                         new PoAConsensusFactory(),
                         "https://www.coindesk.com/apple-co-founder-backs-dorsey-bitcoin-become-webs-currency/"));
-                }
-
-                if (args.Contains("-a"))
-                {
-                    Console.WriteLine(new MultisigAddressCreator().CreateMultisigAddresses(
-                        Networks.Stratis.Testnet(),
-                        FederatedPegNetwork.NetworksSelector.Testnet()));
                 }
 
                 if (args.Contains("-p"))
@@ -70,6 +68,14 @@ namespace FederationSetup
                     FederationSetup.OutputSuccess();
                 }
 
+                if (args.Contains("-m"))
+                {
+                    (Network mainChain, Network sideChain) = GetMainAndSideChainNetworks();
+                    int quorum = ConfigReader.GetOrDefault("quorum", 2);
+
+                    Console.WriteLine(new MultisigAddressCreator().CreateMultisigAddresses(mainChain, sideChain, quorum));
+                }
+
                 Console.ReadLine();
             }
             catch (Exception ex)
@@ -78,6 +84,25 @@ namespace FederationSetup
                 Console.WriteLine();
                 FederationSetup.OutputUsage();
             }
+        }
+
+        private static (Network mainChain, Network sideChain) GetMainAndSideChainNetworks()
+        {
+            Network mainchainNetwork = Networks.Stratis.Mainnet();
+            Network sideChainNetwork = FederatedPegNetwork.NetworksSelector.Mainnet();
+
+            bool testNet = ConfigReader.GetOrDefault("testnet", false);
+            bool regTest = ConfigReader.GetOrDefault("regtest", false);
+
+            mainchainNetwork = testNet ? Networks.Stratis.Testnet() :
+                        regTest ? Networks.Stratis.Testnet() :
+                        Networks.Stratis.Mainnet();
+
+            sideChainNetwork = testNet ? FederatedPegNetwork.NetworksSelector.Testnet() :
+                        regTest ? FederatedPegNetwork.NetworksSelector.Testnet() :
+                        FederatedPegNetwork.NetworksSelector.Mainnet();
+
+            return (mainchainNetwork, sideChainNetwork);
         }
     }
 }

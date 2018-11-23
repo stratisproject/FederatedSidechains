@@ -1,0 +1,23 @@
+{
+  "profiles": {
+    "FederationSetup": {
+      "commandName": "Project"
+    },
+    "1 - Help (-h)": {
+      "commandName": "Project",
+      "commandLineArgs": "-h"
+    },
+    "2 - Create Genesis Block (-g)": {
+      "commandName": "Project",
+      "commandLineArgs": "-g"
+    },
+    "3 - Create private and public keys (-p)": {
+      "commandName": "Project",
+      "commandLineArgs": "-p"
+    },
+    "4 - Create multisig address testnet (-m testnet -quorum=2)": {
+      "commandName": "Project",
+      "commandLineArgs": "-m testnet -quorum=2"
+    }
+  }
+}
