@@ -31,8 +31,8 @@ namespace FederationSetup
             Console.WriteLine("Create multi signature addresses:    -m");
             Console.WriteLine("                                     [network] [-fedpubkeys] [-quorum]");
             Console.WriteLine("                                     network:    TestNet or RegTest (default MainNet).");
-            Console.WriteLine("                                     quorum:     The minimum number of federated members.");  // fed admin will do -m and number (3 qurom + the public keys for the signing of transactions
-            Console.WriteLine("                                     fedpubkeys: Federation members' public keys - must have an odd number of members.");  // fed admin will do -m and number (3 qurom + the public keys for the signing of transactions
+            Console.WriteLine("                                     quorum:     The minimum odd number of federated members.");  // fed admin will do -m and number (3 qurom + the public keys for the signing of transactions
+            Console.WriteLine("                                     fedpubkeys: Federation members' public keys - must have an odd number of up to fifteen members.");  // fed admin will do -m and number (3 qurom + the public keys for the signing of transactions
             Console.WriteLine("                                     Example:    federationsetup -m testnet -keys=");
             Console.WriteLine("                                                     03f1cfdd3f10fd6d399bd768db7bd989a9df3bae48b96e28c96644cab6585a0c34,");
             Console.WriteLine("                                                     03b45ff90d88f50bee1523724d22befa79ae5438e2e90813cfc88dc3f921b95cf0,");
