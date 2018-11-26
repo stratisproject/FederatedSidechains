@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Threading.Tasks;
@@ -42,7 +43,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.SourceChain
                 catch (Exception ex)
                 {
                     this.logger.LogError(ex, "Failed to send {0}", model);
-                    return null;
+                    return new HttpResponseMessage() { ReasonPhrase = ex.Message, StatusCode = HttpStatusCode.InternalServerError };
                 }
             }
         }

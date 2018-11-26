@@ -68,13 +68,12 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
                     {
                         // We are behind the chain A tip.
                         int maxBlocksToRequest = 1;
-                        if (this.crossChainTransferStore.HasSuspended())
+                        maxBlocksToRequest = Math.Min(MaxBlocksToCatchup, this.maxDepositHeight - this.crossChainTransferStore.NextMatureDepositHeight + 1);
+
+                        if (this.crossChainTransferStore.HasSuspended() || maxBlocksToRequest <= 0)
                         {
                             Thread.Sleep(TimeSpans.TenSeconds);
-                        }
-                        else
-                        {
-                            maxBlocksToRequest = Math.Min(MaxBlocksToCatchup, this.maxDepositHeight - this.crossChainTransferStore.NextMatureDepositHeight + 1);
+                            continue;
                         }
 
                         var model = new MaturedBlockRequestModel(this.crossChainTransferStore.NextMatureDepositHeight, maxBlocksToRequest);
