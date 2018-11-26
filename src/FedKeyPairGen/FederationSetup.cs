@@ -31,15 +31,11 @@ namespace FederationSetup
             Console.WriteLine("Create multi signature addresses:    -m");
             Console.WriteLine("                                     [network] [-fedpubkeys] [-quorum]");
             Console.WriteLine("                                     network:    TestNet or RegTest (default MainNet).");
-            Console.WriteLine("                                     quorum:     The minimum odd number of federated members.");  // fed admin will do -m and number (3 qurom + the public keys for the signing of transactions
-            Console.WriteLine("                                     fedpubkeys: Federation members' public keys - must have an odd number of up to fifteen members.");  // fed admin will do -m and number (3 qurom + the public keys for the signing of transactions
-            Console.WriteLine("                                     Example:    federationsetup -m testnet -keys=");
-            Console.WriteLine("                                                     03f1cfdd3f10fd6d399bd768db7bd989a9df3bae48b96e28c96644cab6585a0c34,");
-            Console.WriteLine("                                                     03b45ff90d88f50bee1523724d22befa79ae5438e2e90813cfc88dc3f921b95cf0,");
-            Console.WriteLine("                                                     03f1cfdd3f10fd6d399bd768db7bd989a9df3bae48b96e28c96644cab6585a0c34,");
-            Console.WriteLine("                                                     03421dd8b11d718b598066f0cd3cda16bfb445d3f40fad364291cd92b2b296df0a,");
-            Console.WriteLine("                                                     03b4a8a70890cbb89d203ea236df0760f60ef977d3cafb1395ee01db45b3529129,");
-            Console.WriteLine("                                                     02ab983ada09640c2259e54822958129af61fea2589c36d9a9aae414fddc4bed70");
+            Console.WriteLine("                                     quorum:     The minimum number of federated members.");  // fed admin will do -m and number (3 qurom + the public keys for the signing of transactions
+            Console.WriteLine("                                     fedpubkeys: Federation members' public keys.");
+            Console.WriteLine("                                                 Must have an odd number of up to fifteen members.");  // fed admin will do -m and number (3 qurom + the public keys for the signing of transactions
+            Console.WriteLine("                                     Example:    federationsetup -m testnet -keys=PublicKey1,");
+            Console.WriteLine("                                                     PublicKey2, PublicKey3, PublicKey4, PublicKey5");
             Console.WriteLine("                                                     -quorum=2");
             Console.WriteLine(Environment.NewLine);
         }

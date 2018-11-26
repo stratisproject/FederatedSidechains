@@ -26,28 +26,22 @@ namespace FederationSetup
             var mainchainNetwork = Networks.Stratis.Testnet();
             var sidechainNetwork = FederatedPegNetwork.NetworksSelector.Testnet();
 
-            this.output.WriteLine(this.CreateMultisigAddresses(mainchainNetwork, sidechainNetwork));
+            string password = "mypassword";
+
+            // Create a mnemonic and get the corresponding pubKey.
+            PubKey[] pubKeys = new PubKey[1];
+            var mnemonic = new Mnemonic(Wordlist.English, WordCount.Twelve);
+            pubKeys[0] = mnemonic.DeriveExtKey().PrivateKey.PubKey;
+
+            this.output.WriteLine($"Mnemonic - Please note the following 12 words down in a secure place: {string.Join(" ", mnemonic.Words)}");
+            this.output.WriteLine($"PubKey   - Please share the following public key with the person responsible for the sidechain generation: {Encoders.Hex.EncodeData((pubKeys[0]).ToBytes(false))}");
+
+            this.output.WriteLine(this.CreateMultisigAddresses(mainchainNetwork, sidechainNetwork, pubKeys));
         }
 
-        public string CreateMultisigAddresses(Network mainchainNetwork, Network sidechainNetwork, int quorum = 2, int keysCount = 5)
+        public string CreateMultisigAddresses(Network mainchainNetwork, Network sidechainNetwork, PubKey[] pubKeys, int quorum = 3)
         {
             var output = new StringBuilder();
-
-            PubKey[] pubKeys = new PubKey[keysCount];
-
-            for (int i = 0; i < keysCount; i++)
-            {
-                string password = "mypassword";
-
-                // Create a mnemonic and get the corresponding pubKey.
-                Mnemonic mnemonic = new Mnemonic(Wordlist.English, WordCount.Twelve);
-                var pubKey = mnemonic.DeriveExtKey().PrivateKey.PubKey;
-                pubKeys[i] = pubKey;
-
-                output.AppendLine($"Mnemonic - Please note the following 12 words down in a secure place: {string.Join(" ", mnemonic.Words)}");
-                output.AppendLine($"PubKey   - Please share the following public key with the person responsible for the sidechain generation: {Encoders.Hex.EncodeData((pubKey).ToBytes(false))}");
-                output.AppendLine(Environment.NewLine);
-            }
 
             Script payToMultiSig = PayToMultiSigTemplate.Instance.GenerateScriptPubKey(quorum, pubKeys);
             output.AppendLine("Redeem script: " + payToMultiSig.ToString());
