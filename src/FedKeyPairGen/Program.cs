@@ -60,7 +60,7 @@ namespace FederationSetup
                     GeneratePublicPrivateKeys();
                 }
 
-                if (args.Contains(SwitchGenerateMultiSigAddresses) || Console.ReadLine() == SwitchGenerateMultiSigAddresses)
+                if (args.Contains(SwitchGenerateMultiSigAddresses))
                 {
                     string[] federatedPublicKeys = GetFederatedPublicKeysFromArguments();
 
