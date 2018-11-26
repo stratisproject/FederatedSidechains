@@ -13,7 +13,9 @@ using Stratis.Bitcoin.Builder;
 using Stratis.Bitcoin.Builder.Feature;
 using Stratis.Bitcoin.Configuration.Logging;
 using Stratis.Bitcoin.Connection;
+using Stratis.Bitcoin.Features.Miner;
 using Stratis.Bitcoin.Features.Notifications;
+using Stratis.Bitcoin.Features.PoA;
 using Stratis.Bitcoin.P2P.Protocol.Payloads;
 using Stratis.Bitcoin.Signals;
 using Stratis.Bitcoin.Utilities;
@@ -42,6 +44,10 @@ namespace Stratis.FederatedPeg.Features.FederationGateway
         private readonly IMaturedBlockReceiver maturedBlockReceiver;
 
         private readonly IMaturedBlockSender maturedBlockSender;
+
+        private readonly IMaturedBlocksRequester maturedBlockRequester;
+
+        private readonly IMaturedBlocksProvider maturedBlocksProvider;
 
         private readonly IBlockTipSender blockTipSender;
 
@@ -83,6 +89,8 @@ namespace Stratis.FederatedPeg.Features.FederationGateway
             ILoggerFactory loggerFactory,
             IMaturedBlockReceiver maturedBlockReceiver,
             IMaturedBlockSender maturedBlockSender,
+            IMaturedBlocksRequester maturedBlocksRequester,
+            IMaturedBlocksProvider maturedBlocksProvider,
             IBlockTipSender blockTipSender,
             Signals signals,
             IDepositExtractor depositExtractor,
@@ -103,6 +111,8 @@ namespace Stratis.FederatedPeg.Features.FederationGateway
             this.loggerFactory = loggerFactory;
             this.maturedBlockReceiver = maturedBlockReceiver;
             this.maturedBlockSender = maturedBlockSender;
+            this.maturedBlockRequester = maturedBlocksRequester;
+            this.maturedBlocksProvider = maturedBlocksProvider;
             this.blockTipSender = blockTipSender;
             this.signals = signals;
             this.depositExtractor = depositExtractor;
@@ -147,6 +157,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway
             this.walletSyncManager.Start();
             this.crossChainTransferStore.Start();
             this.partialTransactionRequester.Start();
+            this.maturedBlockRequester.Start();
 
             // Connect the node to the other federation members.
             foreach (var federationMemberIp in this.federationGatewaySettings.FederationNodeIpEndPoints)
@@ -207,7 +218,9 @@ namespace Stratis.FederatedPeg.Features.FederationGateway
                     .FeatureServices(services => {
                         services.AddSingleton<IHttpClientFactory, HttpClientFactory>();
                         services.AddSingleton<IMaturedBlockReceiver, MaturedBlockReceiver>();
+                        services.AddSingleton<IMaturedBlocksRequester, RestMaturedBlockRequester>();
                         services.AddSingleton<IMaturedBlockSender, RestMaturedBlockSender>();
+                        services.AddSingleton<IMaturedBlocksProvider, MaturedBlocksProvider>();
                         services.AddSingleton<IBlockTipSender, RestBlockTipSender>();
                         services.AddSingleton<IFederationGatewaySettings, FederationGatewaySettings>();
                         services.AddSingleton<IOpReturnDataReader, OpReturnDataReader>();
@@ -222,9 +235,30 @@ namespace Stratis.FederatedPeg.Features.FederationGateway
                         services.AddSingleton<ILeaderProvider, LeaderProvider>();
                         services.AddSingleton<FederationWalletController>();
                         services.AddSingleton<ICrossChainTransferStore, CrossChainTransferStore>();
+                        services.AddSingleton<ILeaderReceiver, LeaderReceiver>();
+                        services.AddSingleton<ISignedMultisigTransactionBroadcaster, SignedMultisigTransactionBroadcaster>();
                         services.AddSingleton<IPartialTransactionRequester, PartialTransactionRequester>();
                     });
             });
+            return fullNodeBuilder;
+        }
+
+        public static IFullNodeBuilder UsePoAMining(this IFullNodeBuilder fullNodeBuilder)
+        {
+            fullNodeBuilder.ConfigureFeature(features =>
+                {
+                    features
+                        .AddFeature<PoAFeature>()
+                        .FeatureServices(services =>
+                            {
+                                services.AddSingleton<FederationManager>();
+                                services.AddSingleton<PoABlockHeaderValidator>();
+                                services.AddSingleton<IPoAMiner, PoAMiner>();
+                                services.AddSingleton<SlotsManager>();
+                                services.AddSingleton<BlockDefinition, PoABlockDefinition>();
+                            });
+                });
+
             return fullNodeBuilder;
         }
     }
