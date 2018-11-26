@@ -60,7 +60,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
             this.maxDepositHeight = int.MaxValue;
 
             CancellationTokenSource linkedTokenSource = CancellationTokenSource.CreateLinkedTokenSource(this.nodeLifetime.ApplicationStopping);
-            this.asyncLoop = this.asyncLoopFactory.Run(nameof(RestMaturedBlockRequester), token =>
+            this.asyncLoop = this.asyncLoopFactory.Run(nameof(RestMaturedBlockRequester), async token =>
             {
                 try
                 {
@@ -72,7 +72,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
 
                         if (this.crossChainTransferStore.HasSuspended() || maxBlocksToRequest <= 0)
                         {
-                            Thread.Sleep(TimeSpans.TenSeconds);
+                            await Task.Delay(TimeSpans.TenSeconds.Milliseconds, this.nodeLifetime.ApplicationStopping);
                             continue;
                         }
 
@@ -98,16 +98,14 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
                         }
                         else
                         {
-                            Thread.Sleep(TimeSpans.TenSeconds);
+                            await Task.Delay(TimeSpans.TenSeconds.Milliseconds, this.nodeLifetime.ApplicationStopping);
                         }
                     }
                 }
-                catch (Exception e)
+                catch (Exception)
                 {
                     linkedTokenSource.Cancel();
                 }
-
-                return Task.CompletedTask;
             },
             linkedTokenSource.Token,
             repeatEvery: CatchUpInterval);
