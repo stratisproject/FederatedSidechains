@@ -48,23 +48,24 @@ namespace Stratis.FederatedPeg.Tests
         [Fact]
         public void StartShouldCallGetMatureDeposits()
         {
-            TestingHttpClient.PrepareWorkingHttpClient(ref this.messageHandler, ref this.httpClient, ref this.httpClientFactory);
-
-            var maturedBlockDeposits = new MaturedBlockRequestModel(TestingValues.GetPositiveInt(), TestingValues.GetPositiveInt());
-
-            var restRequester = new RestMaturedBlockRequester(this.loggerFactory, this.federationSettings, this.httpClientFactory, this.asyncLoopFactory, this.crossChainTransferStore, this.nodeLifetime);
-
             this.crossChainTransferStore.NextMatureDepositHeight.Returns(1);
 
+            this.httpClientFactory = Substitute.For<IHttpClientFactory>();
+
+            bool called = false;
+            this.httpClient = Substitute.For<HttpClient>();
+            this.httpClient.PostAsync(Arg.Any<string>(), Arg.Any<HttpContent>())
+              .Returns(Task.Run<HttpResponseMessage>(() => { called = true; return new HttpResponseMessage(); }));
+
+            this.httpClientFactory.CreateClient(Arg.Any<string>()).Returns(this.httpClient);
+
+            var restRequester = new RestMaturedBlockRequester(this.loggerFactory, this.federationSettings, this.httpClientFactory, this.asyncLoopFactory, this.crossChainTransferStore, this.nodeLifetime);
             restRequester.Start();
 
-            Thread.Sleep(100);
+            while (!called)
+                Thread.Sleep(100);
 
-            this.logger.Received().Log(LogLevel.Debug,
-                Arg.Any<EventId>(),
-                Arg.Is<object>(o => o.ToString() == "Sending content Stratis.FederatedPeg.Features.FederationGateway.Models.JsonContent to Uri http://localhost:0/api/FederationGateway/get_matured_block_deposits"),
-                null,
-                Arg.Any<Func<object, Exception, string>>());
+            Assert.True(called);
         }
     }
 }
