@@ -60,7 +60,8 @@ namespace Stratis.FederatedPeg.Tests
             var restRequester = new RestMaturedBlockRequester(this.loggerFactory, this.federationSettings, this.httpClientFactory, this.crossChainTransferStore, this.maturedBlocksReceiver);
             restRequester.Start();
 
-            while (!called)
+            // Wait one minute max.
+            for (int i = 0; i < 600 && !called; i++)
                 Thread.Sleep(100);
 
             Assert.True(called);
