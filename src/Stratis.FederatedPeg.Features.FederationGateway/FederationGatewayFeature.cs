@@ -184,10 +184,18 @@ namespace Stratis.FederatedPeg.Features.FederationGateway
             ChainedHeader block = this.chain.GetBlock(height);
             uint256 hashBlock = block == null ? 0 : block.HashBlock;
 
+            benchLogs.AppendLine(
+                    "NodeStore.Height: ".PadRight(LoggingConfiguration.ColumnLength + 1) +
+                    this.crossChainTransferStore.TipHashAndHeight.Height.ToString().PadRight(9) +
+                    "NodeStore.Hash: ".PadRight(LoggingConfiguration.ColumnLength - 2) +
+                    this.crossChainTransferStore.TipHashAndHeight.Hash.ToString() + "  " +
+                    "NodeStore.NextDepositHeight: ".PadRight(LoggingConfiguration.ColumnLength + 1) +
+                    this.crossChainTransferStore.NextMatureDepositHeight.ToString().PadRight(8));
+
             var federationWallet = this.federationWalletManager.GetWallet();
-            benchLogs.AppendLine("Federation Wallet.Height: ".PadRight(LoggingConfiguration.ColumnLength + 1) +
+            benchLogs.AppendLine("Fed. Wallet.Height: ".PadRight(LoggingConfiguration.ColumnLength + 1) +
                                  (federationWallet != null ? height.ToString().PadRight(8) : "No Wallet".PadRight(8)) +
-                                 (federationWallet != null ? (" Federation Wallet.Hash: ".PadRight(LoggingConfiguration.ColumnLength - 1) + hashBlock) : String.Empty));
+                                 (federationWallet != null ? (" Fed. Wallet.Hash: ".PadRight(LoggingConfiguration.ColumnLength - 1) + hashBlock) : String.Empty));
         }
 
         public void AddComponentStats(StringBuilder benchLog)
