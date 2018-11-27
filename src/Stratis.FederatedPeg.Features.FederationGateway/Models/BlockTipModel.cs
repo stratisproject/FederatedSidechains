@@ -8,7 +8,7 @@ using Stratis.FederatedPeg.Features.FederationGateway.Interfaces;
 namespace Stratis.FederatedPeg.Features.FederationGateway.Models
 {
     /// <summary>
-    /// Block tip Hash and Height model.
+    /// Block tip Hash, Height and MatureConfirmation model.
     /// </summary>
     public class BlockTipModel : RequestModel, IBlockTip
     {

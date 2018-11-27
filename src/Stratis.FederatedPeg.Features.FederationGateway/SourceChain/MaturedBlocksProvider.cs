@@ -30,7 +30,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.SourceChain
 
             if (currentHeight > matureHeight)
             {
-                throw new Exception($"Block height {currentHeight} submitted is not mature enough. Blocks less than a height of {matureHeight} can be processed.");
+                throw new InvalidOperationException($"Block height {currentHeight} submitted is not mature enough. Blocks less than a height of {matureHeight} can be processed.");
             }
 
             // Pre-load the block data
@@ -47,7 +47,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.SourceChain
                 {
                     if (currentHeight == blockHeight)
                     {
-                        throw new Exception($"Block with height {currentHeight} was not found on the block chain.");
+                        throw new InvalidOperationException($"Block with height {currentHeight} was not found on the block chain.");
                     }
                     else
                     {
@@ -72,7 +72,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.SourceChain
 
                 if (maturedBlockDeposits == null)
                 {
-                    throw new Exception($"Unable to get deposits for block at height {chainedHeaders[index].Height}");
+                    throw new InvalidOperationException($"Unable to get deposits for block at height {chainedHeaders[index].Height}");
                 }
 
                 maturedBlocks.Add(maturedBlockDeposits);

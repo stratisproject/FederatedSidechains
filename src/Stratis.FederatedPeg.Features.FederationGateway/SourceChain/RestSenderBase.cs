@@ -36,7 +36,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.SourceChain
                 try
                 {
                     this.logger.LogDebug("Sending content {0} to Uri {1}", request, publicationUri);
-                    HttpResponseMessage httpResponseMessage = await client.PostAsync(publicationUri, request);
+                    HttpResponseMessage httpResponseMessage = await client.PostAsync(publicationUri, request).ConfigureAwait(false);
                     this.logger.LogDebug("Response: {0}", httpResponseMessage);
                     return httpResponseMessage;
                 }

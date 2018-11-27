@@ -80,7 +80,7 @@ namespace Stratis.FederatedPeg.Tests
         }
 
         [Fact]
-        public void GetMaturedBlockDeposits_Fails_When_Block_Not_In_Chain()
+        public async void GetMaturedBlockDeposits_Fails_When_Block_Not_In_Chain_Async()
         {
             this.chain = Substitute.For<ConcurrentChain>();
 
@@ -97,7 +97,7 @@ namespace Stratis.FederatedPeg.Tests
             ChainedHeader chainedHeader = this.BuildChain(3).GetBlock(2);
             this.chain.Tip.Returns(chainedHeader);
 
-            IActionResult result = controller.GetMaturedBlockDeposits(new MaturedBlockRequestModel(1));
+            IActionResult result = await controller.GetMaturedBlockDepositsAsync(new MaturedBlockRequestModel(1)).ConfigureAwait(false);
 
             result.Should().BeOfType<ErrorResult>();
 
@@ -116,7 +116,7 @@ namespace Stratis.FederatedPeg.Tests
         }
 
         [Fact]
-        public void GetMaturedBlockDeposits_Fails_When_Block_Height_Greater_Than_Minimum_Deposit_Confirmations()
+        public async void GetMaturedBlockDeposits_Fails_When_Block_Height_Greater_Than_Minimum_Deposit_Confirmations_Async()
         {
             // Chain header height : 4
             // 0 - 1 - 2 - 3 - 4
@@ -142,7 +142,7 @@ namespace Stratis.FederatedPeg.Tests
             ChainedHeader earlierBlock = this.chain.GetBlock(maturedHeight + 1);
 
             // Mature height = 2 (Chain header height (4) - Minimum deposit confirmations (2))
-            IActionResult result = controller.GetMaturedBlockDeposits(new MaturedBlockRequestModel(earlierBlock.Height));
+            IActionResult result = await controller.GetMaturedBlockDepositsAsync(new MaturedBlockRequestModel(earlierBlock.Height)).ConfigureAwait(false);
 
             // Block height (3) > Mature height (2) - returns error message
             result.Should().BeOfType<ErrorResult>();
@@ -162,7 +162,7 @@ namespace Stratis.FederatedPeg.Tests
         }
 
         [Fact]
-        public void GetMaturedBlockDeposits_Gets_All_Matured_Block_Deposits()
+        public async void GetMaturedBlockDeposits_Gets_All_Matured_Block_Deposits_Async()
         {
             this.chain = this.BuildChain(10);
 
@@ -188,7 +188,7 @@ namespace Stratis.FederatedPeg.Tests
                 depositExtractorCallCount++;
             });
 
-            IActionResult result = controller.GetMaturedBlockDeposits(new MaturedBlockRequestModel(earlierBlock.Height));
+            IActionResult result = await controller.GetMaturedBlockDepositsAsync(new MaturedBlockRequestModel(earlierBlock.Height)).ConfigureAwait(false);
 
             result.Should().BeOfType<JsonResult>();
 

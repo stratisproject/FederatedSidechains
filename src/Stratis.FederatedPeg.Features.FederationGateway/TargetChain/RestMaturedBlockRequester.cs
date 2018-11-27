@@ -72,7 +72,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
 
                         if (this.crossChainTransferStore.HasSuspended() || maxBlocksToRequest <= 0)
                         {
-                            await Task.Delay(TimeSpans.TenSeconds.Milliseconds, this.nodeLifetime.ApplicationStopping);
+                            await Task.Delay(TimeSpans.TenSeconds.Milliseconds, this.nodeLifetime.ApplicationStopping).ConfigureAwait(false);
                             continue;
                         }
 
@@ -98,7 +98,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
                         }
                         else
                         {
-                            await Task.Delay(TimeSpans.TenSeconds.Milliseconds, this.nodeLifetime.ApplicationStopping);
+                            await Task.Delay(TimeSpans.TenSeconds.Milliseconds, this.nodeLifetime.ApplicationStopping).ConfigureAwait(false);
                         }
                     }
                 }

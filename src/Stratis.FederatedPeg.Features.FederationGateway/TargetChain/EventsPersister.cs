@@ -25,7 +25,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
             this.store = store;
             this.maturedBlocksRequester = maturedBlocksRequester;
 
-            this.maturedBlockDepositSubscription = maturedBlockReceiver.MaturedBlockDepositStream.Subscribe(async m => await PersistNewMaturedBlockDeposits(m));
+            this.maturedBlockDepositSubscription = maturedBlockReceiver.MaturedBlockDepositStream.Subscribe(async m => await PersistNewMaturedBlockDeposits(m).ConfigureAwait(false));
             this.logger.LogDebug("Subscribed to {0}", nameof(maturedBlockReceiver), nameof(maturedBlockReceiver.MaturedBlockDepositStream));
         }
 
@@ -38,7 +38,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
 
             if (maturedBlockDeposits.Block.BlockHeight == this.store.NextMatureDepositHeight)
             {
-                await this.store.RecordLatestMatureDepositsAsync(maturedBlockDeposits.Deposits.ToArray());
+                await this.store.RecordLatestMatureDepositsAsync(maturedBlockDeposits.Deposits.ToArray()).ConfigureAwait(false);
             }
         }
 

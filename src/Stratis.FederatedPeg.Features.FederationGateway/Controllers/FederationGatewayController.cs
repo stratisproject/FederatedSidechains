@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
+using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
 using Microsoft.Extensions.Logging;
@@ -114,7 +115,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.Controllers
         /// <returns><see cref="IActionResult"/>OK on success.</returns>
         [Route(FederationGatewayRouteEndPoint.GetMaturedBlockDeposits)]
         [HttpPost]
-        public IActionResult GetMaturedBlockDeposits([FromBody] MaturedBlockRequestModel blockRequest)
+        public async Task<IActionResult> GetMaturedBlockDepositsAsync([FromBody] MaturedBlockRequestModel blockRequest)
         {
             Guard.NotNull(blockRequest, nameof(blockRequest));
 
@@ -126,8 +127,8 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.Controllers
 
             try
             {
-                List<IMaturedBlockDeposits> deposits = this.maturedBlocksProvider.GetMaturedDepositsAsync(
-                    blockRequest.BlockHeight, blockRequest.MaxBlocksToSend).GetAwaiter().GetResult();
+                List<IMaturedBlockDeposits> deposits = await this.maturedBlocksProvider.GetMaturedDepositsAsync(
+                    blockRequest.BlockHeight, blockRequest.MaxBlocksToSend).ConfigureAwait(false);
 
                 return this.Json(deposits);
             }
