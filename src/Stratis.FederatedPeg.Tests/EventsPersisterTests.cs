@@ -43,7 +43,7 @@ namespace Stratis.FederatedPeg.Tests
         {
             int depositCount = 20;
             var maturedBlockDeposits = TestingValues.GetMaturedBlockDeposits(depositCount, new HashHeightPair(0, 0));
-            IObservable<IMaturedBlockDeposits> maturedBlockStream = new[] { maturedBlockDeposits }.ToObservable();
+            IObservable<IMaturedBlockDeposits[]> maturedBlockStream = new[] { new[] { maturedBlockDeposits } }.ToObservable();
             this.maturedBlockReceiver.MaturedBlockDepositStream.Returns(maturedBlockStream);
 
             this.eventsPersister = new EventsPersister(this.loggerFactory, this.store, this.maturedBlockReceiver, this.maturedBlocksRequester);
@@ -65,7 +65,7 @@ namespace Stratis.FederatedPeg.Tests
         {
             int depositCount = 0;
             var maturedBlockDeposits = TestingValues.GetMaturedBlockDeposits(depositCount, new HashHeightPair(0, 0));
-            IObservable<IMaturedBlockDeposits> maturedBlockStream = new[] { maturedBlockDeposits }.ToObservable();
+            IObservable<IMaturedBlockDeposits[]> maturedBlockStream = new[] { new[] { maturedBlockDeposits } }.ToObservable();
             this.maturedBlockReceiver.MaturedBlockDepositStream.Returns(maturedBlockStream);
 
             this.eventsPersister = new EventsPersister(this.loggerFactory, this.store, this.maturedBlockReceiver, this.maturedBlocksRequester);
@@ -89,7 +89,7 @@ namespace Stratis.FederatedPeg.Tests
                 .Select(i => TestingValues.GetMaturedBlockDeposits(i, new HashHeightPair((uint256)(uint)i, i)))
                 .ToList();
 
-            IObservable<IMaturedBlockDeposits> maturedBlockStream = maturedBlockDepositsEnum.ToObservable();
+            IObservable<IMaturedBlockDeposits[]> maturedBlockStream = (new[] { maturedBlockDepositsEnum.ToArray() }).ToObservable();
             this.maturedBlockReceiver.MaturedBlockDepositStream.Returns(maturedBlockStream);
 
             int blockNum = 0;

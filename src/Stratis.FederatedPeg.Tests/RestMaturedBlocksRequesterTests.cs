@@ -1,15 +1,12 @@
-﻿using System;
+﻿
 using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using NSubstitute;
-using Stratis.Bitcoin.Utilities;
 using Stratis.FederatedPeg.Features.FederationGateway;
 using Stratis.FederatedPeg.Features.FederationGateway.Interfaces;
-using Stratis.FederatedPeg.Features.FederationGateway.Models;
 using Stratis.FederatedPeg.Features.FederationGateway.TargetChain;
-using Stratis.FederatedPeg.Tests.Utils;
 using Xunit;
 
 namespace Stratis.FederatedPeg.Tests
@@ -26,11 +23,9 @@ namespace Stratis.FederatedPeg.Tests
 
         private IFederationGatewaySettings federationSettings;
 
-        private IAsyncLoopFactory asyncLoopFactory;
-
         private ICrossChainTransferStore crossChainTransferStore;
 
-        private INodeLifetime nodeLifetime;
+        private IMaturedBlockReceiver maturedBlocksReceiver;
 
         private ILogger logger;
 
@@ -40,9 +35,8 @@ namespace Stratis.FederatedPeg.Tests
             this.logger = Substitute.For<ILogger>();
             this.loggerFactory.CreateLogger(null).ReturnsForAnyArgs(this.logger);
             this.federationSettings = Substitute.For<IFederationGatewaySettings>();
-            this.asyncLoopFactory = new AsyncLoopFactory(this.loggerFactory);
-            this.nodeLifetime = new NodeLifetime();
             this.crossChainTransferStore = Substitute.For<ICrossChainTransferStore>();
+            this.maturedBlocksReceiver = Substitute.For<IMaturedBlockReceiver>();
         }
 
         [Fact]
@@ -55,11 +49,15 @@ namespace Stratis.FederatedPeg.Tests
             bool called = false;
             this.httpClient = Substitute.For<HttpClient>();
             this.httpClient.PostAsync(Arg.Any<string>(), Arg.Any<HttpContent>())
-              .Returns(Task.Run<HttpResponseMessage>(() => { called = true; return new HttpResponseMessage(); }));
+              .ReturnsForAnyArgs(Task.Run(() =>
+              {
+                  called = true;
+                  return new HttpResponseMessage();
+              }));
 
             this.httpClientFactory.CreateClient(Arg.Any<string>()).Returns(this.httpClient);
 
-            var restRequester = new RestMaturedBlockRequester(this.loggerFactory, this.federationSettings, this.httpClientFactory, this.asyncLoopFactory, this.crossChainTransferStore, this.nodeLifetime);
+            var restRequester = new RestMaturedBlockRequester(this.loggerFactory, this.federationSettings, this.httpClientFactory, this.crossChainTransferStore, this.maturedBlocksReceiver);
             restRequester.Start();
 
             while (!called)

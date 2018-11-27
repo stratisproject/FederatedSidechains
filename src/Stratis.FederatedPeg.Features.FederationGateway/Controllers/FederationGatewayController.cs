@@ -18,7 +18,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.Controllers
 {
     public static class FederationGatewayRouteEndPoint
     {
-        public const string ReceiveMaturedBlock = "receive-matured-block";
+        public const string ReceiveMaturedBlocks = "receive-matured-blocks";
         public const string ReceiveCurrentBlockTip = "receive-current-block-tip";
         public const string GetMaturedBlockDeposits = "get_matured_block_deposits";
         public const string CreateSessionOnCounterChain = "create-session-oncounterchain";
@@ -68,9 +68,9 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.Controllers
             this.leaderReceiver = leaderReceiver;
         }
 
-        [Route(FederationGatewayRouteEndPoint.ReceiveMaturedBlock)]
+        [Route(FederationGatewayRouteEndPoint.ReceiveMaturedBlocks)]
         [HttpPost]
-        public void ReceiveMaturedBlock([FromBody] MaturedBlockDepositsModel maturedBlockDeposits)
+        public void ReceiveMaturedBlock([FromBody] MaturedBlockDepositsModel[] maturedBlockDeposits)
         {
             this.maturedBlockReceiver.ReceiveMaturedBlockDeposits(maturedBlockDeposits);
         }
@@ -96,8 +96,6 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.Controllers
                 this.leaderProvider.Update(new BlockTipModel(blockTip.Hash, blockTip.Height, blockTip.MatureConfirmations));
 
                 this.leaderReceiver.ReceiveLeader(this.leaderProvider);
-
-                this.maturedBlocksRequester.SetTip(blockTip.Height - blockTip.MatureConfirmations);
 
                 return this.Ok();
             }

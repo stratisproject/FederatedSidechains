@@ -1,11 +1,8 @@
 ﻿using System;
-using System.Linq;
 using System.Net.Http;
-using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
-using Stratis.Bitcoin.Utilities;
 using Stratis.FederatedPeg.Features.FederationGateway.Controllers;
 using Stratis.FederatedPeg.Features.FederationGateway.Interfaces;
 using Stratis.FederatedPeg.Features.FederationGateway.Models;
@@ -13,44 +10,24 @@ using Stratis.FederatedPeg.Features.FederationGateway.SourceChain;
 
 namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
 {
-    public class RestMaturedBlockRequester : RestSenderBase, IMaturedBlocksRequester, IDisposable
+    public class RestMaturedBlockRequester : RestSenderBase, IMaturedBlocksRequester
     {
         public const int MaxBlocksToCatchup = 1000;
-        public static TimeSpan CatchUpInterval = TimeSpans.TenSeconds;
 
-        private IAsyncLoop asyncLoop;
-        private IAsyncLoopFactory asyncLoopFactory;
         private ICrossChainTransferStore crossChainTransferStore;
-        private INodeLifetime nodeLifetime;
+        private IMaturedBlockReceiver maturedBlockReceiver;
         private int maxDepositHeight;
 
         public RestMaturedBlockRequester(
             ILoggerFactory loggerFactory,
             IFederationGatewaySettings settings,
             IHttpClientFactory httpClientFactory,
-            IAsyncLoopFactory asyncLoopFactory,
             ICrossChainTransferStore crossChainTransferStore,
-            INodeLifetime nodeLifetime)
+            IMaturedBlockReceiver maturedBlockReceiver)
             : base(loggerFactory, settings, httpClientFactory)
         {
-            this.asyncLoopFactory = asyncLoopFactory;
             this.crossChainTransferStore = crossChainTransferStore;
-            this.nodeLifetime = nodeLifetime;
-        }
-
-        /// <inheritdoc />
-        public void SetTip(int tipHeight)
-        {
-            this.maxDepositHeight = tipHeight;
-        }
-
-        /// <inheritdoc />
-        public void SetLastReceived(int lastReceived)
-        {
-            if (lastReceived > this.maxDepositHeight)
-            {
-                this.maxDepositHeight = lastReceived;
-            }
+            this.maturedBlockReceiver = maturedBlockReceiver;
         }
 
         /// <inheritdoc />
@@ -58,67 +35,41 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
         {
             // Over-estimate. We correct this later.
             this.maxDepositHeight = int.MaxValue;
-
-            CancellationTokenSource linkedTokenSource = CancellationTokenSource.CreateLinkedTokenSource(this.nodeLifetime.ApplicationStopping);
-            this.asyncLoop = this.asyncLoopFactory.Run(nameof(RestMaturedBlockRequester), async token =>
-            {
-                try
-                {
-                    while (this.crossChainTransferStore.NextMatureDepositHeight <= this.maxDepositHeight)
-                    {
-                        // We are behind the chain A tip.
-                        int maxBlocksToRequest = 1;
-                        maxBlocksToRequest = Math.Min(MaxBlocksToCatchup, this.maxDepositHeight - this.crossChainTransferStore.NextMatureDepositHeight + 1);
-
-                        if (this.crossChainTransferStore.HasSuspended() || maxBlocksToRequest <= 0)
-                        {
-                            await Task.Delay(TimeSpans.TenSeconds.Milliseconds, this.nodeLifetime.ApplicationStopping).ConfigureAwait(false);
-                            continue;
-                        }
-
-                        var model = new MaturedBlockRequestModel(this.crossChainTransferStore.NextMatureDepositHeight, maxBlocksToRequest);
-                        HttpResponseMessage response = this.SendAsync(model, FederationGatewayRouteEndPoint.GetMaturedBlockDeposits).GetAwaiter().GetResult();
-                        if (response?.IsSuccessStatusCode ?? false)
-                        {
-                            string successJson = response.Content.ReadAsStringAsync().GetAwaiter().GetResult();
-                            MaturedBlockDepositsModel[] blockDeposits = JsonConvert.DeserializeObject<MaturedBlockDepositsModel[]>(successJson);
-
-                            // We over-estimate the maxDepositHeight at start up.
-                            // Set it to the correct value based on the blocks that we are able to retrieve
-                            if (blockDeposits.Length < maxBlocksToRequest)
-                                this.maxDepositHeight = model.BlockHeight + blockDeposits.Length - 1;
-
-                            foreach (MaturedBlockDepositsModel blockDeposit in blockDeposits)
-                            {
-                                if (blockDeposit.Block.BlockHeight == this.crossChainTransferStore.NextMatureDepositHeight)
-                                {
-                                    this.crossChainTransferStore.RecordLatestMatureDepositsAsync(blockDeposit.Deposits.ToArray()).GetAwaiter().GetResult();
-                                }
-                            }
-                        }
-                        else
-                        {
-                            await Task.Delay(TimeSpans.TenSeconds.Milliseconds, this.nodeLifetime.ApplicationStopping).ConfigureAwait(false);
-                        }
-                    }
-                }
-                catch (Exception)
-                {
-                    linkedTokenSource.Cancel();
-                }
-            },
-            linkedTokenSource.Token,
-            repeatEvery: CatchUpInterval);
+            this.GetMoreBlocksAsync().GetAwaiter().GetResult();
         }
 
         /// <inheritdoc />
-        public void Dispose()
+        public async Task<bool> GetMoreBlocksAsync()
         {
-            if (this.asyncLoop != null)
+            int maxBlocksToRequest = 1;
+
+            if (!this.crossChainTransferStore.HasSuspended())
             {
-                this.asyncLoop.Dispose();
-                this.asyncLoop = null;
+                maxBlocksToRequest = Math.Min(MaxBlocksToCatchup, this.maxDepositHeight - this.crossChainTransferStore.NextMatureDepositHeight + 1);
+
+                if (maxBlocksToRequest <= 0)
+                    return false;
             }
+
+            var model = new MaturedBlockRequestModel(this.crossChainTransferStore.NextMatureDepositHeight, maxBlocksToRequest);
+            HttpResponseMessage response = await this.SendAsync(model, FederationGatewayRouteEndPoint.GetMaturedBlockDeposits).ConfigureAwait(false);
+            if (response.IsSuccessStatusCode)
+            {
+                string successJson = response.Content?.ReadAsStringAsync().GetAwaiter().GetResult();
+                if (successJson != null)
+                {
+                    MaturedBlockDepositsModel[] blockDeposits = JsonConvert.DeserializeObject<MaturedBlockDepositsModel[]>(successJson);
+
+                    this.maturedBlockReceiver.ReceiveMaturedBlockDeposits(blockDeposits);
+
+                    if (blockDeposits.Length < maxBlocksToRequest)
+                        this.maxDepositHeight = model.BlockHeight + blockDeposits.Length - 1;
+
+                    return true;
+                }
+            }
+
+            return false;
         }
     }
 }

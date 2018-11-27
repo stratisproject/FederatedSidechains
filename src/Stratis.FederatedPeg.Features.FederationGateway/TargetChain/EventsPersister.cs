@@ -25,21 +25,25 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
             this.store = store;
             this.maturedBlocksRequester = maturedBlocksRequester;
 
-            this.maturedBlockDepositSubscription = maturedBlockReceiver.MaturedBlockDepositStream.Subscribe(async m => await PersistNewMaturedBlockDeposits(m).ConfigureAwait(false));
+            this.maturedBlockDepositSubscription = maturedBlockReceiver.MaturedBlockDepositStream.Subscribe(async m => await PersistNewMaturedBlockDepositsAsync(m).ConfigureAwait(false));
             this.logger.LogDebug("Subscribed to {0}", nameof(maturedBlockReceiver), nameof(maturedBlockReceiver.MaturedBlockDepositStream));
         }
 
         /// <inheritdoc />
-        public async Task PersistNewMaturedBlockDeposits(IMaturedBlockDeposits maturedBlockDeposits)
+        public async Task PersistNewMaturedBlockDepositsAsync(IMaturedBlockDeposits[] maturedBlockDeposits)
         {
             this.logger.LogDebug("New {0} received.", nameof(IMaturedBlockDeposits));
 
-            this.maturedBlocksRequester.SetLastReceived(maturedBlockDeposits.Block.BlockHeight);
-
-            if (maturedBlockDeposits.Block.BlockHeight == this.store.NextMatureDepositHeight)
+            for (int i = 0; i < maturedBlockDeposits.Length; i++)
             {
-                await this.store.RecordLatestMatureDepositsAsync(maturedBlockDeposits.Deposits.ToArray()).ConfigureAwait(false);
+                if (maturedBlockDeposits[i].Block.BlockHeight == this.store.NextMatureDepositHeight)
+                {
+                    await this.store.RecordLatestMatureDepositsAsync(maturedBlockDeposits[i].Deposits.ToArray()).ConfigureAwait(false);
+                }
             }
+
+            await this.store.SaveCurrentTipAsync().ConfigureAwait(false);
+            await this.maturedBlocksRequester.GetMoreBlocksAsync().ConfigureAwait(false);
         }
 
         /// <inheritdoc />

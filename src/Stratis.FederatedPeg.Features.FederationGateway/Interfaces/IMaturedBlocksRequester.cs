@@ -5,20 +5,14 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.Interfaces
     public interface IMaturedBlocksRequester
     {
         /// <summary>
-        /// Sets the counter-chain tip height.
-        /// </summary>
-        /// <param name="tipHeight">The height of a received chain A block.</param>
-        void SetTip(int tipHeight);
-
-        /// <summary>
-        /// Get the last received deposit height and possible triggers the synchornization.
-        /// </summary>
-        /// <param name="lastReceived">The height of a received chain A block.</param>
-        void SetLastReceived(int lastReceived);
-
-        /// <summary>
         /// Starts the requester.
         /// </summary>
         void Start();
+
+        /// <summary>
+        /// Gets more blocks from the counter node.
+        /// </summary>
+        /// <returns><c>True</c> if more blocks were found and <c>false</c> otherwise.</returns>
+        Task<bool> GetMoreBlocksAsync();
     }
 }
