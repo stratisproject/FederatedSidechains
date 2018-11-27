@@ -16,7 +16,6 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
 
         private ICrossChainTransferStore crossChainTransferStore;
         private IMaturedBlockReceiver maturedBlockReceiver;
-        private int maxDepositHeight;
 
         public RestMaturedBlockRequester(
             ILoggerFactory loggerFactory,
@@ -33,8 +32,6 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
         /// <inheritdoc />
         public void Start()
         {
-            // Over-estimate. We correct this later.
-            this.maxDepositHeight = int.MaxValue;
             this.GetMoreBlocksAsync().GetAwaiter().GetResult();
         }
 
@@ -45,10 +42,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
 
             if (!this.crossChainTransferStore.HasSuspended())
             {
-                maxBlocksToRequest = Math.Min(MaxBlocksToCatchup, this.maxDepositHeight - this.crossChainTransferStore.NextMatureDepositHeight + 1);
-
-                if (maxBlocksToRequest <= 0)
-                    return false;
+                maxBlocksToRequest = MaxBlocksToCatchup;
             }
 
             var model = new MaturedBlockRequestModel(this.crossChainTransferStore.NextMatureDepositHeight, maxBlocksToRequest);
@@ -64,7 +58,6 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
 
                     if (blockDeposits.Length < maxBlocksToRequest)
                     {
-                        this.maxDepositHeight = model.BlockHeight + blockDeposits.Length - 1;
                         await this.crossChainTransferStore.SaveCurrentTipAsync().ConfigureAwait(false);
                     }
 

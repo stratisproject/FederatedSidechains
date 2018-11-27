@@ -41,6 +41,9 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.SourceChain
                 if (maxBlocks-- <= 0)
                     break;
 
+                if (currentHeight >= this.chain.Tip.Height)
+                    break;
+
                 chainedHeaders[index] = this.chain.GetBlock(currentHeight);
 
                 if (chainedHeaders[index] == null)
