@@ -42,7 +42,6 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
                 }
             }
 
-            await this.store.SaveCurrentTipAsync().ConfigureAwait(false);
             await this.maturedBlocksRequester.GetMoreBlocksAsync().ConfigureAwait(false);
         }
 
