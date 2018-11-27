@@ -56,7 +56,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
 
                     this.maturedBlockReceiver.ReceiveMaturedBlockDeposits(blockDeposits);
 
-                    if (blockDeposits.Length < maxBlocksToRequest)
+                    if (blockDeposits.Length > 0 && blockDeposits.Length < maxBlocksToRequest)
                     {
                         await this.crossChainTransferStore.SaveCurrentTipAsync().ConfigureAwait(false);
                     }
