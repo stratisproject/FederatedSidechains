@@ -54,11 +54,14 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
                 {
                     MaturedBlockDepositsModel[] blockDeposits = JsonConvert.DeserializeObject<MaturedBlockDepositsModel[]>(successJson);
 
-                    this.maturedBlockReceiver.ReceiveMaturedBlockDeposits(blockDeposits);
-
-                    if (blockDeposits.Length > 0 && blockDeposits.Length < maxBlocksToRequest)
+                    if (blockDeposits.Length > 0)
                     {
-                        await this.crossChainTransferStore.SaveCurrentTipAsync().ConfigureAwait(false);
+                        this.maturedBlockReceiver.ReceiveMaturedBlockDeposits(blockDeposits);
+
+                        if (blockDeposits.Length < maxBlocksToRequest)
+                        {
+                            await this.crossChainTransferStore.SaveCurrentTipAsync().ConfigureAwait(false);
+                        }
                     }
 
                     return true;
