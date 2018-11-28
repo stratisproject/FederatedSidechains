@@ -94,13 +94,13 @@ namespace Stratis.FederatedPeg.Tests.Utils
         {
             this.newLine("# MainchainUser");
             this.newLine("cd $path_to_stratisd");
-            this.newLine($"start-process cmd -ArgumentList \"/k color {this.consoleColors[5]} && dotnet run -testnet -port=36178 -apiport=38221 -agentprefix=mainuser -datadir=$root_datadir\\MainchainUser\"");
+            this.newLine($"start-process cmd -ArgumentList \"/k color {this.consoleColors[5]} && dotnet run --no-build -testnet -port=36178 -apiport=38221 -agentprefix=mainuser -datadir=$root_datadir\\MainchainUser\"");
             this.newLine("timeout $interval_time");
             this.newLine(Environment.NewLine);
 
             this.newLine("# SidechainUser");
             this.newLine("cd path_to_sidechaind");
-            this.newLine($"start-process cmd -ArgumentList \"/k color {this.consoleColors[4]} && dotnet run -port=26179 -apiport=38225 -agentprefix=sideuser -datadir=$root_datadir\\SidechainUser agentprefix=sc_user -addnode=127.0.0.1:36{GetPortNumberSuffix(this.chains[1], 0)} -addnode=127.0.0.1:36{GetPortNumberSuffix(this.chains[1], 1)} -addnode=127.0.0.1:36{GetPortNumberSuffix(this.chains[1], 2)}\"");
+            this.newLine($"start-process cmd -ArgumentList \"/k color {this.consoleColors[4]} && dotnet run --no-build -testnet -port=26179 -apiport=38225 -agentprefix=sideuser -datadir=$root_datadir\\SidechainUser agentprefix=sc_user -addnode=127.0.0.1:36{GetPortNumberSuffix(this.chains[1], 0)} -addnode=127.0.0.1:36{GetPortNumberSuffix(this.chains[1], 1)} -addnode=127.0.0.1:36{GetPortNumberSuffix(this.chains[1], 2)}\"");
             this.newLine("timeout $interval_time");
             this.newLine(Environment.NewLine);
         }
@@ -111,10 +111,10 @@ namespace Stratis.FederatedPeg.Tests.Utils
             federationMemberIndexes.ForEach(i => {
                 this.newLine($"# Federation member {i} main and side");
                 this.newLine(
-                    $"start-process cmd -ArgumentList \"/k color {this.consoleColors[i+1]} && dotnet run -mainchain -testnet -agentprefix=fed{i + 1}main -datadir=$root_datadir\\gateway{i + 1} -port=36{GetPortNumberSuffix(this.chains[0], i)} -apiport=38{GetPortNumberSuffix(this.chains[0], i)} -counterchainapiport=38{GetPortNumberSuffix(this.chains[1], i)} -federationips=$mainchain_federationips -redeemscript=\"\"$redeemscript\"\" -publickey=$gateway{i+1}_public_key\"");
+                    $"start-process cmd -ArgumentList \"/k color {this.consoleColors[i+1]} && dotnet run --no-build -mainchain -testnet -agentprefix=fed{i + 1}main -datadir=$root_datadir\\gateway{i + 1} -port=36{GetPortNumberSuffix(this.chains[0], i)} -apiport=38{GetPortNumberSuffix(this.chains[0], i)} -counterchainapiport=38{GetPortNumberSuffix(this.chains[1], i)} -federationips=$mainchain_federationips -redeemscript=\"\"$redeemscript\"\" -publickey=$gateway{i+1}_public_key\"");
                 this.newLine("timeout $long_interval_time");
                 this.newLine(
-                    $"start-process cmd -ArgumentList \"/k color {this.consoleColors[i + 1]} && dotnet run -sidechain -testnet -agentprefix=fed{i + 1}side -datadir=$root_datadir\\gateway{i + 1} mine=1 mineaddress=$sidechain_multisig_address -port=36{GetPortNumberSuffix(this.chains[1], i)} -apiport=38{GetPortNumberSuffix(this.chains[1], i)} -counterchainapiport=38{GetPortNumberSuffix(this.chains[0], i)} -txindex=1 -federationips=$sidechain_federationips -redeemscript=\"\"$redeemscript\"\" -publickey=$gateway{i + 1}_public_key\"");
+                    $"start-process cmd -ArgumentList \"/k color {this.consoleColors[i + 1]} && dotnet run --no-build -sidechain -testnet -agentprefix=fed{i + 1}side -datadir=$root_datadir\\gateway{i + 1} mine=1 mineaddress=$sidechain_multisig_address -port=36{GetPortNumberSuffix(this.chains[1], i)} -apiport=38{GetPortNumberSuffix(this.chains[1], i)} -counterchainapiport=38{GetPortNumberSuffix(this.chains[0], i)} -txindex=1 -federationips=$sidechain_federationips -redeemscript=\"\"$redeemscript\"\" -publickey=$gateway{i + 1}_public_key\"");
                 this.newLine("timeout $long_interval_time");
                 this.newLine(Environment.NewLine);
             });
