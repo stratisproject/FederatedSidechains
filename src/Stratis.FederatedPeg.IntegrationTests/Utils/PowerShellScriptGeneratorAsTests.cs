@@ -138,12 +138,14 @@ namespace Stratis.FederatedPeg.Tests.Utils
 
         private void SetFolderVariables()
         {
-            //var userDir = Environment.SpecialFolder.UserProfile;
-            var rootDataDir = @"C:\Users\Matthieu\AppData\Roaming\StratisNode\federation";
-            var fedGatewayDDir = @"C:\Users\Matthieu\source\repos\FederatedSidechains\src\Stratis.FederationGatewayD";
-            var sidechainDDir = @"C:\Users\Matthieu\source\repos\FederatedSidechains\src\Stratis.SidechainD";
-            var stratisDDir = @"C:\Users\Matthieu\source\repos\StratisBitcoinFullNode\src\Stratis.StratisD";
-            var walletFile = @"C:\Users\Matthieu\AppData\Roaming\StratisNode\stratis\StratisTest\walletTest1.wallet.json";
+            var appDataDir = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
+            var rootDataDir = Path.Combine(appDataDir, "StratisNode", "federation");
+            var repoRoot = Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),"source","repos");
+            var fedGatewayDDir = Path.Combine(repoRoot, "FederatedSidechains","src","Stratis.FederationGatewayD");
+            var sidechainDDir = Path.Combine(repoRoot, "FederatedSidechains", "src", "Stratis.SidechainD");
+            var stratisDDir = Path.Combine(repoRoot, @"StratisBitcoinFullNode","src","Stratis.StratisD");
+            var walletFile = Path.Combine(appDataDir, "StratisNode","stratis", this.mainchainNetwork.Name,"walletTest1.wallet.json");
             this.newLine("###############################");
             this.newLine("#    UPDATE THESE 5 VALUES    #");
             this.newLine("###############################");
