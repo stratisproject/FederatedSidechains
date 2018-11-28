@@ -73,8 +73,11 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.SourceChain
 
         public IMaturedBlockDeposits ExtractMaturedBlockDeposits(ChainedHeader chainedHeader)
         {
-            ChainedHeader newlyMaturedBlock = this.GetNewlyMaturedBlock(chainedHeader);
+            return this.ExtractBlockDeposits(this.GetNewlyMaturedBlock(chainedHeader));
+        }
 
+        public IMaturedBlockDeposits ExtractBlockDeposits(ChainedHeader newlyMaturedBlock)
+        {
             if (newlyMaturedBlock == null) return null;
 
             var maturedBlock = new MaturedBlockModel()
@@ -91,11 +94,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.SourceChain
             return maturedBlockDeposits;
         }
 
-        /// <summary>
-        /// Get the block that is expected to be mature given the chain header.
-        /// </summary>
-        /// <param name="chainedHeader"></param>
-        /// <returns></returns>
+
         private ChainedHeader GetNewlyMaturedBlock(ChainedHeader chainedHeader)
         {
             var newMaturedHeight = chainedHeader.Height - (int)this.MinimumDepositConfirmations;
