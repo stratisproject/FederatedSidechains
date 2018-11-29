@@ -32,8 +32,6 @@ namespace Stratis.FederatedPeg.Tests.Utils
 
         private List<string> chains;
 
-        private StringBuilder stringBuilder;
-
         private Dictionary<int, string> consoleColors;
 
         private Action<string> newLine;
@@ -57,8 +55,8 @@ namespace Stratis.FederatedPeg.Tests.Utils
             this.federationMemberIndexes = Enumerable.Range(0, this.pubKeysByMnemonic.Count).ToList();
             this.chains = new[] { "mainchain", "sidechain" }.ToList();
 
-            this.stringBuilder = new StringBuilder();
-            this.newLine = s => this.stringBuilder.AppendLine(s);
+            var stringBuilder = new StringBuilder();
+            this.newLine = s => stringBuilder.AppendLine(s);
 
             SetFolderVariables();
             CopyStratisChainFiles();
@@ -71,7 +69,7 @@ namespace Stratis.FederatedPeg.Tests.Utils
             StartChainsD();
             EnableWallets();
 
-            this.output.WriteLine(this.stringBuilder.ToString());
+            this.output.WriteLine(stringBuilder.ToString());
         }
 
         private void CreatePoaKeyFiles()
