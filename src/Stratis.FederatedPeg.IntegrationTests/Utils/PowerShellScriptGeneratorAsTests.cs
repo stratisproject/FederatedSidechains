@@ -206,7 +206,7 @@ namespace Stratis.FederatedPeg.Tests.Utils
                 i =>
                     {
                         this.stringBuilder.AppendLine($"# Member{i + 1} mnemonic: {this.mnemonics[i]}");
-                        this.stringBuilder.AppendLine($"# Member1 public key: {this.pubKeysByMnemonic[this.mnemonics[0]]}");
+                        this.stringBuilder.AppendLine($"# Member{i + 1} public key: {this.pubKeysByMnemonic[this.mnemonics[i]]}");
                     });
 
             this.stringBuilder.AppendLine($"# Redeem script: {this.scriptAndAddresses.payToMultiSig}");
