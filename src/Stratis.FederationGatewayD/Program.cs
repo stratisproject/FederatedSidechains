@@ -77,14 +77,13 @@ namespace Stratis.FederationGatewayD
             IFullNode node = new FullNodeBuilder()
                 .UseNodeSettings(nodeSettings)
                 .UseBlockStore()
-                .UsePoAConsensus()
+                .AddFederationGateway()
+                .UseFederatedPegPoAMining()
                 .UseMempool()
                 .UseWallet()
                 .UseTransactionNotification()
                 .UseBlockNotification()
-                .AddFederationGateway()
                 .UseApi()
-                //.UseApps()
                 .AddRPC()
                 .Build();
             return node;
