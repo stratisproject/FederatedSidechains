@@ -101,7 +101,19 @@ namespace Stratis.FederatedPeg.Tests.Utils
 
         private void CopyStratisChainFiles()
         {
-            this.stringBuilder.AppendLine(@"If ((Test-Path $env:APPDATA\StratisNode\stratis\StratisTest) -And -Not (Test-Path $root_datadir\gateway1\stratis\StratisTest\blocks)) {");
+            // Create the folders in case they don't exist.
+            this.stringBuilder.AppendLine("# Create the folders in case they don't exist.");
+            this.stringBuilder.AppendLine("New-Item -ItemType directory -Force -Path $root_datadir");
+            this.stringBuilder.AppendLine(@"New-Item -ItemType directory -Force -Path $root_datadir\gateway1\stratis\StratisTest");
+            this.stringBuilder.AppendLine(@"New-Item -ItemType directory -Force -Path $root_datadir\gateway2\stratis\StratisTest");
+            this.stringBuilder.AppendLine(@"New-Item -ItemType directory -Force -Path $root_datadir\gateway3\stratis\StratisTest");
+            this.stringBuilder.AppendLine(@"New-Item -ItemType directory -Force -Path $root_datadir\MainchainUser\stratis\StratisTest");
+            this.stringBuilder.AppendLine(Environment.NewLine);
+
+            // Copy the blockchain data from a current, ideally up-to-date, Stratis Testnet folder.
+            this.stringBuilder.AppendLine("# Copy the blockchain data from a current, ideally up-to-date, Stratis Testnet folder.");
+            this.stringBuilder.AppendLine(@"If ((Test-Path $env:APPDATA\StratisNode\stratis\StratisTest) -And -Not (Test-Path $root_datadir\gateway1\stratis\StratisTest\blocks))");
+            this.stringBuilder.AppendLine(@"{");
             this.stringBuilder.AppendLine(@"    $destinations = ""$root_datadir\gateway1\stratis\StratisTest"",");
             this.stringBuilder.AppendLine(@"        ""$root_datadir\gateway2\stratis\StratisTest"",");
             this.stringBuilder.AppendLine(@"        ""$root_datadir\gateway3\stratis\StratisTest"",");
