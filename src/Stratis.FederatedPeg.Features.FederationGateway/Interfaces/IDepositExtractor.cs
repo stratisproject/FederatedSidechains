@@ -34,6 +34,13 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.Interfaces
         /// <returns>The matured deposits.</returns>
         IMaturedBlockDeposits ExtractBlockDeposits(ChainedHeader newlyMaturedBlock);
 
+        /// <summary>
+        /// Gets deposits from the newly matured block.
+        /// </summary>
+        /// <param name="newlyMaturedBlock">The newly matured block.</param>
+        /// <returns>The matured deposits.</returns>
+        IMaturedBlockDeposits ExtractBlockDeposits(ChainedHeader newlyMaturedBlock);
+
         uint MinimumDepositConfirmations { get; }
     }
 }
