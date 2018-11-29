@@ -109,6 +109,8 @@ namespace Stratis.FederatedPeg.Tests.Utils
             this.stringBuilder.AppendLine(@"    $destinations | % { Copy-Item $env:APPDATA\StratisNode\stratis\StratisTest\blocks -Recurse -Destination $_}");
             this.stringBuilder.AppendLine(@"    $destinations | % { Copy-Item $env:APPDATA\StratisNode\stratis\StratisTest\chain -Recurse -Destination $_}");
             this.stringBuilder.AppendLine(@"    $destinations | % { Copy-Item $env:APPDATA\StratisNode\stratis\StratisTest\coinview -Recurse -Destination $_}");
+            this.stringBuilder.AppendLine(@"    $destinations | % { Copy-Item $env:APPDATA\StratisNode\stratis\StratisTest\finalizedBlock -Recurse -Destination $_}");
+            this.stringBuilder.AppendLine(@"    $destinations | % { Copy-Item $env:APPDATA\StratisNode\stratis\StratisTest\provenheaders -Recurse -Destination $_}");
             this.stringBuilder.AppendLine(@"    Copy-Item -Path $path_to_stratis_wallet_with_funds -Destination $root_datadir\MainchainUser\stratis\StratisTest");
             this.stringBuilder.AppendLine(@"}");
             this.stringBuilder.AppendLine(Environment.NewLine);
