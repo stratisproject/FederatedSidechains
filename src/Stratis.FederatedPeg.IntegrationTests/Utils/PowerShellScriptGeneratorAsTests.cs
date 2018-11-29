@@ -106,11 +106,10 @@ namespace Stratis.FederatedPeg.Tests.Utils
             this.stringBuilder.AppendLine(@"        ""$root_datadir\gateway2\stratis\StratisTest"",");
             this.stringBuilder.AppendLine(@"        ""$root_datadir\gateway3\stratis\StratisTest"",");
             this.stringBuilder.AppendLine(@"        ""$root_datadir\MainchainUser\stratis\StratisTest""");
-            this.stringBuilder.AppendLine(
-                @"    $destinations | % { Copy - Item $env:APPDATA\StratisNode\stratis\StratisTest\blocks - Recurse - Destination $_}");
-            this.stringBuilder.AppendLine(@"    $destinations | % { Copy - Item $env:APPDATA\StratisNode\stratis\StratisTest\chain - Recurse - Destination $_}");
-            this.stringBuilder.AppendLine(@"    $destinations | % { Copy - Item $env:APPDATA\StratisNode\stratis\StratisTest\coinview - Recurse - Destination $_}");
-            this.stringBuilder.AppendLine(@"    Copy - Item - Path $path_to_stratis_wallet_with_funds - Destination $root_datadir\MainchainUser\stratis\StratisTest");
+            this.stringBuilder.AppendLine(@"    $destinations | % { Copy-Item $env:APPDATA\StratisNode\stratis\StratisTest\blocks -Recurse -Destination $_}");
+            this.stringBuilder.AppendLine(@"    $destinations | % { Copy-Item $env:APPDATA\StratisNode\stratis\StratisTest\chain -Recurse -Destination $_}");
+            this.stringBuilder.AppendLine(@"    $destinations | % { Copy-Item $env:APPDATA\StratisNode\stratis\StratisTest\coinview -Recurse -Destination $_}");
+            this.stringBuilder.AppendLine(@"    Copy-Item -Path $path_to_stratis_wallet_with_funds -Destination $root_datadir\MainchainUser\stratis\StratisTest");
             this.stringBuilder.AppendLine(@"}");
             this.stringBuilder.AppendLine(Environment.NewLine);
         }
