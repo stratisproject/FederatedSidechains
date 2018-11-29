@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text;
 
@@ -130,14 +131,17 @@ namespace Stratis.FederatedPeg.Tests.Utils
 
         private void SetFolderVariables()
         {
-            var rootDataDir = @"C:\Users\Matthieu\AppData\Roaming\StratisNode\federation";
-            var fedGatewayDDir = @"C:\Users\Matthieu\source\repos\FederatedSidechains\src\Stratis.FederationGatewayD";
-            var sidechainDDir = @"C:\Users\Matthieu\source\repos\FederatedSidechains\src\Stratis.SidechainD";
-            var stratisDDir = @"C:\Users\Matthieu\source\repos\StratisBitcoinFullNode\src\Stratis.StratisD";
-            var walletFile = @"C:\Users\Matthieu\AppData\Roaming\StratisNode\stratis\StratisTest\walletTest1.wallet.json";
+            string directoryPath = Path.Combine("$env:APPDATA", "StratisNode");
+            var rootDataDir = Path.Combine(directoryPath, "federation");
+            var fedGatewayDDir = Path.Combine("$git_repos_path", "FederatedSidechains", "src", "Stratis.FederationGatewayD");
+            var sidechainDDir = Path.Combine("$git_repos_path", "FederatedSidechains", "src", "Stratis.SidechainD");
+            var stratisDDir = Path.Combine("$git_repos_path", "StratisBitcoinFullNode", "src", "Stratis.StratisD");
+            var walletFile = Path.Combine(directoryPath, "stratis", "StratisTest", "walletTest1.wallet.json");
+
             this.stringBuilder.AppendLine("###############################");
             this.stringBuilder.AppendLine("#    UPDATE THESE 5 VALUES    #");
             this.stringBuilder.AppendLine("###############################");
+            this.stringBuilder.AppendLine($"$git_repos_path = \"{Path.Combine(Environment.GetEnvironmentVariable("USERPROFILE"), "source", "repos")}\"");
             this.stringBuilder.AppendLine($"$root_datadir = \"{rootDataDir}\"");
             this.stringBuilder.AppendLine($"$path_to_federationgatewayd = \"{fedGatewayDDir}\"");
             this.stringBuilder.AppendLine($"$path_to_sidechaind = \"{sidechainDDir}\"");
