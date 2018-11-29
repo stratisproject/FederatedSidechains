@@ -16,14 +16,6 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.Interfaces
         Task<List<IMaturedBlockDeposits>> GetMaturedDepositsAsync(int blockHeight, int maxBlocks);
 
         /// <summary>
-        /// Gets all the available chained headers starting at the specified block height up to a maximum number of headers.
-        /// </summary>
-        /// <param name="blockHeight">The block height at which to start.</param>
-        /// <param name="maxHeaders">The maximum number of headers to get.</param>
-        /// <returns>All the available chained headers starting at the specified block height up to the maximum number of headers.</returns>
-        Task<List<ChainedHeader>> GetChainedHeadersAsync(int blockHeight, int maxHeaders);
-
-        /// <summary>
         /// Gets deposits from the block that is expected to be mature given this chain header.
         /// </summary>
         /// <param name="chainedHeader">The last received chain header.</param>

@@ -25,8 +25,13 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.SourceChain
             this.blockCache = new Dictionary<uint256, Block>();
         }
 
-        /// <inheritdoc />
-        public async Task<List<ChainedHeader>> GetChainedHeadersAsync(int blockHeight, int maxHeaders)
+        /// <summary>
+        /// Gets all the available chained headers starting at the specified block height up to a maximum number of headers.
+        /// </summary>
+        /// <param name="blockHeight">The block height at which to start.</param>
+        /// <param name="maxHeaders">The maximum number of headers to get.</param>
+        /// <returns>All the available chained headers starting at the specified block height up to the maximum number of headers.</returns>
+        private async Task<List<ChainedHeader>> GetChainedHeadersAsync(int blockHeight, int maxHeaders)
         {
             // Pre-load the block data
             var blockHashes = new List<uint256>();
