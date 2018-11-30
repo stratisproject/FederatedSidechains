@@ -17,7 +17,7 @@ namespace Stratis.FederatedSidechains.AdminDashboard.Controllers
 
         public IActionResult Index()
         {
-            return View();
+            return View("Dashboard");
         }
     }
 }

@@ -5,4 +5,6 @@ $(document).ready(function()
         alert("ok");
     });
     signalrHub.start();
+
+    //$('#enableF').modal('show');
 });
