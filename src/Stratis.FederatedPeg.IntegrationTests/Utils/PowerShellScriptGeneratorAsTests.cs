@@ -119,16 +119,28 @@ namespace Stratis.FederatedPeg.Tests.Utils
         }
 
         private void CopyStratisChainFiles()
-        {
+        {            
+            // Create the folders in case they don't exist.
+            this.newLine("# Create the folders in case they don't exist.");
+            this.newLine("New-Item -ItemType directory -Force -Path $root_datadir");
+            this.newLine(@"New-Item -ItemType directory -Force -Path $root_datadir\gateway1\stratis\StratisTest");
+            this.newLine(@"New-Item -ItemType directory -Force -Path $root_datadir\gateway2\stratis\StratisTest");
+            this.newLine(@"New-Item -ItemType directory -Force -Path $root_datadir\gateway3\stratis\StratisTest");
+            this.newLine(@"New-Item -ItemType directory -Force -Path $root_datadir\MainchainUser\stratis\StratisTest");
+            this.newLine(Environment.NewLine);
+            
+            // Copy the blockchain data from a current, ideally up-to-date, Stratis Testnet folder.
+            this.newLine("# Copy the blockchain data from a current, ideally up-to-date, Stratis Testnet folder.");
             this.newLine(@"If ((Test-Path $env:APPDATA\StratisNode\stratis\StratisTest) -And -Not (Test-Path $root_datadir\gateway1\stratis\StratisTest\blocks)) {");
-            this.newLine(@"    $destinations = ""$root_datadir\gateway1\stratis\StratisTest""");
+            this.newLine(@"    $destinations = ""$root_datadir\gateway1\stratis\StratisTest"",");
             this.newLine(@"        ""$root_datadir\gateway2\stratis\StratisTest"",");
             this.newLine(@"        ""$root_datadir\gateway3\stratis\StratisTest"",");
             this.newLine(@"        ""$root_datadir\MainchainUser\stratis\StratisTest""");
-            this.newLine(
-                @"    $destinations | % { Copy-Item $env:APPDATA\StratisNode\stratis\StratisTest\blocks -Recurse -Destination $_}");
+            this.newLine(@"    $destinations | % { Copy-Item $env:APPDATA\StratisNode\stratis\StratisTest\blocks -Recurse -Destination $_}");
             this.newLine(@"    $destinations | % { Copy-Item $env:APPDATA\StratisNode\stratis\StratisTest\chain -Recurse -Destination $_}");
             this.newLine(@"    $destinations | % { Copy-Item $env:APPDATA\StratisNode\stratis\StratisTest\coinview -Recurse -Destination $_}");
+            this.newLine(@"    $destinations | % { Copy-Item $env:APPDATA\StratisNode\stratis\StratisTest\finalizedBlock -Recurse -Destination $_}");
+            this.newLine(@"    $destinations | % { Copy-Item $env:APPDATA\StratisNode\stratis\StratisTest\provenheaders -Recurse -Destination $_}");
             this.newLine(@"    Copy-Item -Path $path_to_stratis_wallet_with_funds -Destination $root_datadir\MainchainUser\stratis\StratisTest");
             this.newLine(@"}");
             this.newLine(Environment.NewLine);
@@ -211,7 +223,7 @@ namespace Stratis.FederatedPeg.Tests.Utils
                 i =>
                     {
                         this.newLine($"# Member{i + 1} mnemonic: {this.mnemonics[i]}");
-                        this.newLine($"# Member1 public key: {this.pubKeysByMnemonic[this.mnemonics[0]]}");
+                        this.newLine($"# Member{i + 1} public key: {this.pubKeysByMnemonic[this.mnemonics[0]]}");
                     });
 
             this.newLine($"# Redeem script: {this.scriptAndAddresses.payToMultiSig}");
