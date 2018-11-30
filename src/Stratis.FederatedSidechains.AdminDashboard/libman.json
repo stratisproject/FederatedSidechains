@@ -25,6 +25,10 @@
     {
       "library": "popper.js@1.14.6",
       "destination": "wwwroot\\lib\\popper.js"
+    },
+    {
+      "library": "node-snackbar@0.1.15",
+      "destination": "wwwroot\\lib\\node-snackbar"
     }
   ]
 }
