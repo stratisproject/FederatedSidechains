@@ -150,15 +150,14 @@ namespace Stratis.FederatedPeg.Tests.Utils
         {
             var appDataDir = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
             var rootDataDir = Path.Combine(appDataDir, "StratisNode", "federation");
-            var repoRoot = Path.Combine(
-                Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),"source","repos");
-            var fedGatewayDDir = Path.Combine(repoRoot, "FederatedSidechains","src","Stratis.FederationGatewayD");
-            var sidechainDDir = Path.Combine(repoRoot, "FederatedSidechains", "src", "Stratis.SidechainD");
-            var stratisDDir = Path.Combine(repoRoot, @"StratisBitcoinFullNode","src","Stratis.StratisD");
+            var fedGatewayDDir = Path.Combine("$git_repos_path", "FederatedSidechains","src","Stratis.FederationGatewayD");
+            var sidechainDDir = Path.Combine("$git_repos_path", "FederatedSidechains", "src", "Stratis.SidechainD");
+            var stratisDDir = Path.Combine("$git_repos_path", "StratisBitcoinFullNode","src","Stratis.StratisD");
             var walletFile = Path.Combine(appDataDir, "StratisNode","stratis", this.mainchainNetwork.Name,"walletTest1.wallet.json");
             this.newLine("###############################");
             this.newLine("#    UPDATE THESE 5 VALUES    #");
             this.newLine("###############################");
+            this.newLine($"$git_repos_path = \"{Path.Combine(Environment.GetEnvironmentVariable("USERPROFILE"), "source", "repos")}\"");
             this.newLine($"$root_datadir = \"{rootDataDir}\"");
             this.newLine($"$path_to_federationgatewayd = \"{fedGatewayDDir}\"");
             this.newLine($"$path_to_sidechaind = \"{sidechainDDir}\"");
@@ -223,7 +222,7 @@ namespace Stratis.FederatedPeg.Tests.Utils
                 i =>
                     {
                         this.newLine($"# Member{i + 1} mnemonic: {this.mnemonics[i]}");
-                        this.newLine($"# Member{i + 1} public key: {this.pubKeysByMnemonic[this.mnemonics[0]]}");
+                        this.newLine($"# Member{i + 1} public key: {this.pubKeysByMnemonic[this.mnemonics[i]]}");
                     });
 
             this.newLine($"# Redeem script: {this.scriptAndAddresses.payToMultiSig}");
