@@ -2,34 +2,16 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-
-using NBitcoin;
-
-using Stratis.Bitcoin.Networks;
-using Stratis.Sidechains.Networks;
+using Stratis.FederatedPeg.IntegrationTests.Utils;
 
 using Xunit;
 using Xunit.Abstractions;
 
 namespace Stratis.FederatedPeg.Tests.Utils
 {
-    public class PowerShellScriptGeneratorAsTests
+    public class PowerShellScriptGeneratorAsTests : TestBase
     {
         private readonly ITestOutputHelper output;
-
-        private Network mainchainNetwork;
-
-        private FederatedPegTest sidechainNetwork;
-
-        private IList<Mnemonic> mnemonics;
-
-        private Dictionary<Mnemonic, PubKey> pubKeysByMnemonic;
-
-        private (Script payToMultiSig, BitcoinAddress sidechainMultisigAddress, BitcoinAddress mainchainMultisigAddress) scriptAndAddresses;
-
-        private List<int> federationMemberIndexes;
-
-        private List<string> chains;
 
         private StringBuilder stringBuilder;
 
@@ -43,17 +25,6 @@ namespace Stratis.FederatedPeg.Tests.Utils
         [Fact]
         public void Generate_PS1_Fragment()
         {
-            this.mainchainNetwork = Networks.Stratis.Testnet();
-            this.sidechainNetwork = (FederatedPegTest)FederatedPegNetwork.NetworksSelector.Testnet();
-
-            this.mnemonics = this.sidechainNetwork.FederationMnemonics;
-            this.pubKeysByMnemonic = this.mnemonics.ToDictionary(m => m, m => m.DeriveExtKey().PrivateKey.PubKey);
-
-            this.scriptAndAddresses = GenerateScriptAndAddresses(this.mainchainNetwork, this.sidechainNetwork, 2, this.pubKeysByMnemonic);
-
-            this.federationMemberIndexes = Enumerable.Range(0, this.pubKeysByMnemonic.Count).ToList();
-            this.chains = new[] { "mainchain", "sidechain" }.ToList();
-
             this.stringBuilder = new StringBuilder();
 
             SetFolderVariables();
@@ -87,7 +58,7 @@ namespace Stratis.FederatedPeg.Tests.Utils
         private void StartGatewayDs()
         {
             this.stringBuilder.AppendLine("cd $path_to_federationgatewayd");
-            federationMemberIndexes.ForEach(i => {
+            this.federationMemberIndexes.ForEach(i => {
                 this.stringBuilder.AppendLine($"# Federation member {i} main and side");
                 this.stringBuilder.AppendLine(
                     $"start-process cmd -ArgumentList \"/k color {this.consoleColors[i+1]} && dotnet run -mainchain -agentprefix=fed{i + 1}main -datadir=$root_datadir\\gateway{i + 1} -port=36{GetPortNumberSuffix(this.chains[0], i)} -apiport=38{GetPortNumberSuffix(this.chains[0], i)} -counterchainapiport=38{GetPortNumberSuffix(this.chains[1], i)} -federationips=$mainchain_federationips -redeemscript=\"\"$redeemscript\"\" -publickey=$gateway{i+1}_public_key\"");
@@ -212,23 +183,6 @@ namespace Stratis.FederatedPeg.Tests.Utils
             this.consoleColors =
                 new Dictionary<int, string>() { { 1, "0E" }, { 2, "0A" }, { 3, "09" }, { 4, "0C" }, { 5, "0D" }, };
             this.stringBuilder.AppendLine(Environment.NewLine);
-        }
-
-        private IList<Mnemonic> GenerateMnemonics(int keyCount)
-        {
-            return Enumerable.Range(0, keyCount)
-                .Select(k => new Mnemonic(Wordlist.English, WordCount.Twelve))
-                .ToList();
-        }
-
-
-        private (Script payToMultiSig, BitcoinAddress sidechainMultisigAddress, BitcoinAddress mainchainMultisigAddress)
-            GenerateScriptAndAddresses(Network mainchainNetwork, Network sidechainNetwork, int quorum, Dictionary<Mnemonic, PubKey> pubKeysByMnemonic)
-        {
-            Script payToMultiSig = PayToMultiSigTemplate.Instance.GenerateScriptPubKey(quorum, pubKeysByMnemonic.Values.ToArray());
-            BitcoinAddress sidechainMultisigAddress = payToMultiSig.Hash.GetAddress(sidechainNetwork);
-            BitcoinAddress mainchainMultisigAddress = payToMultiSig.Hash.GetAddress(mainchainNetwork);
-            return (payToMultiSig, sidechainMultisigAddress, mainchainMultisigAddress);
         }
     }
 }
