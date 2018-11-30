@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
+using NBitcoin;
 using Stratis.FederatedPeg.IntegrationTests.Utils;
 
 using Xunit;
@@ -91,7 +92,7 @@ namespace Stratis.FederatedPeg.Tests.Utils
         }
 
         private void CopyStratisChainFiles()
-        {            
+        {
             // Create the folders in case they don't exist.
             this.newLine("# Create the folders in case they don't exist.");
             this.newLine("New-Item -ItemType directory -Force -Path $root_datadir");
@@ -103,7 +104,7 @@ namespace Stratis.FederatedPeg.Tests.Utils
             this.newLine(@"New-Item -ItemType directory -Force -Path $root_datadir\gateway2\poa\FederatedPegTest");
             this.newLine(@"New-Item -ItemType directory -Force -Path $root_datadir\gateway3\poa\FederatedPegTest");
             this.newLine(Environment.NewLine);
-            
+
             // Copy the blockchain data from a current, ideally up-to-date, Stratis Testnet folder.
             this.newLine("# Copy the blockchain data from a current, ideally up-to-date, Stratis Testnet folder.");
             this.newLine(@"If ((Test-Path $env:APPDATA\StratisNode\stratis\StratisTest) -And -Not (Test-Path $root_datadir\gateway1\stratis\StratisTest\blocks)) {");
