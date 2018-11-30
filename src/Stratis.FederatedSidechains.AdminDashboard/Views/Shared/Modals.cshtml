@@ -1,0 +1,219 @@
+<!-- Modal #miningPublicKeys -->
+<div class="modal fade" data-keyboard="false" data-backdrop="static" id="miningPublicKeys" tabindex="-1" role="dialog" aria-labelledby="miningPublicKeys" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" role="document">
+    <div class="modal-content">
+        <div class="modal-header">
+        <h5 class="modal-title" id="">Mining Public Keys</h5>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+            <span aria-hidden="true">&times;</span>
+        </button>
+        </div>
+        <div class="modal-body">
+        <div class="alert alert-success" role="alert">Mining public key has been copied to clipboard !</div>
+        <ul class="list-unstyled align-items-center flex-column d-flex">
+            <li class="py-2">
+            <code>02446dfcecfcbef1878d906ffd023258a129e9471dba90a1845f15063397ada335</code>
+            <a href="#" class="text-primary ml-2">copy</a>
+            </li>
+            <li class="py-2">
+            <code>02446dfcecfcbef1878d906ffd023258a129e9471dba90a1845f15063397ada335</code>
+            <a href="#" class="text-primary ml-2">copy</a>
+            </li>
+            <li class="py-2">
+            <code>02446dfcecfcbef1878d906ffd023258a129e9471dba90a1845f15063397ada335</code>
+            <a href="#" class="text-primary ml-2">copy</a>
+            </li>
+        </ul>
+        </div>
+        <div class="modal-footer">
+        <button type="button" class="btn btn-outline-secondary mx-auto" data-dismiss="modal">Close</button>
+        </div>
+    </div>
+    </div>
+</div>
+<!-- /Modal #miningPublicKeys -->
+
+<!-- Modal Enable F. -->
+<div class="modal fade" data-keyboard="false" data-backdrop="static" id="enableF" tabindex="-1" role="dialog" aria-labelledby="enableF" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-sm" role="document">
+    <div class="modal-content">
+        <div class="modal-header">
+        <h5 class="modal-title" id="">Enable Federation</h5>
+        </div>
+        <div class="modal-body">
+        <p class="text-muted my-2 text-center">Some text explaining what this does</p>
+        <form class="my-3">
+            <div class="form-group">
+            <label for="Mnemonics">Mnemonics</label>
+            <input type="text" class="form-control" id="Mnemonics" aria-describedby="Mnemonics" placeholder="Enter Mnemonics here">
+            </div>
+            <div class="form-group">
+            <label for="Password">Password</label>
+            <input type="password" class="form-control" id="Password" placeholder="Password here">
+            </div>
+            <button type="submit" class="btn btn-primary d-flex justify-content-end ml-auto">Enable Federation</button>
+        </form>
+        </div>
+    </div>
+    </div>
+</div>
+<!-- /Modal Enable F. -->
+
+<!-- Modal resync crosschain -->
+<div class="modal fade" data-keyboard="false" data-backdrop="static" id="recyncCrosschain" tabindex="-1" role="dialog" aria-labelledby="recyncCrosschain" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-sm" role="document">
+    <div class="modal-content">
+        <div class="modal-header">
+        <h5 class="modal-title" id="">Recync Crosschain transactions</h5>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+            <span aria-hidden="true">&times;</span>
+        </button>
+        </div>
+        <div class="modal-body">
+        <p class="text-muted my-2 text-center">Some text explaining what this does</p>
+        <span class="d-flex justify-content-center my-4">
+            <button type="button" class="btn btn-outline-secondary" data-dismiss="modal">Cancel</button>
+            <button type="submit" class="btn btn-primary ml-3">Recync Crosschain transactions</button>
+        </span>
+        </div>
+    </div>
+    </div>
+</div>
+<!-- /Modal resync crosschain -->
+
+<!-- Modal resync crosschain -->
+<div class="modal fade" data-keyboard="false" data-backdrop="static" id="recyncBlockchain" tabindex="-1" role="dialog" aria-labelledby="recyncBlockchain" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-sm" role="document">
+    <div class="modal-content">
+        <div class="modal-header">
+        <h5 class="modal-title" id="">Recync Blockchain</h5>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+            <span aria-hidden="true">&times;</span>
+        </button>
+        </div>
+        <div class="modal-body">
+        <p class="text-muted my-2 text-center">Some text explaining what this does</p>
+        <form class="my-3">
+            <div class="form-group">
+            <label for="Mnemonics">Block height</label>
+            <input type="text" class="form-control is-invalid" id="blockHeight" aria-describedby="blockHeight" placeholder="Enter Block height here">
+            <div class="invalid-feedback">Error message here</div>
+            </div>
+            <span class="d-flex justify-content-center my-4">
+            <button type="button" class="btn btn-outline-secondary" data-dismiss="modal">Cancel</button>
+            <button type="submit" class="btn btn-primary ml-3">Recync Blockchain</button>
+            </span>
+        </form>
+        </div>
+    </div>
+    </div>
+</div>
+<!-- /Modal resync crosschain -->
+
+<!-- Modal resync crosschain -->
+<div class="modal fade" data-keyboard="false" data-backdrop="static" id="stopNode" tabindex="-1" role="dialog" aria-labelledby="stopNode" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-sm" role="document">
+    <div class="modal-content">
+        <div class="modal-header">
+        <h5 class="modal-title" id="">Stop Node</h5>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+            <span aria-hidden="true">&times;</span>
+        </button>
+        </div>
+        <div class="modal-body">
+        <div class="alert alert-info" role="alert">Are you sure to stop the node ?</div>
+            <span class="d-flex justify-content-center my-4">
+            <button type="button" class="btn btn-outline-secondary" data-dismiss="modal">Cancel</button>
+            <button type="submit" class="btn btn-danger ml-3">Stop the node</button>
+            </span>
+        </div>
+    </div>
+    </div>
+</div>
+<!-- /Modal resync crosschain -->
+
+<!-- Modal history -->
+<div class="modal fade" data-keyboard="false" data-backdrop="static" id="history" tabindex="-1" role="dialog" aria-labelledby="history" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
+    <div class="modal-content">
+        <div class="modal-header">
+        <h5 class="modal-title" id="">History</h5>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+            <span aria-hidden="true">&times;</span>
+        </button>
+        </div>
+        <div class="modal-body">
+        <table class="table table-sm my-3">
+            <thead>
+            <tr>
+                <th class="text-center" scope="col">Status</th>
+                <th class="text-center" scope="col">Destination</th>
+                <th class="text-center" scope="col">Tx ID</th>
+                <th class="text-center" scope="col">Seen in block</th>
+                <th class="text-center" scope="col">Confirmed in block</th>
+                <th class="text-center" scope="col">Amount</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr>
+                <td class="text-center"><i class="material-icons text-yellow md-18">schedule</i></td>
+                <td class="text-center text-truncate"><code>pTEBX8oNk6GoPufm755yuFtbBgEPmjPvdK</code></td>
+                <td class="text-left text-truncate" style="max-width: 110px;"><a href="">41a651dda85edfe703a2668a4d75a5e1dd7b3145614d5734c229c479de2af6d1</a></td>
+                <td class="text-center"><a href="">123456</a></td>
+                <td class="text-center"><a href="">123456</a></td>
+                <td class="text-center">199997.00</td>
+            </tr>
+            <tr>
+                <td class="text-center"><i class="material-icons text-green md-18">check_circle</i></td>
+                <td class="text-center text-truncate"><code>pTEBX8oNk6GoPufm755yuFtbBgEPmjPvdK</code></td>
+                <td class="text-left text-truncate" style="max-width: 110px;"><a href="">41a651dda85edfe703a2668a4d75a5e1dd7b3145614d5734c229c479de2af6d1</a></td>
+                <td class="text-center"><a href="">123456</a></td>
+                <td class="text-center"><a href="">123456</a></td>
+                <td class="text-center">199997.00</td>
+            </tr>
+            <tr>
+                <td class="text-center"><i class="material-icons text-green md-18">check_circle</i></td>
+                <td class="text-center text-truncate"><code>pTEBX8oNk6GoPufm755yuFtbBgEPmjPvdK</code></td>
+                <td class="text-left text-truncate" style="max-width: 110px;"><a href="">41a651dda85edfe703a2668a4d75a5e1dd7b3145614d5734c229c479de2af6d1</a></td>
+                <td class="text-center"><a href="">123456</a></td>
+                <td class="text-center"><a href="">123456</a></td>
+                <td class="text-center">199997.00</td>
+            </tr>
+            <tr>
+                <td class="text-center"><i class="material-icons text-green md-18">check_circle</i></td>
+                <td class="text-center text-truncate"><code>pTEBX8oNk6GoPufm755yuFtbBgEPmjPvdK</code></td>
+                <td class="text-left text-truncate" style="max-width: 110px;"><a href="">41a651dda85edfe703a2668a4d75a5e1dd7b3145614d5734c229c479de2af6d1</a></td>
+                <td class="text-center"><a href="">123456</a></td>
+                <td class="text-center"><a href="">123456</a></td>
+                <td class="text-center">199997.00</td>
+            </tr>
+            <tr>
+                <td class="text-center"><i class="material-icons text-green md-18">check_circle</i></td>
+                <td class="text-center text-truncate"><code>pTEBX8oNk6GoPufm755yuFtbBgEPmjPvdK</code></td>
+                <td class="text-left text-truncate" style="max-width: 110px;"><a href="">41a651dda85edfe703a2668a4d75a5e1dd7b3145614d5734c229c479de2af6d1</a></td>
+                <td class="text-center"><a href="">123456</a></td>
+                <td class="text-center"><a href="">123456</a></td>
+                <td class="text-center">199997.00</td>
+            </tr>
+            </tbody>
+        </table>
+        <nav aria-label="" class="mt-4 d-flex justify-content-center">
+            <ul class="pagination">
+            <li class="page-item disabled">
+                <a class="page-link" href="#" tabindex="-1">Previous</a>
+            </li>
+            <li class="page-item"><a class="page-link" href="#">1</a></li>
+            <li class="page-item active">
+                <a class="page-link" href="#">2 <span class="sr-only">(current)</span></a>
+            </li>
+            <li class="page-item"><a class="page-link" href="#">3</a></li>
+            <li class="page-item">
+                <a class="page-link" href="#">Next</a>
+            </li>
+            </ul>
+        </nav>
+        </div>
+    </div>
+    </div>
+</div>
+<!-- /Modal history -->

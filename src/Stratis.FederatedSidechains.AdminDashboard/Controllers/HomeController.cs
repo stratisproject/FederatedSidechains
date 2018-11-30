@@ -19,13 +19,5 @@ namespace Stratis.FederatedSidechains.AdminDashboard.Controllers
         {
             return View();
         }
-
-        public async Task<IActionResult> LetsGoAsync()
-        {
-            var rc = new RestClient($"{this.fullNodeSettings.Endpoint}/api/Node/status");
-            var rr = new RestRequest(Method.GET);
-            IRestResponse response = await rc.ExecuteTaskAsync(rr);
-            return Content(response.Content);
-        }
     }
 }

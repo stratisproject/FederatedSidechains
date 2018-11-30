@@ -11,8 +11,10 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.FileProviders;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Stratis.FederatedSidechains.AdminDashboard.Services;
 using Stratis.FederatedSidechains.AdminDashboard.Settings;
 using Stratis.FederatedSidechains.AdminDashboard.Hubs;
+using Stratis.FederatedSidechains.AdminDashboard.Rest;
 
 namespace Stratis.FederatedSidechains.AdminDashboard
 {
@@ -29,6 +31,7 @@ namespace Stratis.FederatedSidechains.AdminDashboard
         {
             //TODO: change this
             services.Configure<FullNodeSettings>(this.Configuration.GetSection("FullNode"));
+            services.Configure<DefaultEndpointsSettings>(this.Configuration.GetSection("DefaultEndpoints"));
 
             services.AddTransient<FullNodeSettings>();
 
