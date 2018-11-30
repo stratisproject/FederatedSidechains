@@ -127,6 +127,9 @@ namespace Stratis.FederatedPeg.Tests.Utils
             this.newLine(@"New-Item -ItemType directory -Force -Path $root_datadir\gateway2\stratis\StratisTest");
             this.newLine(@"New-Item -ItemType directory -Force -Path $root_datadir\gateway3\stratis\StratisTest");
             this.newLine(@"New-Item -ItemType directory -Force -Path $root_datadir\MainchainUser\stratis\StratisTest");
+            this.newLine(@"New-Item -ItemType directory -Force -Path $root_datadir\gateway1\poa\FederatedPegTest");
+            this.newLine(@"New-Item -ItemType directory -Force -Path $root_datadir\gateway2\poa\FederatedPegTest");
+            this.newLine(@"New-Item -ItemType directory -Force -Path $root_datadir\gateway3\poa\FederatedPegTest");
             this.newLine(Environment.NewLine);
             
             // Copy the blockchain data from a current, ideally up-to-date, Stratis Testnet folder.
