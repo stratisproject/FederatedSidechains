@@ -71,10 +71,8 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.SourceChain
             return new Deposit(transaction.GetHash(), depositsToMultisig.Sum(o => o.Value), targetAddress, blockHeight, blockHash);
         }
 
-        public IMaturedBlockDeposits ExtractMaturedBlockDeposits(ChainedHeader chainedHeader)
+        public IMaturedBlockDeposits ExtractBlockDeposits(ChainedHeader newlyMaturedBlock)
         {
-            ChainedHeader newlyMaturedBlock = this.GetNewlyMaturedBlock(chainedHeader);
-
             if (newlyMaturedBlock == null) return null;
 
             var maturedBlock = new MaturedBlockModel()
@@ -89,14 +87,6 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.SourceChain
             var maturedBlockDeposits = new MaturedBlockDepositsModel(maturedBlock, deposits);
 
             return maturedBlockDeposits;
-        }
-
-        private ChainedHeader GetNewlyMaturedBlock(ChainedHeader chainedHeader)
-        {
-            if ((this.chain.Tip.Height - chainedHeader.Height) < this.MinimumDepositConfirmations)
-                return null;
-
-            return this.chain.GetBlock(chainedHeader.Height);
         }
     }
 }

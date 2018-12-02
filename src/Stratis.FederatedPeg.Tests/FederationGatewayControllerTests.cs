@@ -182,8 +182,8 @@ namespace Stratis.FederatedPeg.Tests
             this.depositExtractor.MinimumDepositConfirmations.Returns((uint)minConfirmations);
 
             var depositExtractorCallCount = 0;
-            this.depositExtractor.ExtractMaturedBlockDeposits(Arg.Any<ChainedHeader>()).Returns(new MaturedBlockDepositsModel(null, null));
-            this.depositExtractor.When(x => x.ExtractMaturedBlockDeposits(Arg.Any<ChainedHeader>())).Do(info =>
+            this.depositExtractor.ExtractBlockDeposits(Arg.Any<ChainedHeader>()).Returns(new MaturedBlockDepositsModel(null, null));
+            this.depositExtractor.When(x => x.ExtractBlockDeposits(Arg.Any<ChainedHeader>())).Do(info =>
             {
                 depositExtractorCallCount++;
             });
@@ -192,7 +192,8 @@ namespace Stratis.FederatedPeg.Tests
 
             result.Should().BeOfType<JsonResult>();
 
-            var expectedCallCount = (this.chain.Height - minConfirmations) - earlierBlock.Height;
+            // If the minConfirmations == 0 and this.chain.Height == earlierBlock.Height then expectedCallCount must be 1.
+            var expectedCallCount = (this.chain.Height - minConfirmations) - earlierBlock.Height + 1;
 
             depositExtractorCallCount.Should().Be(expectedCallCount);
         }
