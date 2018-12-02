@@ -76,7 +76,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.Interfaces
         /// <summary>
         /// The tip of our chain when we last updated the store.
         /// </summary>
-        HashHeightPair TipHashAndHeight { get; }
+        ChainedHeader TipHashAndHeight { get; }
 
         /// <summary>
         /// The block height on the counter-chain for which the next list of deposits is expected.

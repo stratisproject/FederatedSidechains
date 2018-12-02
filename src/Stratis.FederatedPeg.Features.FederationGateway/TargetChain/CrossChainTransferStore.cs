@@ -43,7 +43,9 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
         public int NextMatureDepositHeight { get; private set; }
 
         /// <inheritdoc />
-        public HashHeightPair TipHashAndHeight { get; private set; }
+        public ChainedHeader TipHashAndHeight { get; private set; }
+
+        public BlockLocator BlockLocator { get; private set; }
 
         /// <summary>The key of the repository tip in the common table.</summary>
         private static readonly byte[] RepositoryTipKey = new byte[] { 0 };
@@ -95,7 +97,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
             this.withdrawalExtractor = withdrawalExtractor;
             this.lockObj = new object();
             this.logger = loggerFactory.CreateLogger(this.GetType().FullName);
-            this.TipHashAndHeight = new HashHeightPair(network.GenesisHash, 0);
+            this.TipHashAndHeight = this.chain.GetBlock(0);
             this.NextMatureDepositHeight = 1;
             this.cancellation = new CancellationTokenSource();
 
@@ -602,7 +604,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
                 if (allDepositIds.Count == 0)
                 {
                     // Exiting here and saving the tip after the sync.
-                    this.TipHashAndHeight = new HashHeightPair(blocks.Last().GetHash(), this.TipHashAndHeight.Height + blocks.Count);
+                    this.TipHashAndHeight = this.chain.GetBlock(blocks.Last().GetHash());
 
                     this.logger.LogTrace("(-)");
                     return;
@@ -621,7 +623,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
             {
                 dbreezeTransaction.SynchronizeTables(transferTableName, commonTableName);
 
-                HashHeightPair prevTip = this.TipHashAndHeight;
+                ChainedHeader prevTip = this.TipHashAndHeight;
 
                 try
                 {
@@ -660,7 +662,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
                     this.PutTransfers(dbreezeTransaction, tracker.Keys.ToArray());
 
                     // Commit additions
-                    HashHeightPair newTip = new HashHeightPair(blocks.Last().GetHash(), prevTip.Height + blocks.Count);
+                    ChainedHeader newTip = this.chain.GetBlock(blocks.Last().GetHash());
                     this.SaveTipHashAndHeight(dbreezeTransaction, newTip);
                     dbreezeTransaction.Commit();
 
@@ -691,7 +693,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
 
             HashHeightPair tipToChase = this.TipToChase();
 
-            if (tipToChase.Hash == this.TipHashAndHeight.Hash)
+            if (tipToChase.Hash == this.TipHashAndHeight.HashBlock)
             {
                 // Indicate that we are synchronized.
                 this.logger.LogTrace("(-):false");
@@ -710,31 +712,26 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
 
             // If the chain does not contain our tip..
             if (this.TipHashAndHeight != null && (this.TipHashAndHeight.Height > tipToChase.Height ||
-                this.chain.GetBlock(this.TipHashAndHeight.Hash)?.Height != this.TipHashAndHeight.Height))
+                this.chain.GetBlock(this.TipHashAndHeight.HashBlock)?.Height != this.TipHashAndHeight.Height))
             {
                 // We are ahead of the current chain or on the wrong chain.
+                ChainedHeader fork = this.chain.FindFork(this.TipHashAndHeight.GetLocator()) ?? this.chain.GetBlock(0);
 
-                // Find the block hashes that are not beyond the height of the tip being chased.
-                uint256[] blockHashes = this.depositIdsByBlockHash
-                    .Where(d => this.blockHeightsByBlockHash[d.Key] <= tipToChase.Height)
-                    .OrderByDescending(d => this.blockHeightsByBlockHash[d.Key]).Select(d => d.Key).ToArray();
-
-                // Find the fork based on those hashes.
-                ChainedHeader fork = this.chain.FindFork(blockHashes);
-                uint256 commonTip = (fork == null) ? this.network.GenesisHash : fork.Block.GetHash();
-                int commonHeight = (fork == null) ? 0 : this.blockHeightsByBlockHash[commonTip];
+                // Must not exceed wallet height otherise transaction validations may fail.
+                while (fork.Height > tipToChase.Height)
+                    fork = fork.Previous;
 
                 using (DBreeze.Transactions.Transaction dbreezeTransaction = this.DBreeze.GetTransaction())
                 {
                     dbreezeTransaction.SynchronizeTables(transferTableName, commonTableName);
                     dbreezeTransaction.ValuesLazyLoadingIsOn = false;
 
-                    HashHeightPair prevTip = this.TipHashAndHeight;
+                    ChainedHeader prevTip = this.TipHashAndHeight;
 
                     try
                     {
-                        StatusChangeTracker tracker = this.OnDeleteBlocks(dbreezeTransaction, commonHeight);
-                        this.SaveTipHashAndHeight(dbreezeTransaction, new HashHeightPair(commonTip, commonHeight));
+                        StatusChangeTracker tracker = this.OnDeleteBlocks(dbreezeTransaction, fork.Height);
+                        this.SaveTipHashAndHeight(dbreezeTransaction, fork);
                         dbreezeTransaction.Commit();
                         this.UndoLookups(tracker);
                     }
@@ -769,7 +766,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
                 this.logger.LogTrace("()");
 
                 HashHeightPair tipToChase = this.TipToChase();
-                if (tipToChase.Hash == this.TipHashAndHeight.Hash)
+                if (tipToChase.Hash == this.TipHashAndHeight.HashBlock)
                 {
                     // Indicate that we are synchronized.
                     this.logger.LogTrace("(-):true");
@@ -814,7 +811,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
             int batchSize = 0;
             HashHeightPair tipToChase = this.TipToChase();
 
-            foreach (ChainedHeader header in this.chain.EnumerateToTip(this.TipHashAndHeight.Hash).Skip(1))
+            foreach (ChainedHeader header in this.chain.EnumerateToTip(this.TipHashAndHeight.HashBlock).Skip(1))
             {
                 if (this.chain.GetBlock(header.HashBlock) == null)
                     break;
@@ -851,12 +848,21 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
         /// </summary>
         /// <param name="dbreezeTransaction">The DBreeze transaction context to use.</param>
         /// <returns>The hash and height pair.</returns>
-        private HashHeightPair LoadTipHashAndHeight(DBreeze.Transactions.Transaction dbreezeTransaction)
+        private ChainedHeader LoadTipHashAndHeight(DBreeze.Transactions.Transaction dbreezeTransaction)
         {
-            Row<byte[], byte[]> row = dbreezeTransaction.Select<byte[], byte[]>(commonTableName, RepositoryTipKey);
-            if (row.Exists)
-                this.TipHashAndHeight = HashHeightPair.Load(row.Value);
+            var blockLocator = new BlockLocator();
+            try
+            {
+                Row<byte[], byte[]> row = dbreezeTransaction.Select<byte[], byte[]>(commonTableName, RepositoryTipKey);
+                Guard.Assert(row.Exists);
+                blockLocator.FromBytes(row.Value);
+            }
+            catch (Exception)
+            {
+                blockLocator.Blocks = new List<uint256> { this.network.GenesisHash };
+            }
 
+            this.TipHashAndHeight = this.chain.GetBlock(blockLocator.Blocks[0]) ?? this.chain.FindFork(blockLocator);
             return this.TipHashAndHeight;
         }
 
@@ -865,10 +871,11 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
         /// </summary>
         /// <param name="dbreezeTransaction">The DBreeze transaction context to use.</param>
         /// <param name="newTip">The new tip to persist.</param>
-        private void SaveTipHashAndHeight(DBreeze.Transactions.Transaction dbreezeTransaction, HashHeightPair newTip)
+        private void SaveTipHashAndHeight(DBreeze.Transactions.Transaction dbreezeTransaction, ChainedHeader newTip)
         {
+            BlockLocator locator = this.chain.Tip.GetLocator();
             this.TipHashAndHeight = newTip;
-            dbreezeTransaction.Insert<byte[], byte[]>(commonTableName, RepositoryTipKey, this.TipHashAndHeight.ToBytes());
+            dbreezeTransaction.Insert<byte[], byte[]>(commonTableName, RepositoryTipKey, locator.ToBytes());
         }
 
         /// <summary>
