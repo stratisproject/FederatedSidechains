@@ -129,10 +129,10 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
                     this.LoadNextMatureHeight(dbreezeTransaction);
 
                     // Initialize the lookups.
-                    foreach (Row<byte[], CrossChainTransfer> transferRow in dbreezeTransaction.SelectForward<byte[], CrossChainTransfer>(transferTableName))
+                    foreach (Row<byte[], byte[]> transferRow in dbreezeTransaction.SelectForward<byte[], byte[]>(transferTableName))
                     {
-                        CrossChainTransfer transfer = transferRow.Value;
-
+                        CrossChainTransfer transfer = new CrossChainTransfer();
+                        transfer.FromBytes(transferRow.Value, this.network.Consensus.ConsensusFactory);
                         this.depositsIdsByStatus[transfer.Status].Add(transfer.DepositTransactionId);
 
                         if (transfer.BlockHash != null && transfer.BlockHeight != null)
