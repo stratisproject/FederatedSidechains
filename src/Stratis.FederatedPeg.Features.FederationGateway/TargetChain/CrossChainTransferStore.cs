@@ -341,7 +341,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
         }
 
         /// <inheritdoc />
-        public Task RecordLatestMatureDepositsAsync(IMaturedBlockDeposits[] maturedBlockDeposits)
+        public Task<bool> RecordLatestMatureDepositsAsync(IMaturedBlockDeposits[] maturedBlockDeposits)
         {
             Guard.NotNull(maturedBlockDeposits, nameof(maturedBlockDeposits));
             Guard.Assert(!maturedBlockDeposits.Any(m => m.Deposits.Any(d => d.BlockNumber != m.Block.BlockHeight || d.BlockHash != m.Block.BlockHash)));
@@ -353,6 +353,8 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
                     this.logger.LogTrace("()");
 
                     // Sanitize and sort the list.
+                    int originalDepositHeight = this.NextMatureDepositHeight;
+
                     maturedBlockDeposits = maturedBlockDeposits
                         .OrderBy(a => a.Block.BlockHeight)
                         .SkipWhile(m => m.Block.BlockHeight < this.NextMatureDepositHeight).ToArray();
@@ -361,13 +363,13 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
                         maturedBlockDeposits.First().Block.BlockHeight != this.NextMatureDepositHeight)
                     {
                         this.logger.LogTrace("(-):[NO_VIABLE_BLOCKS]");
-                        return;
+                        return true;
                     }
 
                     if (maturedBlockDeposits.Last().Block.BlockHeight != this.NextMatureDepositHeight + maturedBlockDeposits.Length - 1)
                     {
                         this.logger.LogTrace("(-):[DUPLICATE_BLOCKS]");
-                        return;
+                        return true;
                     }
 
                     this.Synchronize();
@@ -494,6 +496,9 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
                     }
 
                     this.logger.LogTrace("(-)");
+
+                    // If progress was made we will check for more blocks.
+                    return this.NextMatureDepositHeight != originalDepositHeight;
                 }
             });
         }

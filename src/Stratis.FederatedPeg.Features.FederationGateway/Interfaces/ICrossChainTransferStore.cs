@@ -32,13 +32,14 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.Interfaces
         /// The value of <see cref="NextMatureDepositHeight"/> is incremented at the end of this call.
         /// </summary>
         /// <param name="blockDeposits">The deposits in order of occurrence on the source chain.</param>
+        /// <returns><c>True</c> if there may be more blocks and <c>false</c> otherwise.</returns>
         /// <remarks>
         /// The transfers are set to <see cref="CrossChainTransfer.Status"/> of <see cref="CrossChainTransferStatus.Partial"/>
         /// or <see cref="CrossChainTransferStatus.Rejected"/> depending on whether enough funds are available in the federation wallet.
         /// New partial transactions are recorded in the wallet to ensure that future transactions will not
         /// attempt to re-use UTXO's.
         /// </remarks>
-        Task RecordLatestMatureDepositsAsync(IMaturedBlockDeposits[] blockDeposits);
+        Task<bool> RecordLatestMatureDepositsAsync(IMaturedBlockDeposits[] blockDeposits);
 
         /// <summary>
         /// Returns transactions by status. Orders the results by UTXO selection order.
