@@ -24,14 +24,6 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.Interfaces
     public interface IOpReturnDataReader
     {
         /// <summary>
-        /// Interprets the inbound OP_RETURN data and tells us what type it is.
-        /// </summary>
-        /// <param name="transaction">The transaction we are examining.</param>
-        /// <param name="opReturnDataType">Returns information about how the data was interpreted.</param>
-        /// <returns>The relevant string or null of the type is Unknown.</returns>
-        string GetString(Transaction transaction, out OpReturnDataType opReturnDataType);
-
-        /// <summary>
         /// Tries to find a single OP_RETURN output that can be interpreted as an address.
         /// </summary>
         /// <param name="transaction">The transaction we are examining.</param>
