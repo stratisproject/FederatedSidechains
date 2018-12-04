@@ -4,17 +4,6 @@ using NBitcoin;
 namespace Stratis.FederatedPeg.Features.FederationGateway.Interfaces
 {
     /// <summary>
-    /// Represents different types of data the reader can discern.
-    /// </summary>
-    public enum OpReturnDataType
-    {
-        Unknown = 0,
-        Address = 10,
-        Hash = 20,
-        BlockHeight = 30
-    }
-
-    /// <summary>
     /// OP_RETURN data can be a hash, an address or unknown.
     /// This class interprets the data.
     /// Addresses are contained in the source transactions on the monitor chain whereas
