@@ -121,24 +121,22 @@ namespace Stratis.FederatedPeg.Features.FederationGateway
             this.logger.LogInformation("RequestPartialTransactionPayload: PartialTransaction  - {0}.", payload.PartialTransaction);
             this.logger.LogInformation("RequestPartialTransactionPayload: TemplateTransaction - {0}.", template);
 
-            uint256 oldHash = payload.PartialTransaction.GetHash();
+            ICrossChainTransfer[] transfer = await this.crossChainTransferStore.GetAsync(new[] { payload.DepositId });
+            if (transfer[0]?.Status != CrossChainTransferStatus.Partial)
+            {
+                this.logger.LogInformation("OnMessageReceivedAsync: PartialTransaction already signed.");
+                return;
+            }
 
             payload.AddPartial(await this.crossChainTransferStore.MergeTransactionSignaturesAsync(payload.DepositId, new[] { payload.PartialTransaction }).ConfigureAwait(false));
 
-            if (payload.PartialTransaction.GetHash() == oldHash)
-            {
-                this.logger.LogInformation("OnMessageReceivedAsync: PartialTransaction already signed.");
-            }
-            else
-            {
-                this.logger.LogInformation("OnMessageReceivedAsync: PartialTransaction signed.");
-                this.logger.LogInformation("RequestPartialTransactionPayload: PartialTransaction  - {0}.", payload.PartialTransaction);
-                this.logger.LogInformation("Broadcasting Payload....");
+            this.logger.LogInformation("OnMessageReceivedAsync: PartialTransaction signed.");
+            this.logger.LogInformation("RequestPartialTransactionPayload: PartialTransaction  - {0}.", payload.PartialTransaction);
+            this.logger.LogInformation("Broadcasting Payload....");
 
-                await BroadcastAsync(payload);
+            await BroadcastAsync(payload);
 
-                this.logger.LogInformation("Broadcasted.");
-            }
+            this.logger.LogInformation("Broadcasted.");
         }
     }
 }
