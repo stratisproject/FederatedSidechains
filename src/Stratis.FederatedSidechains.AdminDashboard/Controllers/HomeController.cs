@@ -43,6 +43,7 @@ namespace Stratis.FederatedSidechains.AdminDashboard.Controllers
             // Checking if the local cache is built otherwise we will display the initialization page
             if(string.IsNullOrEmpty(this.distributedCache.GetString("DashboardData")))
             {
+                ViewBag.NodeUnavailable = !string.IsNullOrEmpty(this.distributedCache.GetString("NodeUnavailable"));
                 return View("Initialization");
             }
 

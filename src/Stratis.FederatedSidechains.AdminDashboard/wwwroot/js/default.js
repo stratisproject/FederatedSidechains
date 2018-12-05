@@ -29,7 +29,7 @@ function DisplayNotification(text)
 {
     setTimeout(function()
     {
-        Snackbar.show({text: text, pos: "bottom-center"});
+        Snackbar.show({text: text, pos: "bottom-center", showAction: false});
     }, 1000);
 }
 

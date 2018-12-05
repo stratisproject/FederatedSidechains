@@ -36,7 +36,7 @@ namespace Stratis.FederatedSidechains.AdminDashboard.Services
             }
             else
             {
-                await this.distributedCache.SetStringAsync("NodeError", "true");
+                await this.distributedCache.SetStringAsync("NodeUnavailable", "true");
             }
 
             await this.updaterHub.Clients.All.SendAsync("AnotherUselessAction");
