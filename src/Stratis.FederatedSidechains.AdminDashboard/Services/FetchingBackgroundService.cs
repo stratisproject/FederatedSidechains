@@ -51,6 +51,7 @@ namespace Stratis.FederatedSidechains.AdminDashboard.Services
             #region Stratis Node
             var stratisStatus = await ApiRequester.GetRequestAsync(this.defaultEndpointsSettings.StratisNode, "/api/Node/status");
             var stratisRawmempool = await ApiRequester.GetRequestAsync(this.defaultEndpointsSettings.StratisNode, "/api/Mempool/getrawmempool");
+            var stratisBestBlock = await ApiRequester.GetRequestAsync(this.defaultEndpointsSettings.StratisNode, "/api/Consensus/getbestblockhash");
             var stratisWalletHistory = await ApiRequester.GetRequestAsync(this.defaultEndpointsSettings.StratisNode, $"/api/Wallet/history?WalletName={walletName}&AccountName=account%200");
             var stratisWalletBalances = await ApiRequester.GetRequestAsync(this.defaultEndpointsSettings.StratisNode, $"/api/Wallet/balance?WalletName={walletName}&AccountName=account%200");
             #endregion
@@ -58,6 +59,7 @@ namespace Stratis.FederatedSidechains.AdminDashboard.Services
             #region Sidechain Node
             var sidechainStatus = await ApiRequester.GetRequestAsync(this.defaultEndpointsSettings.SidechainNode, "/api/Node/status");
             var sidechainRawmempool = await ApiRequester.GetRequestAsync(this.defaultEndpointsSettings.SidechainNode, "/api/Mempool/getrawmempool");
+            var sidechainBestBlock = await ApiRequester.GetRequestAsync(this.defaultEndpointsSettings.SidechainNode, "/api/Consensus/getbestblockhash");
             var sidechainWalletHistory = await ApiRequester.GetRequestAsync(this.defaultEndpointsSettings.SidechainNode, $"/api/Wallet/history?WalletName={walletName}&AccountName=account%200");
             var sidechainWalletBalances = await ApiRequester.GetRequestAsync(this.defaultEndpointsSettings.SidechainNode, $"/api/FederationWallet/balance");
             #endregion
@@ -75,7 +77,7 @@ namespace Stratis.FederatedSidechains.AdminDashboard.Services
                     SwaggerUrl = string.Concat(this.defaultEndpointsSettings.StratisNode, "/swagger"),
                     SyncingStatus = stratisStatus.Content.consensusHeight > 0 ? (stratisStatus.Content.blockStoreHeight / stratisStatus.Content.consensusHeight) * 100 : 0,
                     Peers = stratisStatus.Content.outboundPeers,
-                    BlockHash = "ebfc5fcd96e25ac2969acc84c20ca7b2e940240694e7fa3ec92d6041fe603ed9",
+                    BlockHash = stratisBestBlock.Content,
                     BlockHeight = stratisStatus.Content.blockStoreHeight,
                     MempoolSize = stratisRawmempool.Content.Count,
                     FederationMembers = new object[] {},
@@ -89,7 +91,7 @@ namespace Stratis.FederatedSidechains.AdminDashboard.Services
                     SwaggerUrl = string.Concat(this.defaultEndpointsSettings.SidechainNode, "/swagger"),
                     SyncingStatus = sidechainStatus.Content.consensusHeight > 0 ? (sidechainStatus.Content.blockStoreHeight / sidechainStatus.Content.consensusHeight) * 100 : 0,
                     Peers = sidechainStatus.Content.outboundPeers,
-                    BlockHash = "ebfc5fcd96e25ac2969acc84c20ca7b2e940240694e7fa3ec92d6041fe603ed9",
+                    BlockHash = sidechainBestBlock.Content,
                     BlockHeight = sidechainStatus.Content.blockStoreHeight,
                     MempoolSize = sidechainRawmempool.Content.Count,
                     FederationMembers = new object[] {},
