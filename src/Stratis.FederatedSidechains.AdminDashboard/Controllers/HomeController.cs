@@ -20,14 +20,11 @@ namespace Stratis.FederatedSidechains.AdminDashboard.Controllers
         private readonly IDistributedCache distributedCache;
         public readonly IHubContext<DataUpdaterHub> updaterHub;
 
-        public IOptions<FullNodeSettings> FullNodeSettings { get; }
-
         public HomeController(IDistributedCache distributedCache, IOptions<FullNodeSettings> fullNodeSettings, IHubContext<DataUpdaterHub> hubContext)
         {
             this.fullNodeSettings = fullNodeSettings.Value;
             this.distributedCache = distributedCache;
             this.updaterHub = hubContext;
-            FullNodeSettings = fullNodeSettings;
         }
         
         [Ajax]
@@ -35,7 +32,7 @@ namespace Stratis.FederatedSidechains.AdminDashboard.Controllers
         public IActionResult CheckFederation()
         {
             //TODO: detect if federation is enabled
-            return Json(false);
+            return Json(true);
         }
 
         public IActionResult Index()
