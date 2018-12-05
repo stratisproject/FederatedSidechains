@@ -118,17 +118,20 @@ namespace Stratis.FederatedPeg.Features.FederationGateway
             ICrossChainTransfer[] transfer = await this.crossChainTransferStore.GetAsync(new[] { payload.DepositId });
             if (transfer[0]?.Status != CrossChainTransferStatus.Partial)
             {
-                this.logger.LogInformation("OnMessageReceivedAsync: PartialTransaction {0} already signed.", template);
+                this.logger.LogTrace("OnMessageReceivedAsync: PartialTransaction {0} already signed.", template);
                 return;
             }
 
-            uint256 oldHash = payload.PartialTransaction.GetHash();
+            uint256 oldHash = transfer[0].PartialTransaction.GetHash();
 
             Transaction signedTransaction = await this.crossChainTransferStore.MergeTransactionSignaturesAsync(payload.DepositId, new[] { payload.PartialTransaction }).ConfigureAwait(false);
 
             if (oldHash != signedTransaction.GetHash())
             {
-                this.logger.LogInformation("Signed transaction (deposit={1}) to produce {2} from {3}.", payload.DepositId, oldHash, signedTransaction.GetHash());
+                this.logger.LogTrace("Signed transaction (deposit={1}) to produce {2} from {3}.", payload.DepositId, oldHash, signedTransaction.GetHash());
+
+                // Respond back to the peer that requested a signature.
+                await this.BroadcastAsync(payload.AddPartial(signedTransaction));
             }
         }
     }
