@@ -7,6 +7,9 @@
         $(document).ready(function()
         {
             Snackbar.show({text: "The full nodes API are unavailable", pos: "bottom-center", duration: 0});
+            setTimeout(function() {
+                document.location.reload();
+            }, 10000);
         });
         </script>
     }
