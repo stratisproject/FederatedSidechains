@@ -1,5 +1,7 @@
 ﻿using System;
+using System.IO;
 using System.Linq;
+using System.Reflection;
 using NBitcoin;
 using NBitcoin.DataEncoders;
 using Stratis.Bitcoin.Configuration;
@@ -123,31 +125,33 @@ namespace FederationSetup
 
         private static void GeneratePublicPrivateKeys()
         {
-            var mnemonic = new Mnemonic(Wordlist.English, WordCount.Twelve);
-            PubKey pubKey = mnemonic.DeriveExtKey().PrivateKey.PubKey;
+            // Generate keys for signing.
+            var mnemonicForSigningKey = new Mnemonic(Wordlist.English, WordCount.Twelve);
+            PubKey signingPubKey = mnemonicForSigningKey.DeriveExtKey().PrivateKey.PubKey;
 
-            Console.WriteLine($"-- For Sidechain Generator --");
-            Console.WriteLine($"-----------------------------");
-            Console.WriteLine($"-- Mnemonic --");
-            Console.WriteLine($"Please keep the following 12 words for yourself and note them down in a secure place:");
-            Console.WriteLine($"{string.Join(" ", mnemonic.Words)}");
-            Console.WriteLine();
-            Console.WriteLine($"-- To share with the sidechain generator --");
-            Console.WriteLine($"1. Your pubkey: {Encoders.Hex.EncodeData(pubKey.ToBytes(false))}");
-            Console.WriteLine($"2. Your ip address: if you're willing to. This is required to help the nodes connect when bootstrapping the network.");
+            // Generate keys for migning.
+            var tool = new KeyTool(new DataFolder(Path.GetDirectoryName(Assembly.GetEntryAssembly().Location)));
+            Key key = tool.GeneratePrivateKey();
+
+            string savePath = tool.GetPrivateKeySavePath();
+            tool.SavePrivateKey(key);
+            PubKey miningPubKey = key.PubKey;
+
+            Console.WriteLine($"-----------------------------------------------------------------------------");
+            Console.WriteLine($"-- Please give the following 2 public keys to the federation administrator --");
+            Console.WriteLine($"-----------------------------------------------------------------------------");
+            Console.WriteLine($"1. Your signing pubkey: {Encoders.Hex.EncodeData(signingPubKey.ToBytes(false))}");
+            Console.WriteLine($"2. Your mining pubkey: {Encoders.Hex.EncodeData(miningPubKey.ToBytes(false))}");
             Console.WriteLine(Environment.NewLine);
-
-            mnemonic = new Mnemonic(Wordlist.English, WordCount.Twelve);
-            pubKey = mnemonic.DeriveExtKey().PrivateKey.PubKey;
-
-            Console.WriteLine($"-- For Sidechain Mining --");
-            Console.WriteLine($"--------------------------");
-            Console.WriteLine($"-- Mnemonic --");
-            Console.WriteLine($"Please keep the following 12 words for yourself and note them down in a secure place:");
-            Console.WriteLine($"{string.Join(" ", mnemonic.Words)}");
-            Console.WriteLine();
-            Console.WriteLine($"-- To share for Sidechain Mining --");
-            Console.WriteLine($"1. Your pubkey: {Encoders.Hex.EncodeData(pubKey.ToBytes(false))}");
+            Console.WriteLine($"------------------------------------------------------------------------------------------");
+            Console.WriteLine($"-- Please keep the following 12 words for yourself and note them down in a secure place --");
+            Console.WriteLine($"------------------------------------------------------------------------------------------");
+            Console.WriteLine($"Your signing mnemonic: {string.Join(" ", mnemonicForSigningKey.Words)}");
+            Console.WriteLine(Environment.NewLine);
+            Console.WriteLine($"------------------------------------------------------------------------------------------------------------");
+            Console.WriteLine($"-- Please save the following file in a secure place, you'll need it when the federation has been created. --");
+            Console.WriteLine($"------------------------------------------------------------------------------------------------------------");
+            Console.WriteLine($"File path: {savePath}");
             Console.WriteLine(Environment.NewLine);
         }
 
