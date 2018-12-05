@@ -34,8 +34,10 @@ namespace Stratis.FederatedSidechains.AdminDashboard
             services.Configure<DefaultEndpointsSettings>(this.Configuration.GetSection("DefaultEndpoints"));
 
             services.AddTransient<FullNodeSettings>();
+            
+            services.AddDistributedMemoryCache();
 
-            services.AddHostedService<DataRetrieverService>();
+            services.AddHostedService<FetchingBackgroundService>();
 
             services.AddMvc();
 

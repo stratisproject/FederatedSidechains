@@ -29,6 +29,10 @@
     {
       "library": "node-snackbar@0.1.15",
       "destination": "wwwroot\\lib\\node-snackbar"
+    },
+    {
+      "library": "nprogress@0.2.0",
+      "destination": "wwwroot\\lib\\nprogress"
     }
   ]
 }

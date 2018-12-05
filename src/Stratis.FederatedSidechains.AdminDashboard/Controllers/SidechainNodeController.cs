@@ -29,7 +29,7 @@ namespace Stratis.FederatedSidechains.AdminDashboard.Controllers
         [Ajax]
         [HttpPost]
         [Route("resync")]
-        public async Task<IActionResult> ResyncAsync(int height)
+        public IActionResult Resync(int height)
         {
             return Ok();
         }

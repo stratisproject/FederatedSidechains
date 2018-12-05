@@ -1,17 +1,45 @@
 $(document).ready(function()
 {
+    // Run SignalR to accept events from the backend
+    NProgress.start();
     var signalrHub = new signalR.HubConnectionBuilder().withUrl("/ws-updater").build();
-    signalrHub.on("ReceiveMessage", function (user, message) {
+    signalrHub.on("AnotherUselessAction", function () {
         alert("ok");
     });
     signalrHub.start();
 
-    //$("#enableF").modal("show");
+    // Check if the federation is enabled, if it's not the case a modal is displayed to enabled it
+    $.get("/check-federation", function(response)
+    {
+        if(response == false)
+        {
+            $("#enableF").modal("show");
+        }
+    });
+
+    /*$(".loader").fadeOut(function()
+    {
+        $("#loading-content").fadeIn();
+    });*/
+
+    NProgress.done();
 });
 
 function DisplayNotification(text)
 {
-    setTimeout(function(){Snackbar.show({text: text, pos: "bottom-center"});}, 1000);
+    setTimeout(function()
+    {
+        Snackbar.show({text: text, pos: "bottom-center"});
+    }, 1000);
+}
+
+function BeginAction()
+{
+    NProgress.start();
+}
+function CompleteAction()
+{
+    NProgress.done();
 }
 
 function HideModals()

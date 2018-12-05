@@ -35,46 +35,46 @@
 <!-- Modal Enable F. -->
 <div class="modal fade" data-keyboard="false" data-backdrop="static" id="enableF" tabindex="-1" role="dialog" aria-labelledby="enableF" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered modal-sm" role="document">
-    <div class="modal-content">
-        <div class="modal-header">
-        <h5 class="modal-title" id="">Enable Federation</h5>
-        </div>
-        <div class="modal-body">
-        <p class="text-muted my-2 text-center">Some text explaining what this does</p>
-        <form class="my-3">
-            <div class="form-group">
-            <label for="Mnemonics">Mnemonics</label>
-            <input type="text" class="form-control" id="Mnemonics" aria-describedby="Mnemonics" placeholder="Enter Mnemonics here">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="">Enable Federation</h5>
             </div>
-            <div class="form-group">
-            <label for="Password">Password</label>
-            <input type="password" class="form-control" id="Password" placeholder="Password here">
+            <div class="modal-body">
+                <p class="text-muted my-2 text-center">Some text explaining what this does</p>
+                <form class="my-3" data-ajax="true" asp-controller="SidechainNode" asp-action="EnableFederation" data-ajax-begin="BeginAction();" data-ajax-complete="CompleteAction();" data-ajax-success="alert('yeah');" data-ajax-failure="alert('buh');">
+                    <div class="form-group">
+                        <label for="Mnemonics">Mnemonics</label>
+                        <input type="text" class="form-control" name="mnemonic" id="Mnemonics" aria-describedby="Mnemonics" placeholder="Enter Mnemonics here">
+                    </div>
+                    <div class="form-group">
+                        <label for="Password">Password</label>
+                        <input type="password" class="form-control" name="password" id="Password" placeholder="Password here">
+                    </div>
+                    <button type="submit" class="btn btn-primary d-flex justify-content-end ml-auto">Enable Federation</button>
+                </form>
             </div>
-            <button type="submit" class="btn btn-primary d-flex justify-content-end ml-auto">Enable Federation</button>
-        </form>
         </div>
-    </div>
     </div>
 </div>
 <!-- /Modal Enable F. -->
 
 <div class="modal fade" data-keyboard="false" data-backdrop="static" id="stratisResyncCrosschain" tabindex="-1" role="dialog" aria-labelledby="resyncCrosschain" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered modal-sm" role="document">
-    <div class="modal-content">
-        <div class="modal-header">
-            <h5 class="modal-title" id="">Resync Crosschain transactions</h5>
-            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                <span aria-hidden="true">&times;</span>
-            </button>
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="">Resync Crosschain transactions</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <p class="text-muted my-2 text-center">Some text explaining what this does</p>
+                <span class="d-flex justify-content-center my-4">
+                    <button type="button" class="btn btn-outline-secondary" data-dismiss="modal">Cancel</button>
+                    <a data-ajax="true" asp-controller="StratisNode" asp-action="ResyncCrosschainTransactionsAsync" data-ajax-begin="HideModals" data-ajax-success="StratisCrosschainResynced" data-ajax-failure="StratisCrosschainResyncFailed" class="btn btn-danger ml-3">Resync Crosschain Transactions</a>
+                </span>
+            </div>
         </div>
-        <div class="modal-body">
-            <p class="text-muted my-2 text-center">Some text explaining what this does</p>
-            <span class="d-flex justify-content-center my-4">
-                <button type="button" class="btn btn-outline-secondary" data-dismiss="modal">Cancel</button>
-                <a data-ajax="true" asp-controller="StratisNode" asp-action="ResyncCrosschainTransactionsAsync" data-ajax-begin="HideModals" data-ajax-success="StratisCrosschainResynced" data-ajax-failure="StratisCrosschainResyncFailed" class="btn btn-danger ml-3">Resync Crosschain Transactions</a>
-            </span>
-        </div>
-    </div>
     </div>
 </div>
 <div class="modal fade" data-keyboard="false" data-backdrop="static" id="stratisResyncBlockchain" tabindex="-1" role="dialog" aria-labelledby="resyncBlockchain" aria-hidden="true">
@@ -136,7 +136,7 @@
             <p class="text-muted my-2 text-center">Some text explaining what this does</p>
             <span class="d-flex justify-content-center my-4">
                 <button type="button" class="btn btn-outline-secondary" data-dismiss="modal">Cancel</button>
-                <a data-ajax="true" asp-controller="SidechainNode" asp-action="ResyncCrosschainTransactionsAsync" data-ajax-begin="HideModals" data-ajax-success="SidechainCrosschainResynced" data-ajax-failure="SidechainCrosschainResyncFailed" class="btn btn-danger ml-3">Resync Crosschain Transactions</a>
+                <a data-ajax="true" asp-controller="SidechainNode" asp-action="ResyncCrosschainTransactions" data-ajax-begin="HideModals" data-ajax-success="SidechainCrosschainResynced" data-ajax-failure="SidechainCrosschainResyncFailed" class="btn btn-danger ml-3">Resync Crosschain Transactions</a>
             </span>
         </div>
     </div>
@@ -153,7 +153,7 @@
             </div>
             <div class="modal-body">
                 <p class="text-muted my-2 text-center">Some text explaining what this does</p>
-                <form class="my-3" data-ajax="true" asp-controller="SidechainNode" asp-action="ResyncAsync" data-ajax-begin="HideModals" data-ajax-success="SidechainResyncedBlockchain" data-ajax-failure="SidechainResyncBlockchainFailed" method="post">
+                <form class="my-3" data-ajax="true" asp-controller="SidechainNode" asp-action="Resync" data-ajax-begin="HideModals" data-ajax-success="SidechainResyncedBlockchain" data-ajax-failure="SidechainResyncBlockchainFailed" method="post">
                     <div class="form-group">
                         <label for="blockHeight">Block height</label>
                         <input type="number" class="form-control" name="height" required id="blockHeight" aria-describedby="blockHeight" placeholder="Enter Block height here">
