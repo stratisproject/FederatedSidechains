@@ -480,6 +480,7 @@ namespace Stratis.FederatedPeg.Tests
                 peer.RemoteSocketAddress.Returns(peerEndPoint.Address);
                 peer.RemoteSocketPort.Returns(peerEndPoint.Port);
                 peer.PeerEndPoint.Returns(peerEndPoint);
+                peer.IsConnected.Returns(true);
 
                 var peers = new NetworkPeerCollection();
                 peers.Add(peer);
