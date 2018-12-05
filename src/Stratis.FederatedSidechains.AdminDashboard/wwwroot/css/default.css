@@ -6834,7 +6834,7 @@ a.text-purple:hover, a.text-purple:focus {
 
 #loading-content
 {
-  /*display: none;*/
+  display: none;
 }
 
 .loader

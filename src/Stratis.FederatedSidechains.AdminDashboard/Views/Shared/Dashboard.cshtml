@@ -1,5 +1,5 @@
 @model DashboardModel
-@*<partial name="Loader" />*@
+<partial name="Loader" />
 <div id="loading-content">
    <div class="row my-2">
       <div class="col-lg-6 col-12">
@@ -373,3 +373,16 @@
       </div>
    </div>
 </div>
+@section Scripts
+{
+   <script type="text/javascript">
+   $(document).ready(function()
+   {
+      setTimeout(function () {
+         $(".loader").fadeOut(function() {
+            $("#loading-content").fadeIn();
+         });
+      }, 500);
+   });
+   </script>
+}
