@@ -3,11 +3,10 @@ $(document).ready(function()
     // Run SignalR to accept events from the backend
     NProgress.start();
     var signalrHub = new signalR.HubConnectionBuilder().withUrl("/ws-updater").build();
-    signalrHub.on("AnotherUselessAction", function () {
-        alert("ok");
-    });
-    signalrHub.on("CacheBuilt", function () {
-        //alert("CacheBuilt");
+    signalrHub.on("CacheIsDifferent", function () {
+        NProgress.start();
+        $("#container").load("/update-dashboard");
+         NProgress.done();
     });
     signalrHub.start();
 

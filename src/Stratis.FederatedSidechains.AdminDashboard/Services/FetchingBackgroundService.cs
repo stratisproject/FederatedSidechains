@@ -11,6 +11,7 @@ using Microsoft.AspNetCore.SignalR;
 using Stratis.FederatedSidechains.AdminDashboard.Hubs;
 using Microsoft.Extensions.Caching.Distributed;
 using System.Net.Sockets;
+using Newtonsoft.Json.Linq;
 
 namespace Stratis.FederatedSidechains.AdminDashboard.Services
 {
@@ -100,9 +101,15 @@ namespace Stratis.FederatedSidechains.AdminDashboard.Services
                     UnconfirmedBalance = (double)sidechainWalletBalances.Content.balances[0].amountUnconfirmed / 100000000
                 }
             };
-                
+            
+            if(!string.IsNullOrEmpty(this.distributedCache.GetString("DashboardData")))
+            {
+                if(JToken.DeepEquals(this.distributedCache.GetString("DashboardData"), JsonConvert.SerializeObject(dashboardModel)) == false)
+                {
+                    await this.updaterHub.Clients.All.SendAsync("CacheIsDifferent");
+                }
+            }
             this.distributedCache.SetString("DashboardData", JsonConvert.SerializeObject(dashboardModel));
-            await this.updaterHub.Clients.All.SendAsync("CacheBuilt");
         }
 
         private async void DoWorkAsync(object state)

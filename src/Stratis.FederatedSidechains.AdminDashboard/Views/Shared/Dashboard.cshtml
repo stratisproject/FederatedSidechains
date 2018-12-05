@@ -1,6 +1,9 @@
 @model DashboardModel
-<partial name="Loader" />
-<div id="loading-content">
+@if(ViewBag.DisplayLoader == true)
+{
+   <partial name="Loader" />
+}
+<div id="@(ViewBag.DisplayLoader == true ? "loading-content":"")">
    <div class="row my-2">
       <div class="col-lg-6 col-12">
          <div class="card mb-4">

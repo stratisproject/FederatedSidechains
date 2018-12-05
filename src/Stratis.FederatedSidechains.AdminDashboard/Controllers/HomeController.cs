@@ -43,9 +43,22 @@ namespace Stratis.FederatedSidechains.AdminDashboard.Controllers
                 ViewBag.NodeUnavailable = !string.IsNullOrEmpty(this.distributedCache.GetString("NodeUnavailable"));
                 return View("Initialization");
             }
-
+            
+            ViewBag.DisplayLoader = true;
             var dashboardModel = JsonConvert.DeserializeObject<DashboardModel>(this.distributedCache.GetString("DashboardData"));
             return View("Dashboard", dashboardModel);
+        }
+
+        [Ajax]
+        [Route("update-dashboard")]
+        public IActionResult UpdateDashboard()
+        {
+            if(!string.IsNullOrEmpty(this.distributedCache.GetString("DashboardData")))
+            {
+                var dashboardModel = JsonConvert.DeserializeObject<DashboardModel>(this.distributedCache.GetString("DashboardData"));
+                return PartialView("Dashboard", dashboardModel);
+            }
+            return NoContent();
         }
     }
 }
