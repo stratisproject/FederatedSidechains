@@ -96,7 +96,9 @@
                      <tfoot>
                         @if((Model.StratisNode.Peers as JArray).Count == 0)
                         {
-                           <td colspan="4" class="text-center"><em>There no peers to display.</em></td>
+                           <tr>
+                              <td colspan="4" class="text-center"><em>There no peers to display.</em></td>
+                           </tr>
                         }
                      </tfoot>
                   </table>
@@ -116,7 +118,9 @@
                      <tfoot>
                         @if((Model.StratisNode.FederationMembers as JArray).Count == 0)
                         {
-                           <td colspan="4" class="text-center"><em>There no federation member to display.</em></td>
+                           <tr>
+                              <td colspan="4" class="text-center"><em>There no federation member to display.</em></td>
+                           </tr>
                         }
                      </tfoot>
                   </table>
@@ -181,7 +185,9 @@
                   @if((Model.StratisNode.History as JArray).Count == 0)
                   {
                      <tfoot>
-                        <td colspan="6" class="text-center"><em>There no transaction to display.</em></td>
+                        <tr>
+                           <td colspan="6" class="text-center"><em>There no transaction to display.</em></td>
+                        </tr>
                      </tfoot>
                   }
                </table>
@@ -282,7 +288,9 @@
                      <tfoot>
                         @if((Model.SidechainNode.Peers as JArray).Count == 0)
                         {
-                           <td colspan="4" class="text-center"><em>There no peers to display.</em></td>
+                           <tr>
+                              <td colspan="4" class="text-center"><em>There no peers to display.</em></td>
+                           </tr>
                         }
                      </tfoot>
                   </table>
@@ -302,7 +310,9 @@
                      <tfoot>
                         @if((Model.SidechainNode.FederationMembers as JArray).Count == 0)
                         {
-                           <td colspan="4" class="text-center"><em>There no federation member to display.</em></td>
+                           <tr>
+                              <td colspan="4" class="text-center"><em>There no federation member to display.</em></td>
+                           </tr>
                         }
                      </tfoot>
                   </table>
@@ -367,7 +377,9 @@
                   @if((Model.SidechainNode.History as JArray).Count == 0)
                   {
                      <tfoot>
-                        <td colspan="6" class="text-center"><em>There no transaction to display.</em></td>
+                        <tr>
+                           <td colspan="6" class="text-center"><em>There no transaction to display.</em></td>
+                        </tr>
                      </tfoot>
                   }
                </table>
