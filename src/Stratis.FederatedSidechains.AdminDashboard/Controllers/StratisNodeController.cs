@@ -23,14 +23,16 @@ namespace Stratis.FederatedSidechains.AdminDashboard.Controllers
         [Route("resync")]
         public async Task<IActionResult> ResyncAsync(int height)
         {
-            return Ok();
+            ApiResponse stopNodeRequest = await ApiRequester.GetRequestAsync(this.defaultEndpointsSettings.StratisNode, "/api/Node/status");
+            return stopNodeRequest.IsSuccess ? (IActionResult) Ok() : BadRequest();
         }
 
         [Ajax]
         [Route("resync-crosschain-transactions")]
         public async Task<IActionResult> ResyncCrosschainTransactionsAsync()
         {
-            return Ok();
+            ApiResponse stopNodeRequest = await ApiRequester.GetRequestAsync(this.defaultEndpointsSettings.StratisNode, "/api/Node/status");
+            return stopNodeRequest.IsSuccess ? (IActionResult) Ok() : BadRequest();
         }
 
         [Ajax]
