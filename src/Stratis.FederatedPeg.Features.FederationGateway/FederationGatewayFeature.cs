@@ -201,7 +201,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway
                 "NodeStore.Hash: ".PadRight(LoggingConfiguration.ColumnLength - 2) +
                 this.crossChainTransferStore.TipHashAndHeight.HashBlock.ToString() + "  " +
                 "NodeStore.NextDepositHeight: ".PadRight(LoggingConfiguration.ColumnLength + 1) +
-                this.crossChainTransferStore.NextMatureDepositHeight.ToString().PadRight(8));
+                (this.crossChainTransferStore.NextMatureDepositHeight.ToString() + (this.crossChainTransferStore.HasSuspended()?"!":"")).PadRight(8));
         }
 
         public void AddComponentStats(StringBuilder benchLog)
