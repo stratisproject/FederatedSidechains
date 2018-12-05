@@ -10,6 +10,7 @@ using Stratis.FederatedSidechains.AdminDashboard.Models;
 using Microsoft.AspNetCore.SignalR;
 using Stratis.FederatedSidechains.AdminDashboard.Hubs;
 using Microsoft.Extensions.Caching.Distributed;
+using System.Net.Sockets;
 
 namespace Stratis.FederatedSidechains.AdminDashboard.Services
 {
@@ -29,22 +30,58 @@ namespace Stratis.FederatedSidechains.AdminDashboard.Services
 
         public async Task StartAsync(CancellationToken cancellationToken)
         {
-            await BuildCacheAsync();
+            if(PerformNodeCheck())
+            {
+                await this.BuildCacheAsync();
+            }
+            else
+            {
+                await this.distributedCache.SetStringAsync("NodeError", "true");
+            }
 
-            await updaterHub.Clients.All.SendAsync("AnotherUselessAction");
+            await this.updaterHub.Clients.All.SendAsync("AnotherUselessAction");
 
             //TODO: Add timer setting in configuration file
             this.dataRetrieverTimer = new Timer(DoWorkAsync, null, TimeSpan.Zero, TimeSpan.FromSeconds(5));
             await Task.CompletedTask;
         }
 
+        /// <summary>
+        /// Perform connection check with the nodes
+        /// </summary>
+        /// <remarks>The ports can be changed in the future</remarks>
+        /// <returns>True if the connection are succeed</returns>
+        private bool PerformNodeCheck() => this.PortCheck(37221) && this.PortCheck(38226);
+
+        private bool PortCheck(int port)
+        {
+            using(TcpClient tcpClient = new TcpClient())
+            {
+                try
+                {
+                    tcpClient.Connect("127.0.0.1", port);
+                    return true;
+                }
+                catch
+                {
+                    return false;
+                }
+            }
+        }
+
+        /// <summary>
+        /// Retrieve all node information and store it in IDistributedCache object
+        /// </summary>
+        /// <returns></returns>
         private async Task BuildCacheAsync()
         {
             #region Stratis Node
             var stratisGetStatus = await ApiRequester.GetRequestAsync(this.defaultEndpointsSettings.StratisNode, "/api/Node/status");
             var stratisGetRawmempool = await ApiRequester.GetRequestAsync(this.defaultEndpointsSettings.StratisNode, "/api/Mempool/getrawmempool");
+            var stratisGetWalletHistory = await ApiRequester.GetRequestAsync(this.defaultEndpointsSettings.StratisNode, "/api/Wallet/history?WalletName=ClintMourlevat&AccountName=account%200");   //TODO: change wallet name
             dynamic stratisStatus = JsonConvert.DeserializeObject(stratisGetStatus.Content);
             dynamic stratisRawmempool = JsonConvert.DeserializeObject(stratisGetRawmempool.Content);
+            dynamic stratisWalletHistory = JsonConvert.DeserializeObject(stratisGetWalletHistory.Content);
             #endregion
 
             #region Sidechain Node
@@ -69,7 +106,9 @@ namespace Stratis.FederatedSidechains.AdminDashboard.Services
                     Peers = stratisStatus.outboundPeers,
                     BlockHash = "ebfc5fcd96e25ac2969acc84c20ca7b2e940240694e7fa3ec92d6041fe603ed9",
                     BlockHeight = stratisStatus.blockStoreHeight,
-                    MempoolSize = stratisRawmempool.Count
+                    MempoolSize = stratisRawmempool.Count,
+                    FederationMembers = new object[] {},
+                    History = stratisWalletHistory.history[0].transactionsHistory
                 },  
                 SidechainNode = new SidechainNodelModel
                 {
@@ -79,7 +118,9 @@ namespace Stratis.FederatedSidechains.AdminDashboard.Services
                     Peers = sidechainStatus.outboundPeers,
                     BlockHash = "ebfc5fcd96e25ac2969acc84c20ca7b2e940240694e7fa3ec92d6041fe603ed9",
                     BlockHeight = sidechainStatus.blockStoreHeight,
-                    MempoolSize = sidechainRawmempool.Count
+                    MempoolSize = sidechainRawmempool.Count,
+                    FederationMembers = new object[] {},
+                    History = new object[] {}
                 }
             };
                 
