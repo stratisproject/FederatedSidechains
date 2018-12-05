@@ -102,7 +102,7 @@ namespace Stratis.FederatedSidechains.AdminDashboard.Services
                 {
                     WebAPIUrl = string.Concat(this.defaultEndpointsSettings.StratisNode, "/api"),
                     SwaggerUrl = string.Concat(this.defaultEndpointsSettings.StratisNode, "/swagger"),
-                    SyncingStatus = 50,
+                    SyncingStatus = stratisStatus.consensusHeight > 0 ? (stratisStatus.blockStoreHeight / stratisStatus.consensusHeight) * 100 : 0,
                     Peers = stratisStatus.outboundPeers,
                     BlockHash = "ebfc5fcd96e25ac2969acc84c20ca7b2e940240694e7fa3ec92d6041fe603ed9",
                     BlockHeight = stratisStatus.blockStoreHeight,
@@ -114,7 +114,7 @@ namespace Stratis.FederatedSidechains.AdminDashboard.Services
                 {
                     WebAPIUrl = string.Concat(this.defaultEndpointsSettings.SidechainNode, "/api"),
                     SwaggerUrl = string.Concat(this.defaultEndpointsSettings.SidechainNode, "/swagger"),
-                    SyncingStatus = 70,
+                    SyncingStatus = sidechainStatus.consensusHeight > 0 ? (sidechainStatus.blockStoreHeight / sidechainStatus.consensusHeight) * 100 : 0,
                     Peers = sidechainStatus.outboundPeers,
                     BlockHash = "ebfc5fcd96e25ac2969acc84c20ca7b2e940240694e7fa3ec92d6041fe603ed9",
                     BlockHeight = sidechainStatus.blockStoreHeight,
