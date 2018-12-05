@@ -140,6 +140,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
                             if (!this.depositIdsByBlockHash.TryGetValue(transfer.BlockHash, out HashSet<uint256> deposits))
                             {
                                 deposits = new HashSet<uint256>();
+                                this.depositIdsByBlockHash[transfer.BlockHash] = deposits;
                             }
 
                             deposits.Add(transfer.DepositTransactionId);
@@ -217,7 +218,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
                     continue;
 
                 // Verify that the transaction input UTXO's have been reserved by the wallet.
-                if (ValidateTransaction(partialTransfer.PartialTransaction, wallet))
+                if (ValidateTransaction(partialTransfer.PartialTransaction))
                     continue;
 
                 // If not then the chain has been rewound so far that this transaction has lost its UTXO's.
@@ -416,18 +417,37 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
                                     ScriptPubKey = scriptPubKey
                                 };
 
-                                transaction = BuildDeterministicTransaction(deposit.Id, recipient);
-
+                                // Another federation member may have created this transaction already.
+                                (transaction, _) = this.FindWithdrawalTransactionInWallet(deposit.Id);
                                 if (transaction != null)
                                 {
-                                    // Reserve the UTXOs before building the next transaction.
-                                    walletUpdated |= this.federationWalletManager.ProcessTransaction(transaction, isPropagated: false);
+                                    // Add my signature.
+                                    var scriptCoins = new List<Coin>();
+                                    if (this.TransactionHasValidUTXOs(transaction, scriptCoins))
+                                    {
+                                        TransactionBuilder builder = new TransactionBuilder(this.network);
 
-                                    status = CrossChainTransferStatus.Partial;
+                                        Transaction combined =
+                                            builder
+                                                .AddCoins(scriptCoins)
+                                                .SignTransaction(transaction);
+                                    }
                                 }
                                 else
                                 {
-                                    haveSuspendedTransfers = true;
+                                    transaction = BuildDeterministicTransaction(deposit.Id, recipient);
+
+                                    if (transaction != null)
+                                    {
+                                        // Reserve the UTXOs before building the next transaction.
+                                        walletUpdated |= this.federationWalletManager.ProcessTransaction(transaction, isPropagated: false);
+
+                                        status = CrossChainTransferStatus.Partial;
+                                    }
+                                    else
+                                    {
+                                        haveSuspendedTransfers = true;
+                                    }
                                 }
                             }
 
@@ -551,7 +571,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
                             this.UpdateSpendingDetailsInWallet(oldTransaction.GetHash(), transfer.PartialTransaction, wallet);
                             this.federationWalletManager.SaveWallet();
 
-                            if (ValidateTransaction(transfer.PartialTransaction, wallet, true))
+                            if (ValidateTransaction(transfer.PartialTransaction, true))
                             {
                                 transfer.SetStatus(CrossChainTransferStatus.FullySigned);
                             }
@@ -780,6 +800,12 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
 
                 while (!this.cancellation.IsCancellationRequested)
                 {
+                    if (this.HasSuspended())
+                    {
+                        ICrossChainTransfer[] transfers = this.Get(this.depositsIdsByStatus[CrossChainTransferStatus.Suspended].ToArray());
+                        this.NextMatureDepositHeight = transfers.Min(t => t.DepositHeight) ?? this.NextMatureDepositHeight;
+                    }
+
                     this.RewindIfRequired();
 
                     if (this.SynchronizeBatch())
@@ -975,7 +1001,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
             foreach (TxIn input in transaction.Inputs)
             {
                 Wallet.TransactionData transactionData = wallet.MultiSigAddress.Transactions
-                    .Where(t => t?.SpendingDetails.TransactionId == transaction.GetHash() && t.Id == input.PrevOut.Hash && t.Index == input.PrevOut.N)
+                    .Where(t => t?.SpendingDetails?.TransactionId == transaction.GetHash() && t.Id == input.PrevOut.Hash && t.Index == input.PrevOut.N)
                     .FirstOrDefault();
 
                 if (transactionData != null)
@@ -1183,16 +1209,34 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
         }
 
         /// <summary>
-        /// Verifies that the transaction's input UTXO's have been reserved by the wallet.
+        /// Determines if there is an existing valid withdrawal transaction for a given deposit id.
         /// </summary>
-        /// <param name="transaction">The transaction to check.</param>
-        /// <param name="wallet">The wallet to check.</param>
-        /// <param name="checkSignature">Indictes whether to check the signature.</param>
-        /// <returns><c>True</c> if all's well and <c>false</c> otherwise.</returns>
-        public static bool ValidateTransaction(Transaction transaction, FederationWallet wallet, bool checkSignature = false)
+        /// <param name="depositId">The deposit id to find the withrawal transaction for.</param>
+        /// <returns>The transaction data containing the withdrawal transaction.</returns>
+        private (Transaction, TransactionData) FindWithdrawalTransactionInWallet(uint256 depositId)
+        {
+            FederationWallet wallet = this.federationWalletManager.GetWallet();
+
+            foreach (TransactionData transactionData in wallet.MultiSigAddress.Transactions)
+            {
+                Transaction walletTran = transactionData.GetFullTransaction(this.network);
+                IWithdrawal withdrawal = this.withdrawalExtractor.ExtractWithdrawalFromTransaction(walletTran, 0, 0);
+                if (withdrawal?.DepositId == depositId)
+                {
+                    if (!TransactionHasValidUTXOs(walletTran))
+                        continue;
+
+                    return (walletTran, transactionData);
+                }
+            }
+
+            return (null, null);
+        }
+
+        private bool TransactionHasValidUTXOs(Transaction transaction, List<Coin> coins = null)
         {
             // All the input UTXO's should be present in spending details of the multi-sig address.
-            List<Coin> coins = checkSignature ? new List<Coin>() : null;
+            FederationWallet wallet = this.federationWalletManager.GetWallet();
 
             foreach (TxIn input in transaction.Inputs)
             {
@@ -1206,6 +1250,26 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
                     coins?.Add(new Coin(transactionData.Id, (uint)transactionData.Index, transactionData.Amount, transactionData.ScriptPubKey));
                 }
             }
+
+            return true;
+        }
+
+        /// <inheritdoc />
+        public bool ValidateTransaction(Transaction transaction, bool checkSignature = false)
+        {
+            // All the input UTXO's should be present in spending details of the multi-sig address.
+            List<Coin> coins = checkSignature ? new List<Coin>() : null;
+            FederationWallet wallet = this.federationWalletManager.GetWallet();
+
+            // Verify that the transaction has valid UTXOs.
+            if (!TransactionHasValidUTXOs(transaction, coins))
+                return false;
+
+            // Verify that the deposit does not have an earlier transaction.
+            IWithdrawal myWithdrawal = this.withdrawalExtractor.ExtractWithdrawalFromTransaction(transaction, 0, 0);
+            (Transaction walletTran, _) = this.FindWithdrawalTransactionInWallet(myWithdrawal.DepositId);
+            if (walletTran != null && walletTran.GetHash() != transaction.GetHash())
+                return false;
 
             // Verify that all inputs are signed.
             if (checkSignature)

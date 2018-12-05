@@ -75,6 +75,15 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.Interfaces
         bool HasSuspended();
 
         /// <summary>
+        /// Verifies that the transaction's input UTXO's have been reserved by the wallet.
+        /// Also checks that an earlier transaction for the same deposit id does not exist.
+        /// </summary>
+        /// <param name="transaction">The transaction to check.</param>
+        /// <param name="checkSignature">Indicates whether to check the signature.</param>
+        /// <returns><c>True</c> if all's well and <c>false</c> otherwise.</returns>
+        bool ValidateTransaction(Transaction transaction, bool checkSignature = false);
+
+        /// <summary>
         /// The tip of our chain when we last updated the store.
         /// </summary>
         ChainedHeader TipHashAndHeight { get; }
