@@ -11,7 +11,7 @@
                   </div>
                   <ul class="list-inline float-right d-flex align-items-center">
                      <li class="list-inline-item">
-                        <span class="badge badge-@(Model.StratisNode.SyncingStatus > 100 ? "sucess":"warning")">
+                        <span class="badge badge-@(Model.StratisNode.SyncingStatus >= 100 ? "success":"warning")">
                         <i class="material-icons">sync</i> Syncing... @Model.StratisNode.SyncingStatus%
                         </span>
                      </li>
@@ -176,7 +176,7 @@
                      }
                   </tbody>
                   @if((Model.StratisNode.History as JArray).Count == 0)
-                     {
+                  {
                      <tfoot>
                         <td colspan="6" class="text-center"><em>There no transaction to display.</em></td>
                      </tfoot>
@@ -196,7 +196,7 @@
                   <!-- ul -->
                   <ul class="list-inline float-right d-flex align-items-center">
                      <li class="list-inline-item">
-                        <span class="badge badge-@(Model.SidechainNode.SyncingStatus > 100 ? "sucess":"warning")">
+                        <span class="badge badge-@(Model.SidechainNode.SyncingStatus >= 100 ? "success":"warning")">
                         <i class="material-icons">sync</i> Synced @Model.SidechainNode.SyncingStatus%
                         </span>
                      </li>
