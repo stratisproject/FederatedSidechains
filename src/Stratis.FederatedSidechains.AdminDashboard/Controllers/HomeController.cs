@@ -35,7 +35,7 @@ namespace Stratis.FederatedSidechains.AdminDashboard.Controllers
         public IActionResult CheckFederation()
         {
             //TODO: detect if federation is enabled
-            return Json(true);
+            return Json(false);
         }
 
         public IActionResult Index()

@@ -6,6 +6,7 @@ using Stratis.FederatedSidechains.AdminDashboard.Settings;
 using Stratis.FederatedSidechains.AdminDashboard.Rest;
 using RestSharp;
 using Stratis.FederatedSidechains.AdminDashboard.Filters;
+using Newtonsoft.Json;
 
 namespace Stratis.FederatedSidechains.AdminDashboard.Controllers
 {
@@ -21,9 +22,15 @@ namespace Stratis.FederatedSidechains.AdminDashboard.Controllers
 
         [Ajax]
         [Route("enable-federation")]
-        public IActionResult EnableFederation(string mnemonic, string password)
+        public async Task<IActionResult> EnableFederationAsync(string mnemonic, string password)
         {
-            return Ok();
+            ApiResponse importWalletRequest = await ApiRequester.PostRequestAsync(this.defaultEndpointsSettings.SidechainNode, "/api/FederationWallet/import-key", new {mnemonic, password});
+            if(importWalletRequest.IsSuccess)
+            {
+                ApiResponse enableFederationRequest = await ApiRequester.PostRequestAsync(this.defaultEndpointsSettings.SidechainNode, "/api/FederationWallet/enable-federation", new {password});
+                return enableFederationRequest.IsSuccess ? (IActionResult) Ok() : BadRequest();
+            }
+            return BadRequest();
         }
 
         [Ajax]

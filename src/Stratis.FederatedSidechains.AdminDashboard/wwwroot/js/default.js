@@ -6,6 +6,9 @@ $(document).ready(function()
     signalrHub.on("AnotherUselessAction", function () {
         alert("ok");
     });
+    signalrHub.on("CacheBuilt", function () {
+        //alert("CacheBuilt");
+    });
     signalrHub.start();
 
     // Check if the federation is enabled, if it's not the case a modal is displayed to enabled it
@@ -17,11 +20,6 @@ $(document).ready(function()
         }
     });
 
-    /*$(".loader").fadeOut(function()
-    {
-        $("#loading-content").fadeIn();
-    });*/
-
     NProgress.done();
 });
 
@@ -29,7 +27,7 @@ function DisplayNotification(text)
 {
     setTimeout(function()
     {
-        Snackbar.show({text: text, pos: "bottom-center", showAction: false});
+        Snackbar.show({text: text, pos: "bottom-center", showAction: true});
     }, 1000);
 }
 
@@ -45,6 +43,15 @@ function CompleteAction()
 function HideModals()
 {
     $(".modal").modal("hide");
+}
+
+function EnabledFederation()
+{
+    DisplayNotification("The federation is enabled.");
+}
+function EnableFederationFailed()
+{
+    DisplayNotification("Unable to enable the federation.");
 }
 
 /* STRATIS MAINNET ACTIONS EVENT */

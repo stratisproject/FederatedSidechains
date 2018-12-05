@@ -41,14 +41,14 @@
             </div>
             <div class="modal-body">
                 <p class="text-muted my-2 text-center">Some text explaining what this does</p>
-                <form class="my-3" data-ajax="true" asp-controller="SidechainNode" asp-action="EnableFederation" data-ajax-begin="BeginAction();" data-ajax-complete="CompleteAction();" data-ajax-success="alert('yeah');" data-ajax-failure="alert('buh');">
+                <form class="my-3" data-ajax="true" asp-controller="SidechainNode" asp-action="EnableFederationAsync" data-ajax-begin="BeginAction();" data-ajax-complete="CompleteAction();" data-ajax-success="HideModals();EnabledFederation();" data-ajax-failure="EnableFederationFailed">
                     <div class="form-group">
                         <label for="Mnemonics">Mnemonics</label>
-                        <input type="text" class="form-control" name="mnemonic" id="Mnemonics" aria-describedby="Mnemonics" placeholder="Enter Mnemonics here">
+                        <input type="text" class="form-control" autocomplete="off" name="mnemonic" id="Mnemonics" aria-describedby="Mnemonics" placeholder="Enter Mnemonics here">
                     </div>
                     <div class="form-group">
                         <label for="Password">Password</label>
-                        <input type="password" class="form-control" name="password" id="Password" placeholder="Password here">
+                        <input type="password" class="form-control" autocomplete="off" name="password" id="Password" placeholder="Password here">
                     </div>
                     <button type="submit" class="btn btn-primary d-flex justify-content-end ml-auto">Enable Federation</button>
                 </form>
