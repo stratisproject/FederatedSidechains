@@ -28,41 +28,72 @@ namespace FederationSetup
             // Start with the banner and the help message.
             FederationSetup.OutputHeader();
             FederationSetup.OutputMenu();
-            args = GetChoice();
+            
 
             while (true)
             {
                 try
                 {
+                    Console.Write("Your choice: ");
+                    string userInput = Console.ReadLine().Trim();
+                    
                     string command = null;
-                    if (args != null)
+                    if (!string.IsNullOrEmpty(userInput))
                     {
+                        args = userInput.Split(" ");
                         command = args[0];
                     }
-
+                    else
+                    {
+                        args = null;
+                        command = null;
+                    }
+                    
                     Console.WriteLine();
 
                     if (command == SwitchExit) return;
 
                     if (command == SwitchMenu)
                     {
+                        if (args.Length != 1)
+                            throw new ArgumentException("Please enter the exact number of argument required.");
+
                         FederationSetup.OutputMenu();
                     }
 
                     if (command == SwitchMineGenesisBlock)
                     {
-                        Console.WriteLine(new GenesisMiner().MineGenesisBlocks(new PoAConsensusFactory(), "https://www.coindesk.com/apple-co-founder-backs-dorsey-bitcoin-become-webs-currency/"));
+                        int index = userInput.IndexOf("text=");
+                        if (index < 0)
+                            throw new ArgumentException("The -text=\"<text>\" argument is missing.");
+
+                        string text = userInput.Substring(userInput.IndexOf("text=") + 5);
+
+                        if (text.Substring(0, 1) != "\"" || text.Substring(text.Length - 1, 1) != "\"")
+                            throw new ArgumentException("The -text=\"<text>\" argument should have double-quotes.");
+                        
+                        text = text.Substring(1, text.Length - 2);
+
+                        if (string.IsNullOrEmpty(text))
+                            throw new ArgumentException("Please specify the text to be included in the genesis block.");
+
+                        Console.WriteLine(new GenesisMiner().MineGenesisBlocks(new PoAConsensusFactory(), text));
                         FederationSetup.OutputSuccess();
                     }
 
                     if (command == SwitchGenerateFedPublicPrivateKeys)
                     {
+                        if (args.Length != 1)
+                            throw new ArgumentException("Please enter the exact number of argument required.");
+
                         GeneratePublicPrivateKeys();
                         FederationSetup.OutputSuccess();
                     }
 
                     if (command == SwitchGenerateMultiSigAddresses)
                     {
+                        if (args.Length != 4)
+                            throw new ArgumentException("Please enter the exact number of argument required.");
 
                         ConfigReader = new TextFileConfiguration(args);
 
@@ -80,30 +111,14 @@ namespace FederationSetup
                         Console.WriteLine($"Creating multisig addresses for {mainChain.Name} and {sideChain.Name}.");
                         Console.WriteLine(new MultisigAddressCreator().CreateMultisigAddresses(mainChain, sideChain, federatedPublicKeys.Select(f => new PubKey(f)).ToArray(), quorum));
                     }
-
-                    args = GetChoice();
                 }
                 catch (Exception ex)
                 {
                     FederationSetup.OutputErrorLine($"An error occurred: {ex.Message}");
                     Console.WriteLine();
                     FederationSetup.OutputMenu();
-                    args = GetChoice();
                 }
             }
-        }
-
-        private static string[] GetChoice()
-        {
-            Console.Write("Your choice: ");
-            string command = Console.ReadLine();
-
-            if (!string.IsNullOrEmpty(command))
-            {
-                return command.Split(" ");
-            }
-
-            return null;
         }
 
         private static void GeneratePublicPrivateKeys()
@@ -175,19 +190,30 @@ namespace FederationSetup
 
         private static (Network mainChain, Network sideChain) GetMainAndSideChainNetworksFromArguments()
         {
-            Network mainchainNetwork = Networks.Stratis.Mainnet();
-            Network sideChainNetwork = FederatedPegNetwork.NetworksSelector.Mainnet();
+            string network = ConfigReader.GetOrDefault("network", (string)null);
 
-            bool testNet = ConfigReader.GetOrDefault("testnet", false);
-            bool regTest = ConfigReader.GetOrDefault("regtest", false);
+            if (string.IsNullOrEmpty(network))
+                throw new ArgumentException("Please specify a network.");
 
-            mainchainNetwork = testNet ? Networks.Stratis.Testnet() :
-                        regTest ? Networks.Stratis.Testnet() :
-                        Networks.Stratis.Mainnet();
+            Network mainchainNetwork, sideChainNetwork;
+            switch (network)
+            {
+                case "mainnet":
+                    mainchainNetwork = Networks.Stratis.Mainnet();
+                    sideChainNetwork = FederatedPegNetwork.NetworksSelector.Mainnet();
+                    break;
+                case "testnet":
+                    mainchainNetwork = Networks.Stratis.Testnet();
+                    sideChainNetwork = FederatedPegNetwork.NetworksSelector.Testnet();
+                    break;
+                case "regtest":
+                    mainchainNetwork = Networks.Stratis.Regtest();
+                    sideChainNetwork = FederatedPegNetwork.NetworksSelector.Regtest();
+                    break;
+                default:
+                    throw new ArgumentException("Please specify a network such as: mainnet, testnet or regtest.");
 
-            sideChainNetwork = testNet ? FederatedPegNetwork.NetworksSelector.Testnet() :
-                        regTest ? FederatedPegNetwork.NetworksSelector.Testnet() :
-                        FederatedPegNetwork.NetworksSelector.Mainnet();
+            }
 
             return (mainchainNetwork, sideChainNetwork);
         }
