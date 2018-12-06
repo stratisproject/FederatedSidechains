@@ -21,19 +21,18 @@ namespace Stratis.Sidechains.Networks
         {
             this.Name = FederatedPegNetwork.TestNetworkName;
             this.CoinTicker = FederatedPegNetwork.TestCoinSymbol;
+            this.Magic = 0x522357B;
 
             var consensusFactory = new SmartContractPoAConsensusFactory();
 
             // Create the genesis block.
-            this.GenesisTime = 1513622125;
-            this.GenesisNonce = 1560058197;
-            this.GenesisBits = 402691653;
+            this.GenesisTime = 1544113232;
+            this.GenesisNonce = 56989;
+            this.GenesisBits = new Target(new uint256("0000ffff00000000000000000000000000000000000000000000000000000000"));
             this.GenesisVersion = 1;
             this.GenesisReward = Money.Zero;
-            this.Magic = 0x522357B;
-
-            NBitcoin.Block genesisBlock = CreatePoAGenesisBlock(consensusFactory, this.GenesisTime, this.GenesisNonce, this.GenesisBits, this.GenesisVersion, this.GenesisReward);
-            ((SmartContractPoABlockHeader)genesisBlock.Header).HashStateRoot = new uint256("21B463E3B52F6201C0AD6C991BE0485B6EF8C092E64583FFA655CC1B171FE856"); // Set StateRoot to empty trie.
+            
+            Block genesisBlock = FederatedPegNetwork.CreateGenesis(consensusFactory, this.GenesisTime, this.GenesisNonce, this.GenesisBits, this.GenesisVersion, this.GenesisReward);
 
             this.Genesis = genesisBlock;
 
@@ -125,7 +124,8 @@ namespace Stratis.Sidechains.Networks
             this.DNSSeeds = new List<DNSSeedData>();
             this.SeedNodes = new List<NetworkAddress>();
 
-            // TODO: Do we need Asserts for block hash
+            Assert(this.Consensus.HashGenesisBlock == uint256.Parse("0x00008460b940e3e9c7415a07a54cb569a9f69adf790961f11de0c42aa6470708"));
+            Assert(this.Genesis.Header.HashMerkleRoot == uint256.Parse("0xb68311ebfee717754de683570de6e792a2149776381ed49df9cdf3383e59749d"));
         }
     }
 }
