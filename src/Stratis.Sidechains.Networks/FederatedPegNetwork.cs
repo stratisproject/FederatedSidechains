@@ -1,6 +1,8 @@
 ﻿using NBitcoin;
 using NBitcoin.DataEncoders;
 
+using Stratis.Bitcoin.Features.SmartContracts;
+
 namespace Stratis.Sidechains.Networks
 {
     public static class FederatedPegNetwork
@@ -53,7 +55,7 @@ namespace Stratis.Sidechains.Networks
             genesis.Header.HashPrevBlock = uint256.Zero;
             genesis.UpdateMerkleRoot();
 
-            //((SmartContractBlockHeader)genesis.Header).HashStateRoot = new uint256("21B463E3B52F6201C0AD6C991BE0485B6EF8C092E64583FFA655CC1B171FE856");
+            ((SmartContractBlockHeader)genesis.Header).HashStateRoot = new uint256("21B463E3B52F6201C0AD6C991BE0485B6EF8C092E64583FFA655CC1B171FE856");
 
             return genesis;
         }
