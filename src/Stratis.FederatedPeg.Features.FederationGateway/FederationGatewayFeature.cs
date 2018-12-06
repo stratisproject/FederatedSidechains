@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http;
 using System.Net.Http.Headers;
@@ -201,18 +202,22 @@ namespace Stratis.FederatedPeg.Features.FederationGateway
                 "NodeStore.Hash: ".PadRight(LoggingConfiguration.ColumnLength - 2) +
                 this.crossChainTransferStore.TipHashAndHeight.HashBlock.ToString() + "  " +
                 "NodeStore.NextDepositHeight: ".PadRight(LoggingConfiguration.ColumnLength + 1) +
-                (this.crossChainTransferStore.NextMatureDepositHeight.ToString() + (this.crossChainTransferStore.HasSuspended()?"!":"")).PadRight(8));
-        }
+                this.crossChainTransferStore.NextMatureDepositHeight.ToString().PadRight(8) +
+                "NodeStore.HasSuspended: ".PadRight(LoggingConfiguration.ColumnLength + 1) +
+                this.crossChainTransferStore.HasSuspended().ToString().PadRight(8)
+                );
+       }
 
         public void AddComponentStats(StringBuilder benchLog)
         {
             benchLog.AppendLine();
             benchLog.AppendLine("====== Federation Wallet ======");
 
-            var items = this.federationWalletManager.GetSpendableTransactionsInWallet(0);
-            benchLog.AppendLine("Federation Wallet: ".PadRight(LoggingConfiguration.ColumnLength) +
-                " Balance: " + new Money(items.Sum(s => s.Transaction.Amount)).ToString().PadRight(LoggingConfiguration.ColumnLength) +
-                " Federation Status: " + (this.federationWalletManager.IsFederationActive() ? "Active" : "Inactive"));
+            var balances = this.federationWalletManager.GetWallet().GetSpendableAmount();
+            benchLog.AppendLine("Federation Wallet: ".PadRight(LoggingConfiguration.ColumnLength)
+                                + " Confirmed balance: " + balances.ConfirmedAmount.ToString().PadRight(LoggingConfiguration.ColumnLength)
+                                + " Unconfirmed balance: " + balances.UnConfirmedAmount.ToString().PadRight(LoggingConfiguration.ColumnLength)
+                                + " Federation Status: " + (this.federationWalletManager.IsFederationActive() ? "Active" : "Inactive"));
             benchLog.AppendLine();
         }
     }
