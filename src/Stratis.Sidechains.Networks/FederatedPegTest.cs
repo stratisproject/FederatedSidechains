@@ -12,9 +12,15 @@ namespace Stratis.Sidechains.Networks
     /// <summary>
     /// Right now, ripped nearly straight from <see cref="PoANetwork"/>.
     /// </summary>
-    public class FederatedPegTest : PoANetwork
+    public class FederatedPegTest : Network
     {
-        public IList<Mnemonic> FederationMnemonics { get; }
+        /// <summary> The name of the root folder containing the different federated peg blockchains.</summary>
+        private const string NetworkRootFolderName = "fedpeg";
+
+        /// <summary> The default name used for the federated peg configuration file. </summary>
+        private const string NetworkDefaultConfigFilename = "fedpeg.conf";
+
+        // public IList<Mnemonic> FederationMnemonics { get; }
         public IList<Key> FederationKeys { get; private set; }
 
         internal FederatedPegTest()
@@ -22,6 +28,17 @@ namespace Stratis.Sidechains.Networks
             this.Name = FederatedPegNetwork.TestNetworkName;
             this.CoinTicker = FederatedPegNetwork.TestCoinSymbol;
             this.Magic = 0x522357B;
+            this.DefaultPort = 16438;
+            this.DefaultMaxOutboundConnections = 16;
+            this.DefaultMaxInboundConnections = 109;
+            this.RPCPort = 16474;
+            this.MaxTipAge = 2 * 60 * 60;
+            this.MinTxFee = 10000;
+            this.FallbackFee = 10000;
+            this.MinRelayTxFee = 10000;
+            this.RootFolderName = NetworkRootFolderName;
+            this.DefaultConfigFilename = NetworkDefaultConfigFilename;
+            this.MaxTimeOffsetSeconds = 25 * 60;
 
             var consensusFactory = new SmartContractPoAConsensusFactory();
 
@@ -36,15 +53,17 @@ namespace Stratis.Sidechains.Networks
 
             this.Genesis = genesisBlock;
 
-            this.FederationMnemonics = new[] {
-                 "ensure feel swift crucial bridge charge cloud tell hobby twenty people mandate",
-                 "quiz sunset vote alley draw turkey hill scrap lumber game differ fiction",
-                 "exchange rent bronze pole post hurry oppose drama eternal voice client state"
-             }.Select(m => new Mnemonic(m, Wordlist.English)).ToList();
-
-            this.FederationKeys = this.FederationMnemonics.Select(m => m.DeriveExtKey().PrivateKey).ToList();
-
-            var federationPubKeys = this.FederationKeys.Select(k => k.PubKey).ToList();
+            // Configure federation public keys used to sign blocks.
+            // Keep in mind that order in which keys are added to this list is important
+            // and should be the same for all nodes operating on this network.
+            var federationPubKeys = new List<PubKey>()
+            {
+                new PubKey("03e89abd3c9e791f4fb13ced638457c85beb4aff74d37b3fe031cd888f0f92989e"), // I
+                new PubKey("036f77376cb171fc57dfbe1b9176d72af37c92482a25ead936342c58c29aa0c9eb"), // J
+                new PubKey("02a8a565bf3c675aee4eb8585771c7517e358708faee4f9db2ed7502d7f9dae740"), // L
+                new PubKey("0248de019680c6f18e434547c8c9d48965b656b8e5e70c5a5564cfb1270db79a11"), // M
+                new PubKey("034bd1a94b0ae315f584ecd22b2ad8fa35056cc70862f33e3e08286f3bbe2207c4")  // P
+            };
 
             var consensusOptions = new PoAConsensusOptions(
                 maxBlockBaseSize: 1_000_000,
@@ -84,7 +103,7 @@ namespace Stratis.Sidechains.Networks
                 maxMoney: Money.Coins(20_000_000),
                 coinbaseMaturity: 1,
                 premineHeight: 2,
-                premineReward: Money.Coins(20_000_000),
+                premineReward: Money.Coins(100_000_000),
                 proofOfWorkReward: Money.Coins(0),
                 powTargetTimespan: TimeSpan.FromDays(14), // two weeks
                 powTargetSpacing: TimeSpan.FromMinutes(1),
