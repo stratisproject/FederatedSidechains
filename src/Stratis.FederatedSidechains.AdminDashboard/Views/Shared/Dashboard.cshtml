@@ -83,7 +83,7 @@
                   <label class="mt-3"><strong>Peers :</strong></label>
                   <table class="table table-sm table-striped">
                      <tbody>
-                        @foreach(dynamic peer in Model.StratisNode.Peers as JArray)
+                        @foreach(dynamic peer in (JArray) Model.StratisNode.Peers)
                         {
                            <tr>
                               <td class="text-left">@peer.remoteSocketEndpoint</td>
@@ -94,7 +94,7 @@
                         }
                      </tbody>
                      <tfoot>
-                        @if((Model.StratisNode.Peers as JArray).Count == 0)
+                        @if(((JArray) Model.StratisNode.Peers).Count == 0)
                         {
                            <tr>
                               <td colspan="4" class="text-center"><em>There no peers to display.</em></td>
@@ -105,7 +105,7 @@
                   <label><strong>Federation members :</strong></label>
                   <table class="table table-sm table-striped">
                      <tbody>
-                        @foreach(dynamic member in Model.StratisNode.FederationMembers as JArray)
+                        @foreach(dynamic member in (JArray) Model.StratisNode.FederationMembers)
                         {
                            <tr>
                               <td class="text-left">@member.remoteSocketEndpoint</td>
@@ -116,7 +116,7 @@
                         }
                      </tbody>
                      <tfoot>
-                        @if((Model.StratisNode.FederationMembers as JArray).Count == 0)
+                        @if(((JArray) Model.StratisNode.FederationMembers).Count == 0)
                         {
                            <tr>
                               <td colspan="4" class="text-center"><em>There no federation member to display.</em></td>
@@ -131,7 +131,7 @@
             <div class="card-body">
                <div class="d-flex align-items-center mb-4">
                   <label class="d-flex justify-content-start">
-                     <strong>History <small class="text-muted">(@((Model.StratisNode.History as JArray).Count))</small></strong>
+                     <strong>History <small class="text-muted">(@(((JArray) Model.StratisNode.History).Count))</small></strong>
                   </label>
                   <span class="d-flex justify-content-end align-items-center ml-auto">
                      <a data-toggle="modal" data-target="#history" class="btn btn-outline-primary">See all history</a>
@@ -149,9 +149,9 @@
                      </tr>
                   </thead>
                   <tbody>
-                     @foreach(dynamic transaction in (Model.StratisNode.History as JArray).Take(5).ToList())
+                     @foreach(dynamic transaction in ((JArray)Model.StratisNode.History).Take(5).ToList())
                      {
-                        @if(transaction.type == "send")
+                        if(transaction.type == "send")
                         {
                            <tr>
                               <td class="text-center"><i class="material-icons text-green md-18">check_circle</i></td>
@@ -182,7 +182,7 @@
                         }
                      }
                   </tbody>
-                  @if((Model.StratisNode.History as JArray).Count == 0)
+                  @if(((JArray)Model.StratisNode.History).Count == 0)
                   {
                      <tfoot>
                         <tr>
@@ -272,7 +272,7 @@
                   <label class="mt-3"><strong>Peers :</strong></label>
                   <table class="table table-sm table-striped">
                      <tbody>
-                        @foreach(dynamic peer in Model.SidechainNode.Peers as JArray)
+                        @foreach(dynamic peer in (JArray) Model.SidechainNode.Peers)
                         {
                            <tr>
                               <td class="text-left">@peer.remoteSocketEndpoint</td>
@@ -283,7 +283,7 @@
                         }
                      </tbody>
                      <tfoot>
-                        @if((Model.SidechainNode.Peers as JArray).Count == 0)
+                        @if(((JArray) Model.SidechainNode.Peers).Count == 0)
                         {
                            <tr>
                               <td colspan="4" class="text-center"><em>There no peers to display.</em></td>
@@ -294,7 +294,7 @@
                   <label><strong>Federation members :</strong></label>
                   <table class="table table-sm table-striped">
                      <tbody>
-                        @foreach(dynamic member in Model.SidechainNode.FederationMembers as JArray)
+                        @foreach(dynamic member in (JArray) Model.SidechainNode.FederationMembers)
                         {
                            <tr>
                               <td class="text-left">@member.remoteSocketEndpoint</td>
@@ -305,7 +305,7 @@
                         }
                      </tbody>
                      <tfoot>
-                        @if((Model.SidechainNode.FederationMembers as JArray).Count == 0)
+                        @if(((JArray) Model.SidechainNode.FederationMembers).Count == 0)
                         {
                            <tr>
                               <td colspan="4" class="text-center"><em>There no federation member to display.</em></td>
@@ -320,7 +320,7 @@
             <div class="card-body">
                <div class="d-flex align-items-center mb-4">
                   <label class="d-flex justify-content-start">
-                  <strong>History <small class="text-muted">(@((Model.SidechainNode.History as JArray).Count))</small></strong>
+                  <strong>History <small class="text-muted">(@(((JArray) Model.SidechainNode.History).Count))</small></strong>
                   </label>
                   <span class="d-flex justify-content-end align-items-center ml-auto">
                   <a href="#" class="btn btn-outline-primary">See all history</a>
@@ -338,9 +338,9 @@
                      </tr>
                   </thead>
                   <tbody>
-                     @foreach(dynamic transaction in (Model.SidechainNode.History as JArray).Take(5).ToList())
+                     @foreach(dynamic transaction in ((JArray)Model.SidechainNode.History).Take(5).ToList())
                      {
-                        @if(transaction.type == "send")
+                        if(transaction.type == "send")
                         {
                            <tr>
                               <td class="text-center"><i class="material-icons text-green md-18">check_circle</i></td>
@@ -371,7 +371,7 @@
                         }
                      }
                   </tbody>
-                  @if((Model.SidechainNode.History as JArray).Count == 0)
+                  @if(((JArray) Model.SidechainNode.History).Count == 0)
                   {
                      <tfoot>
                         <tr>
