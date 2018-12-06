@@ -202,7 +202,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway
                 "NodeStore.Height: ".PadRight(LoggingConfiguration.ColumnLength + 1) +
                 this.crossChainTransferStore.TipHashAndHeight.Height.ToString().PadRight(9) +
                 "NodeStore.Hash: ".PadRight(LoggingConfiguration.ColumnLength - 2) +
-                this.crossChainTransferStore.TipHashAndHeight.Hash.ToString() + "  " +
+                this.crossChainTransferStore.TipHashAndHeight.HashBlock.ToString() + "  " +
                 "NodeStore.NextDepositHeight: ".PadRight(LoggingConfiguration.ColumnLength + 1) +
                 this.crossChainTransferStore.NextMatureDepositHeight.ToString().PadRight(8));
         }
@@ -325,4 +325,3 @@ namespace Stratis.FederatedPeg.Features.FederationGateway
     }
 }
 
-   

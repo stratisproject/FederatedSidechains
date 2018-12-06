@@ -71,7 +71,7 @@ namespace Stratis.FederatedPeg.Tests.Utils
             this.newLine(Environment.NewLine);
 
             this.newLine("# SidechainUser");
-            this.newLine("cd path_to_sidechaind");
+            this.newLine("cd $path_to_sidechaind");
             this.newLine($"start-process cmd -ArgumentList \"/k color {this.consoleColors[4]} && dotnet run --no-build -testnet -port=26179 -apiport=38225 -agentprefix=sideuser -datadir=$root_datadir\\SidechainUser agentprefix=sc_user -addnode=127.0.0.1:36{GetPortNumberSuffix(this.chains[1], 0)} -addnode=127.0.0.1:36{GetPortNumberSuffix(this.chains[1], 1)} -addnode=127.0.0.1:36{GetPortNumberSuffix(this.chains[1], 2)}\"");
             this.newLine("timeout $interval_time");
             this.newLine(Environment.NewLine);
@@ -83,10 +83,10 @@ namespace Stratis.FederatedPeg.Tests.Utils
             federationMemberIndexes.ForEach(i => {
                 this.newLine($"# Federation member {i} main and side");
                 this.newLine(
-                    $"start-process cmd -ArgumentList \"/k color {this.consoleColors[i+1]} && dotnet run --no-build -mainchain -testnet -agentprefix=fed{i + 1}main -datadir=$root_datadir\\gateway{i + 1} -port=36{GetPortNumberSuffix(this.chains[0], i)} -apiport=38{GetPortNumberSuffix(this.chains[0], i)} -counterchainapiport=38{GetPortNumberSuffix(this.chains[1], i)} -federationips=$mainchain_federationips -redeemscript=\"\"$redeemscript\"\" -publickey=$gateway{i+1}_public_key -addnode=13.70.81.5 -addnode=52.151.76.252 -whitelist=52.151.76.252 -gateway=1\"");
+                    $"start-process cmd -ArgumentList \"/k color {this.consoleColors[i+1]} && dotnet run --no-build -mainchain -testnet -agentprefix=fed{i + 1}main -datadir=$root_datadir\\gateway{i + 1} -port=36{GetPortNumberSuffix(this.chains[0], i)} -apiport=38{GetPortNumberSuffix(this.chains[0], i)} -counterchainapiport=38{GetPortNumberSuffix(this.chains[1], i)} -federationips=$mainchain_federationips -redeemscript=\"\"$redeemscript\"\" -publickey=$gateway{i+1}_public_key -addnode=13.70.81.5 -addnode=52.151.76.252 -whitelist=52.151.76.252 -gateway=1 -mincoinmaturity=1 -mindepositconfirmations=1\"");
                 this.newLine("timeout $long_interval_time");
                 this.newLine(
-                    $"start-process cmd -ArgumentList \"/k color {this.consoleColors[i + 1]} && dotnet run --no-build -sidechain -testnet -agentprefix=fed{i + 1}side -datadir=$root_datadir\\gateway{i + 1} mine=1 mineaddress=$sidechain_multisig_address -port=36{GetPortNumberSuffix(this.chains[1], i)} -apiport=38{GetPortNumberSuffix(this.chains[1], i)} -counterchainapiport=38{GetPortNumberSuffix(this.chains[0], i)} -txindex=1 -federationips=$sidechain_federationips -redeemscript=\"\"$redeemscript\"\" -publickey=$gateway{i + 1}_public_key\"");
+                    $"start-process cmd -ArgumentList \"/k color {this.consoleColors[i + 1]} && dotnet run --no-build -sidechain -testnet -agentprefix=fed{i + 1}side -datadir=$root_datadir\\gateway{i + 1} mine=1 mineaddress=$sidechain_multisig_address -port=36{GetPortNumberSuffix(this.chains[1], i)} -apiport=38{GetPortNumberSuffix(this.chains[1], i)} -counterchainapiport=38{GetPortNumberSuffix(this.chains[0], i)} -txindex=1 -federationips=$sidechain_federationips -redeemscript=\"\"$redeemscript\"\" -publickey=$gateway{i + 1}_public_key -mincoinmaturity=1 -mindepositconfirmations=1\"");
                 this.newLine("timeout $long_interval_time");
                 this.newLine(Environment.NewLine);
             });
@@ -159,7 +159,7 @@ namespace Stratis.FederatedPeg.Tests.Utils
                     this.newLine($"$params = @{{ \"password\" = \"password\" }}");
                     this.newLine(
                         $"Invoke-WebRequest -Uri http://localhost:38{GetPortNumberSuffix(c, i)}/api/FederationWallet/enable-federation -Method post -Body ($params|ConvertTo-Json) -ContentType \"application/json\"");
-                    this.newLine("timeout $interval_time");
+                    this.newLine("timeout $long_interval_time");
                     this.newLine(Environment.NewLine);
                 });
             });
