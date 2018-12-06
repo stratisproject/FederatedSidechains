@@ -209,8 +209,10 @@ namespace Stratis.FederatedPeg.Features.FederationGateway
             benchLog.AppendLine();
             benchLog.AppendLine("====== Federation Wallet ======");
 
-            var items = this.federationWalletManager.GetSpendableTransactionsInWallet(1);
-            benchLog.AppendLine("Federation Wallet: ".PadRight(LoggingConfiguration.ColumnLength) + " Confirmed balance: " + new Money(items.Sum(s => s.Transaction.Amount)).ToString());
+            var items = this.federationWalletManager.GetSpendableTransactionsInWallet(0);
+            benchLog.AppendLine("Federation Wallet: ".PadRight(LoggingConfiguration.ColumnLength) +
+                " Balance: " + new Money(items.Sum(s => s.Transaction.Amount)).ToString().PadRight(LoggingConfiguration.ColumnLength) +
+                " Federation Status: " + (this.federationWalletManager.IsFederationActive() ? "Active" : "Inactive"));
             benchLog.AppendLine();
         }
     }
