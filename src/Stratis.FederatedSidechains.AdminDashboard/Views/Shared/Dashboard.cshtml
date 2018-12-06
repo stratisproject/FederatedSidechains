@@ -131,10 +131,10 @@
             <div class="card-body">
                <div class="d-flex align-items-center mb-4">
                   <label class="d-flex justify-content-start">
-                  <strong>History <small class="text-muted">(@((Model.StratisNode.History as JArray).Count))</small></strong>
+                     <strong>History <small class="text-muted">(@((Model.StratisNode.History as JArray).Count))</small></strong>
                   </label>
                   <span class="d-flex justify-content-end align-items-center ml-auto">
-                  <a data-toggle="modal" data-target="#history" class="btn btn-outline-primary">See all history</a>
+                     <a data-toggle="modal" data-target="#history" class="btn btn-outline-primary">See all history</a>
                   </span>
                </div>
                <table class="table table-sm table-history">
@@ -194,7 +194,6 @@
             </div>
          </div>
       </div>
-      <!-- /col -->
       <div class="col-lg-6 col-12">
          <div class="card mb-4">
             <div class="card-body">
@@ -202,7 +201,6 @@
                   <div class="mr-auto d-inline-block">
                      <h3>Apex Node</h3>
                   </div>
-                  <!-- ul -->
                   <ul class="list-inline float-right d-flex align-items-center">
                      <li class="list-inline-item">
                         <span class="badge badge-@(Model.SidechainNode.SyncingStatus >= 100 ? "success":"warning")">
@@ -223,7 +221,6 @@
                         </div>
                      </li>
                   </ul>
-                  <!-- /ul -->
                </div>
                <div class="card-text">
                   <ul class="list-inline mb-0 row">
