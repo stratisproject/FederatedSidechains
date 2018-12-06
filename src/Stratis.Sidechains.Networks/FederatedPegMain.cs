@@ -20,7 +20,7 @@ namespace Stratis.Sidechains.Networks
             this.Name = FederatedPegNetwork.MainNetworkName;
             this.CoinTicker = FederatedPegNetwork.CoinSymbol;
 
-            var consensusFactory = new PoAConsensusFactory();
+            var consensusFactory = new SmartContractPoAConsensusFactory();
 
             // Create the genesis block.
             this.GenesisTime = 1513622125;

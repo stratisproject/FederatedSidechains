@@ -2,6 +2,7 @@
 using NBitcoin.DataEncoders;
 
 using Stratis.Bitcoin.Features.SmartContracts;
+using Stratis.Bitcoin.Features.SmartContracts.PoA;
 
 namespace Stratis.Sidechains.Networks
 {
@@ -23,7 +24,7 @@ namespace Stratis.Sidechains.Networks
             }
         }
 
-        public static Block CreateGenesis(ConsensusFactory consensusFactory, uint genesisTime, uint nonce, uint bits, int version, Money reward)
+        public static Block CreateGenesis(SmartContractPoAConsensusFactory consensusFactory, uint genesisTime, uint nonce, uint bits, int version, Money reward)
         {
             string timeStamp = "https://news.bitcoin.com/markets-update-cryptocurrencies-shed-billions-in-bloody-sell-off/";
             var genesisOutputScript = new Script(Op.GetPushOp(Encoders.Hex.DecodeData("04678afdb0fe5548271967f1a67130b7105cd6a828e03909a67962e0ea1f61deb649f6bc3f4cef38c4f35504e51ec112de5c384df7ba0b8d578a4c702b6bf11d5f")), OpcodeType.OP_CHECKSIG);
