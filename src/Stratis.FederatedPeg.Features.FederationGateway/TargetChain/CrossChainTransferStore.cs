@@ -294,7 +294,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
                 {
                     OrderCoinsDeterministic = true,
                     TransactionFee = this.federationGatewaySettings.TransactionFee,
-                    MinConfirmations = (int)this.network.Consensus.MaxReorgLength + 1,
+                    MinConfirmations = this.federationGatewaySettings.MinCoinMaturity,
                     Shuffle = false,
                     IgnoreVerify = true,
                     WalletPassword = walletPassword,
