@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 using NBitcoin;
-using Stratis.Bitcoin.Features.PoA;
+using Stratis.Bitcoin.Features.SmartContracts.PoA;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -22,7 +22,7 @@ namespace FederationSetup
         [Fact(Skip = "This is not a test, it is meant to be run upon creating a network")]
         public void Run_MineGenesis()
         {
-            var consensusFactory = new PoAConsensusFactory();
+            var consensusFactory = new SmartContractPoAConsensusFactory();
             string coinbaseText = "https://www.coindesk.com/apple-co-founder-backs-dorsey-bitcoin-become-webs-currency/";
             this.output.WriteLine(this.MineGenesisBlocks(consensusFactory, coinbaseText));
         }
@@ -46,7 +46,7 @@ namespace FederationSetup
             foreach (KeyValuePair<uint256, string> target in targets)
             {
                 header = this.GeneterateBlock(consensusFactory, coinbaseText, target.Key);
-                output.AppendLine(this.NetworkOutput(header, target.Value));
+                output.AppendLine(this.NetworkOutput(header, target.Value, coinbaseText));
             }
 
             return output.ToString();
@@ -59,7 +59,7 @@ namespace FederationSetup
             return genesis.Header;
         }
 
-        private string NetworkOutput(BlockHeader header, string network)
+        private string NetworkOutput(BlockHeader header, string network, string coinbaseText)
         {
             var output = new StringBuilder();
 
@@ -70,6 +70,7 @@ namespace FederationSetup
             output.AppendLine("version: " + header.Version);
             output.AppendLine("hash: " + header.GetHash());
             output.AppendLine("merkleroot: " + header.HashMerkleRoot);
+            output.AppendLine("coinbase text: " + coinbaseText);
             output.AppendLine(Environment.NewLine);
 
             return output.ToString();
