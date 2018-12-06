@@ -28,6 +28,11 @@ namespace FederationSetup
 
         static void Main(string[] args)
         {
+            Console.SetIn(new StreamReader(Console.OpenStandardInput(),
+                Console.InputEncoding,
+                false,
+                bufferSize: 1024));
+
             // Start with the banner and the help message.
             FederationSetup.OutputHeader();
             FederationSetup.OutputMenu();
