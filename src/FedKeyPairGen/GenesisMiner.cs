@@ -54,7 +54,7 @@ namespace FederationSetup
 
         private BlockHeader GeneterateBlock(ConsensusFactory consensusFactory, string coinbaseText, uint256 target)
         {
-            Block genesis = Network.MineGenesisBlock(consensusFactory, coinbaseText, new Target(target), Money.Coins(50m));
+            Block genesis = Network.MineGenesisBlock(consensusFactory, coinbaseText, new Target(target), Money.Zero);
 
             return genesis.Header;
         }
