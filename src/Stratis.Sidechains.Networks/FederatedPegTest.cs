@@ -103,7 +103,7 @@ namespace Stratis.Sidechains.Networks
                 maxMoney: Money.Coins(20_000_000),
                 coinbaseMaturity: 1,
                 premineHeight: 2,
-                premineReward: Money.Coins(100_000_000),
+                premineReward: Money.Coins(20_000_000),
                 proofOfWorkReward: Money.Coins(0),
                 powTargetTimespan: TimeSpan.FromDays(14), // two weeks
                 powTargetSpacing: TimeSpan.FromMinutes(1),
