@@ -10,7 +10,7 @@ $(document).ready(function()
     });
     signalrHub.start();
 
-    // Check if the federation is enabled, if it's not the case a modal is displayed to enabled it
+    // Check if the federation is enabled, if it's not the case a modal is displayed to enable it
     $.get("/check-federation", function(response)
     {
         if(response == false)

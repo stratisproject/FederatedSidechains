@@ -44,8 +44,12 @@ namespace Stratis.FederatedSidechains.AdminDashboard.Controllers
                 return View("Initialization");
             }
             
-            ViewBag.DisplayLoader = true;
             var dashboardModel = JsonConvert.DeserializeObject<DashboardModel>(this.distributedCache.GetString("DashboardData"));
+            ViewBag.DisplayLoader = true;
+            ViewBag.History = new[] {
+                dashboardModel.StratisNode.History,
+                dashboardModel.SidechainNode.History
+            };
             return View("Dashboard", dashboardModel);
         }
 
