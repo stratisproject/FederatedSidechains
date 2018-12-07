@@ -26,7 +26,7 @@ namespace Stratis.FederatedSidechains.AdminDashboard.Services
         {
             this.defaultEndpointsSettings = defaultEndpointsSettings.Value;
             this.distributedCache = distributedCache;
-            updaterHub = hubContext;
+            this.updaterHub = hubContext;
         }
 
         /// <summary>
@@ -114,7 +114,7 @@ namespace Stratis.FederatedSidechains.AdminDashboard.Services
 
         private async void DoWorkAsync(object state)
         {
-            if(PerformNodeCheck())
+            if(this.PerformNodeCheck())
             {
                 await this.BuildCacheAsync();
             }

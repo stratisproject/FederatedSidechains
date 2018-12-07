@@ -56,6 +56,7 @@ namespace Stratis.FederatedSidechains.AdminDashboard.Controllers
         [Route("resync-crosschain-transactions")]
         public async Task<IActionResult> ResyncCrosschainTransactionsAsync()
         {
+            //TODO: implement this method
             ApiResponse stopNodeRequest = await ApiRequester.GetRequestAsync(this.defaultEndpointsSettings.StratisNode, "/api/Node/status");
             return stopNodeRequest.IsSuccess ? (IActionResult) Ok() : BadRequest();
         }
