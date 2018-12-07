@@ -44,7 +44,7 @@ If ((Test-Path $env:APPDATA\StratisNode\stratis\StratisTest) -And -Not (Test-Pat
     Copy-Item $env:APPDATA\StratisNode\stratis\StratisTest\provenheaders -Recurse -Destination $destination
 }
 
-Copy-Item $path_to_mining_key_dat_file -Destination $root_datadir\gateway\poa\FederatedPegTest\
+Copy-Item $path_to_mining_key_dat_file -Destination $root_datadir\gateway\fedpeg\FederatedPegTest\
 
 # FEDERATION DETAILS
 # Redeem script: 3 03eaec65a70a9164579dcf0ab9d66a821eeb1a597412aa7d28c48d7bb708deebc3 026b7b9092828f3bf9e73995bfa3547c3bcd3814f8101fac626b8349d9a6f0e534 0396f7825142a906191cf394c3b4f2fd66e1244f850eb77aff3923ef125c234ffa 03b824a9500f17c9fe7a4e3bb660e38b97b66ed3c78749146f2f31c06569cf905c 0319a589292010a61ab6da4926f1a91be7cd3791e81e5a71cd7beac157c55ff9f4 5 OP_CHECKMULTISIG
