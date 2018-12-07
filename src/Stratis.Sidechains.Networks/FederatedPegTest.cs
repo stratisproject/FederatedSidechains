@@ -28,10 +28,10 @@ namespace Stratis.Sidechains.Networks
             this.Name = FederatedPegNetwork.TestNetworkName;
             this.CoinTicker = FederatedPegNetwork.TestCoinSymbol;
             this.Magic = 0x522357B;
-            this.DefaultPort = 16438;
+            this.DefaultPort = 26179;
             this.DefaultMaxOutboundConnections = 16;
             this.DefaultMaxInboundConnections = 109;
-            this.RPCPort = 16474;
+            this.RPCPort = 26175;
             this.MaxTipAge = 2 * 60 * 60;
             this.MinTxFee = 10000;
             this.FallbackFee = 10000;
