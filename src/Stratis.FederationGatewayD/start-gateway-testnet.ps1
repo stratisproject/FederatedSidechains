@@ -1,25 +1,37 @@
-﻿
-#############################
+﻿#############################
 #    UPDATE THESE VALUES    #
 #############################
 $git_repos_path = "C:\Users\matthieu\source\repos"
 $root_datadir = "C:\Users\matthieu\AppData\Roaming\StratisNode"
 $path_to_federationgatewayd = "$git_repos_path\FederatedSidechains\src\Stratis.FederationGatewayD"
+
+# please add the path to the federationKey.dat file generated when using federation setup tool.
 $path_to_mining_key_dat_file = "$git_repos_path\secrets\federationKey.dat"
+
 $multisig_public_key = "03b824a9500f17c9fe7a4e3bb660e38b97b66ed3c78749146f2f31c06569cf905c"
 $mining_public_key = "0248de019680c6f18e434547c8c9d48965b656b8e5e70c5a5564cfb1270db79a11"
-$nickname = "matthieu"
+
+#keep this short
+$nickname = "matt"
+
 ######################################
 #    UPDATE THIS BUT DO NOT SHARE    #
 ######################################
 $multisig_mnemonic = "please change that to the keywords generated when using federation setup tool"
+# enter a password - used to protect your multisig wallet
 $multisig_password = "dis_is hard2 guess INNIT?"
+# enter a different password - used to protect the wallet where poa rewards are sent
 $mining_wallet_password = "dis_is quite Tricky 2 honestly..."
+
+
+#######################################
+#    THE ACTUAL SCRIPT BEGINS HERE    #
+#######################################
 
 # Create the folders in case they don't exist.
 New-Item -ItemType directory -Force -Path $root_datadir
 New-Item -ItemType directory -Force -Path $root_datadir\gateway\stratis\StratisTest
-New-Item -ItemType directory -Force -Path $root_datadir\gateway\poa\FederatedPegTest
+New-Item -ItemType directory -Force -Path $root_datadir\gateway\fedpeg\FederatedPegTest
 
 
 # Copy the blockchain data from a current, ideally up-to-date, Stratis Testnet folder.
@@ -54,10 +66,10 @@ $agent_prefix = $nickname + "-" + $mining_public_key.Substring(0,5)
 cd $path_to_federationgatewayd
 # Federation member main and side
 Write-Host "Starting mainchain gateway node"
-start-process cmd -ArgumentList "/k color 0E && dotnet run --no-build -mainchain -testnet -agentprefix=gtway-main-$agent_prefix -datadir=$root_datadir\gateway -port=26178 -apiport=38221 -counterchainapiport=38222 -federationips=$mainchain_federationips -redeemscript=""$redeemscript"" -publickey=$multisig_public_key -mincoinmaturity=1 -mindepositconfirmations=1 -addnode=13.70.81.5 -addnode=52.151.76.252 -whitelist=52.151.76.252 -gateway=1"
+start-process cmd -ArgumentList "/k color 0E && dotnet run --no-build -mainchain -testnet -agentprefix=$agent_prefix -datadir=$root_datadir\gateway -port=26178 -apiport=38221 -counterchainapiport=38222 -federationips=$mainchain_federationips -redeemscript=""$redeemscript"" -publickey=$multisig_public_key -mincoinmaturity=1 -mindepositconfirmations=1 -addnode=13.70.81.5 -addnode=52.151.76.252 -whitelist=52.151.76.252 -gateway=1"
 timeout $long_interval_time
 Write-Host "Starting sidechain gateway node"
-start-process cmd -ArgumentList "/k color 0E && dotnet run --no-build -sidechain -testnet -agentprefix=gtway-side-$agent_prefix -datadir=$root_datadir\gateway -port=26179 -apiport=38222 -counterchainapiport=38221 -federationips=$sidechain_federationips -redeemscript=""$redeemscript"" -publickey=$multisig_public_key -mincoinmaturity=1 -mindepositconfirmations=1 -txindex=1"
+start-process cmd -ArgumentList "/k color 0E && dotnet run --no-build -sidechain -testnet -agentprefix=$agent_prefix -datadir=$root_datadir\gateway -port=26179 -apiport=38222 -counterchainapiport=38221 -federationips=$sidechain_federationips -redeemscript=""$redeemscript"" -publickey=$multisig_public_key -mincoinmaturity=1 -mindepositconfirmations=1 -txindex=1"
 timeout $long_interval_time
 
 
