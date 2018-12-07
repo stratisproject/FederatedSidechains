@@ -14,6 +14,9 @@ $mining_public_key = "0248de019680c6f18e434547c8c9d48965b656b8e5e70c5a5564cfb127
 #keep this short
 $nickname = "matt"
 
+$mainchain_federationips = "127.0.0.1:26178,127.0.0.2:26178,127.0.0.3:26178,127.0.0.4:26178,127.0.0.5:26178"
+$sidechain_federationips = "127.0.0.1:26179,127.0.0.2:26179,127.0.0.3:26179,127.0.0.4:26179,127.0.0.5:26179"
+
 ######################################
 #    UPDATE THIS BUT DO NOT SHARE    #
 ######################################
@@ -53,8 +56,6 @@ Copy-Item $path_to_mining_key_dat_file -Destination $root_datadir\gateway\fedpeg
 # Mainchain P2SH: OP_HASH160 812231abd79e116f5c6ff7455a047e6bccd480f7 OP_EQUAL
 # Mainchain Multisig address: 2N5227saQtu2MRBRudW97JRxcoqbdJ9UPtA
 
-$mainchain_federationips = "13.70.81.5:26178,109.150.17.24:26178,80.200.67.186:26178,104.211.178.243:26178,51.145.3.121:26178"
-$sidechain_federationips = "13.70.81.5:26179,109.150.17.24:26179,80.200.67.186:26179,104.211.178.243:26179,51.145.3.121:26179"
 $redeemscript = "3 03eaec65a70a9164579dcf0ab9d66a821eeb1a597412aa7d28c48d7bb708deebc3 026b7b9092828f3bf9e73995bfa3547c3bcd3814f8101fac626b8349d9a6f0e534 0396f7825142a906191cf394c3b4f2fd66e1244f850eb77aff3923ef125c234ffa 03b824a9500f17c9fe7a4e3bb660e38b97b66ed3c78749146f2f31c06569cf905c 0319a589292010a61ab6da4926f1a91be7cd3791e81e5a71cd7beac157c55ff9f4 5 OP_CHECKMULTISIG"
 
 # The interval between starting the networks run, in seconds.
