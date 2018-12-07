@@ -5,7 +5,7 @@
 $git_repos_path = "C:\Users\matthieu\source\repos"
 $root_datadir = "C:\Users\matthieu\AppData\Roaming\StratisNode"
 $path_to_federationgatewayd = "$git_repos_path\FederatedSidechains\src\Stratis.FederationGatewayD"
-$path_to_mining_key_dat_file = "$git_repos_path\secrets\federation.dat"
+$path_to_mining_key_dat_file = "$git_repos_path\secrets\federationKey.dat"
 $multisig_public_key = "03b824a9500f17c9fe7a4e3bb660e38b97b66ed3c78749146f2f31c06569cf905c"
 $mining_public_key = "0248de019680c6f18e434547c8c9d48965b656b8e5e70c5a5564cfb1270db79a11"
 $nickname = "matthieu"
