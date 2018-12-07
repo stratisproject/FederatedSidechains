@@ -54,10 +54,10 @@ $agent_prefix = $nickname + "-" + $mining_public_key.Substring(0,5)
 cd $path_to_federationgatewayd
 # Federation member main and side
 Write-Host "Starting mainchain gateway node"
-start-process cmd -ArgumentList "/k color 0E && dotnet run --no-build -mainchain -testnet -agentprefix=gtway-main-$agent_prefix -datadir=$root_datadir\gateway -port=26178 -apiport=38221 -counterchainapiport=38222 -federationips=$mainchain_federationips -redeemscript=""$redeemscript"" -publickey=$gateway1_public_key -mincoinmaturity=1 -mindepositconfirmations=1 -addnode=13.70.81.5 -addnode=52.151.76.252 -whitelist=52.151.76.252 -gateway=1"
+start-process cmd -ArgumentList "/k color 0E && dotnet run --no-build -mainchain -testnet -agentprefix=gtway-main-$agent_prefix -datadir=$root_datadir\gateway -port=26178 -apiport=38221 -counterchainapiport=38222 -federationips=$mainchain_federationips -redeemscript=""$redeemscript"" -publickey=$multisig_public_key -mincoinmaturity=1 -mindepositconfirmations=1 -addnode=13.70.81.5 -addnode=52.151.76.252 -whitelist=52.151.76.252 -gateway=1"
 timeout $long_interval_time
 Write-Host "Starting sidechain gateway node"
-start-process cmd -ArgumentList "/k color 0E && dotnet run --no-build -sidechain -testnet -agentprefix=gtway-side-$agent_prefix -datadir=$root_datadir\gateway -port=26179 -apiport=38222 -counterchainapiport=38221 -federationips=$sidechain_federationips -redeemscript=""$redeemscript"" -publickey=$gateway1_public_key -mincoinmaturity=1 -mindepositconfirmations=1 -txindex=1"
+start-process cmd -ArgumentList "/k color 0E && dotnet run --no-build -sidechain -testnet -agentprefix=gtway-side-$agent_prefix -datadir=$root_datadir\gateway -port=26179 -apiport=38222 -counterchainapiport=38221 -federationips=$sidechain_federationips -redeemscript=""$redeemscript"" -publickey=$multisig_public_key -mincoinmaturity=1 -mindepositconfirmations=1 -txindex=1"
 timeout $long_interval_time
 
 
