@@ -90,8 +90,8 @@
                 <p class="text-muted my-2 text-center">Some text explaining what this does</p>
                 <form class="my-3" data-ajax="true" asp-controller="StratisNode" asp-action="ResyncAsync" data-ajax-begin="HideModals" data-ajax-success="StratisResyncedBlockchain" data-ajax-failure="StratisResyncBlockchainFailed" method="post">
                     <div class="form-group">
-                        <label for="blockHeight">Block height</label>
-                        <input type="number" class="form-control" name="height" required id="blockHeight" aria-describedby="blockHeight" placeholder="Enter Block height here">
+                        <label for="value">Block height/Hash</label>
+                        <input type="text" class="form-control" name="value" required id="value" aria-describedby="value" placeholder="Enter Block height or Block Hash here">
                     </div>
                     <span class="d-flex justify-content-center my-4">
                         <button type="button" class="btn btn-outline-secondary" data-dismiss="modal">Cancel</button>
@@ -155,8 +155,8 @@
                 <p class="text-muted my-2 text-center">Some text explaining what this does</p>
                 <form class="my-3" data-ajax="true" asp-controller="SidechainNode" asp-action="ResyncAsync" data-ajax-begin="HideModals" data-ajax-success="SidechainResyncedBlockchain" data-ajax-failure="SidechainResyncBlockchainFailed" method="post">
                     <div class="form-group">
-                        <label for="blockHeight">Block height</label>
-                        <input type="number" class="form-control" name="height" required id="blockHeight" aria-describedby="blockHeight" placeholder="Enter Block height here">
+                        <label for="value">Block height/Hash</label>
+                        <input type="text" class="form-control" name="value" required id="value" aria-describedby="value" placeholder="Enter Block height or Block Hash here">
                     </div>
                     <span class="d-flex justify-content-center my-4">
                         <button type="button" class="btn btn-outline-secondary" data-dismiss="modal">Cancel</button>
