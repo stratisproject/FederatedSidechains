@@ -21,7 +21,7 @@ $multisig_mnemonic = "please change that to the keywords generated when using fe
 # enter a password - used to protect your multisig wallet
 $multisig_password = "dis_is hard2 guess INNIT?"
 # enter a different password - used to protect the wallet where poa rewards are sent
-$mining_wallet_password = "dis_is quite Tricky 2 honestly..."
+$mining_wallet_password = "enter a password"
 
 
 #######################################
