@@ -69,6 +69,16 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.Interfaces
         bool RemoveTransaction(Transaction transaction);
 
         /// <summary>
+        /// Verifies that the transaction's input UTXO's have been reserved by the wallet.
+        /// Also checks that an earlier transaction for the same deposit id does not exist.
+        /// </summary>
+        /// <param name="transaction">The transaction to check.</param>
+        /// <param name="withdrawalExtractor">The withdrawal extractor to use.</param>
+        /// <param name="checkSignature">Indicates whether to check the signature.</param>
+        /// <returns><c>True</c> if all's well and <c>false</c> otherwise.</returns>
+        bool ValidateTransaction(Transaction transaction, bool checkSignature = false);
+
+        /// <summary>
         /// Saves the wallet into the file system.
         /// </summary>
         void SaveWallet();
@@ -107,6 +117,20 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.Interfaces
         /// <param name="oldTransactionId">The transaction id before signatures were added.</param>
         /// <param name="transaction">The transaction, possibly with additional signatures.</param>
         void UpdateTransientTransactionDetails(uint256 oldTransactionId, Transaction transaction);
+
+        /// <summary>
+        /// Finds all withdrawal transactions with optional filtering by deposit id or transaction id.
+        /// </summary>
+        /// <param name="depositId">Filters by this deposit id if not <c>null</c>.</param>
+        /// <param name="transactionId">Filters by this transaction id if not <c>null</c>.</param>
+        /// <returns>The transaction data containing the withdrawal transaction.</returns>
+        List<(Transaction, TransactionData)> FindWithdrawalTransactions(uint256 depositId = null, uint256 transactionId = null);
+
+        /// <summary>
+        /// Removes the transient transactions associated with the corresponding deposit ids.
+        /// </summary>
+        /// <param name="depositId">The deposit id identifying the transient transactions to remove. Set to <c>null</c> to remove all.</param>
+        bool RemoveTransientTransactions(uint256 depositId = null);
 
         /// <summary>
         /// Determines if federation has been activated.
