@@ -71,7 +71,6 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.Interfaces
         /// Also checks that an earlier transaction for the same deposit id does not exist.
         /// </summary>
         /// <param name="transaction">The transaction to check.</param>
-        /// <param name="withdrawalExtractor">The withdrawal extractor to use.</param>
         /// <param name="checkSignature">Indicates whether to check the signature.</param>
         /// <returns><c>True</c> if all's well and <c>false</c> otherwise.</returns>
         bool ValidateTransaction(Transaction transaction, bool checkSignature = false);
