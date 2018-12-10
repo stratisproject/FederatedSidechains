@@ -15,8 +15,6 @@ namespace Stratis.FederatedPeg.Tests.Utils
     {
         private readonly ITestOutputHelper output;
 
-        private StringBuilder stringBuilder;
-
         private Dictionary<int, string> consoleColors;
 
         private Action<string> newLine;
@@ -29,7 +27,8 @@ namespace Stratis.FederatedPeg.Tests.Utils
         [Fact]
         public void Generate_PS1_Fragment()
         {
-            this.stringBuilder = new StringBuilder();
+            var stringBuilder = new StringBuilder();
+            this.newLine = s => stringBuilder.AppendLine();
 
             SetFolderVariables();
             CopyStratisChainFiles();
