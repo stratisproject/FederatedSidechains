@@ -4,6 +4,7 @@ using NBitcoin;
 using NBitcoin.DataEncoders;
 using NBitcoin.Protocol;
 using Stratis.Bitcoin.Features.PoA;
+using Stratis.Bitcoin.Features.SmartContracts.PoA;
 
 namespace Stratis.Sidechains.Networks
 {
@@ -12,14 +13,15 @@ namespace Stratis.Sidechains.Networks
     /// </summary>
     public class FederatedPegMain : PoANetwork
     {
-        public Key[] FederationKeys { get; private set; }
+        public List<PubKey> FederationPubKeys { get; private set; }
 
         internal FederatedPegMain()
         {
             this.Name = FederatedPegNetwork.MainNetworkName;
             this.CoinTicker = FederatedPegNetwork.CoinSymbol;
+            this.Magic = 0x522357A;
 
-            var consensusFactory = new PoAConsensusFactory();
+            var consensusFactory = new SmartContractPoAConsensusFactory();
 
             // Create the genesis block.
             this.GenesisTime = 1513622125;
@@ -27,26 +29,17 @@ namespace Stratis.Sidechains.Networks
             this.GenesisBits = 402691653;
             this.GenesisVersion = 1;
             this.GenesisReward = Money.Zero;
-            this.Magic = 0x522357A;
 
-            NBitcoin.Block genesisBlock = CreatePoAGenesisBlock(consensusFactory, this.GenesisTime, this.GenesisNonce, this.GenesisBits, this.GenesisVersion, this.GenesisReward);
-            //((SmartContractPoABlockHeader)genesisBlock.Header).HashStateRoot = new uint256("21B463E3B52F6201C0AD6C991BE0485B6EF8C092E64583FFA655CC1B171FE856"); // Set StateRoot to empty trie.
+            Block genesisBlock = FederatedPegNetwork.CreateGenesis(consensusFactory, this.GenesisTime, this.GenesisNonce, this.GenesisBits, this.GenesisVersion, this.GenesisReward);
 
             this.Genesis = genesisBlock;
 
-            // Keeping the 3rd there in case we use it in future. For our integration tests we use 2 nodes currently.
-            this.FederationKeys = new Key[]
-            {
-                new Mnemonic("lava frown leave wedding virtual ghost sibling able mammal liar govern wisdom").DeriveExtKey().PrivateKey,
-                new Mnemonic("idle power swim wash diesel blouse photo among eager reward wide hair").DeriveExtKey().PrivateKey,
-                new Mnemonic("high neither night category fly wasp inner kitchen phone current skate menu").DeriveExtKey().PrivateKey
-            };
-
+            //todo : replace dummy values before release
             var federationPubKeys = new List<PubKey>
             {
-                this.FederationKeys[0].PubKey,
-                this.FederationKeys[1].PubKey,
-                this.FederationKeys[2].PubKey
+                new PubKey("02eef7619de25578c9717a289d08c61d4598b2bd81d2ee5db3072a07fa2d121e65"),
+                new PubKey("027ce19209dd1212a6a4fc2b7ddf678c6dea40b596457f934f73f3dcc5d0d9ee55"),
+                new PubKey("03093239d5344ddb4c69c46c75bd629519e0b68d2cfc1a86cd63115fd068f202ba"),
             };
 
             var consensusOptions = new PoAConsensusOptions(
