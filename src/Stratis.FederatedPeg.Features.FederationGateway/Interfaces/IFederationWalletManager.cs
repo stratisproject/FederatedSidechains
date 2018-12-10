@@ -1,8 +1,6 @@
 ﻿using System.Collections.Generic;
 using NBitcoin;
 using Stratis.FederatedPeg.Features.FederationGateway.Wallet;
-using FlatHistory = Stratis.Bitcoin.Features.Wallet.FlatHistory;
-using UnspentOutputReference = Stratis.Bitcoin.Features.Wallet.UnspentOutputReference;
 
 namespace Stratis.FederatedPeg.Features.FederationGateway.Interfaces
 {
@@ -112,13 +110,6 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.Interfaces
         void ImportMemberKey(string password, string mnemonic);
 
         /// <summary>
-        /// Update spending details when the transaction hash changes.
-        /// </summary>
-        /// <param name="oldTransactionId">The transaction id before signatures were added.</param>
-        /// <param name="transaction">The transaction, possibly with additional signatures.</param>
-        void UpdateTransientTransactionDetails(uint256 oldTransactionId, Transaction transaction);
-
-        /// <summary>
         /// Finds all withdrawal transactions with optional filtering by deposit id or transaction id.
         /// </summary>
         /// <param name="depositId">Filters by this deposit id if not <c>null</c>.</param>
@@ -131,6 +122,14 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.Interfaces
         /// </summary>
         /// <param name="depositId">The deposit id identifying the transient transactions to remove. Set to <c>null</c> to remove all.</param>
         bool RemoveTransientTransactions(uint256 depositId = null);
+
+        /// <summary>
+        /// Compares two outpoints to see which occurs earlier.
+        /// </summary>
+        /// <param name="outPoint1">The first outpoint to compare.</param>
+        /// <param name="outPoint2">The second outpoint to compare.</param>
+        /// <returns><c>-1</c> if the <paramref name="outPoint1"/> occurs first and <c>1</c> otherwise.</returns>
+        int CompareOutpoints(OutPoint outPoint1, OutPoint outPoint2);
 
         /// <summary>
         /// Determines if federation has been activated.

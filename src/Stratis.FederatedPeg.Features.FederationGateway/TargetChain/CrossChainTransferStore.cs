@@ -246,23 +246,9 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
                 if (partialTransfer.Status != CrossChainTransferStatus.Partial && partialTransfer.Status != CrossChainTransferStatus.FullySigned)
                     continue;
 
-                (Transaction walletTran, TransactionData walletTranData) =
-                    this.federationWalletManager.FindWithdrawalTransactions(partialTransfer.DepositTransactionId).FirstOrDefault();
-
-                if (walletTran != null)
-                {
-                    // The transaction in the wallet may have a different hash due to signatures added.
-                    if (walletTran.GetHash() != partialTransfer.PartialTransaction.GetHash())
-                    {
-                        // Adopt the transaction from the wallet.
-                        partialTransfer.SetPartialTransaction(walletTran);
-                        tracker.SetTransferStatus(partialTransfer, (walletTranData.BlockHash == null)?CrossChainTransferStatus.Partial:CrossChainTransferStatus.SeenInBlock);
-                    }
-
-                    // Verify that the transaction input UTXO's have been reserved by the wallet.
-                    if (ValidateTransaction(partialTransfer.PartialTransaction))
-                        continue;
-                }
+                // Verify that the transaction input UTXO's have been reserved by the wallet.
+                if (ValidateTransaction(partialTransfer.PartialTransaction))
+                    continue;
 
                 // If not then the chain has been rewound so far that this transaction has lost its UTXO's.
                 // Rewind our recorded chain A tip to ensure the transaction is re-built once UTXO's become available.
@@ -465,7 +451,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
 
                             // If the transfer is already in the wallet then remove it now
                             // so that it can be re-built to include any mining rewards that
-                            // may have been included in a peer's corresponding transaction.
+                            // may have been included by a peer into the wallet.
                             walletUpdated |= this.federationWalletManager.RemoveTransientTransactions(deposit.Id);
 
                             if (!haveSuspendedTransfers)
@@ -613,7 +599,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
                         {
                             dbreezeTransaction.SynchronizeTables(transferTableName, commonTableName);
 
-                            this.federationWalletManager.UpdateTransientTransactionDetails(oldTransaction.GetHash(), transfer.PartialTransaction);
+                            this.federationWalletManager.ProcessTransaction(transfer.PartialTransaction);
                             this.federationWalletManager.SaveWallet();
 
                             if (ValidateTransaction(transfer.PartialTransaction, true))
@@ -631,7 +617,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
                         {
                             // Restore expected store state in case the calling code retries / continues using the store.
                             transfer.SetPartialTransaction(oldTransaction);
-                            this.federationWalletManager.UpdateTransientTransactionDetails(transfer.PartialTransaction.GetHash(), oldTransaction);
+                            this.federationWalletManager.ProcessTransaction(oldTransaction);
                             this.federationWalletManager.SaveWallet();
                             this.RollbackAndThrowTransactionError(dbreezeTransaction, err, "MERGE_ERROR");
                         }
@@ -712,6 +698,9 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
                             IWithdrawal withdrawal = withdrawals[i];
                             Transaction transaction = block.Transactions.Single(t => t.GetHash() == withdrawal.Id);
 
+                            // Ensure that the wallet is in step.
+                            this.federationWalletManager.ProcessTransaction(transaction, withdrawal.BlockNumber, block);
+
                             if (crossChainTransfers[i] == null)
                             {
                                 Script scriptPubKey = BitcoinAddress.Create(withdrawal.TargetAddress, this.network).ScriptPubKey;
@@ -723,14 +712,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
                             }
                             else
                             {
-                                // The transaction may have ended up with a different hash than what we had recorded.
-                                // Make the necessary changes.
-                                uint256 oldTransactionId = crossChainTransfers[i].PartialTransaction.GetHash();
-                                if (oldTransactionId != transaction.GetHash())
-                                {
-                                    this.federationWalletManager.UpdateTransientTransactionDetails(oldTransactionId, transaction);
-                                    crossChainTransfers[i].SetPartialTransaction(transaction);
-                                }
+                                crossChainTransfers[i].SetPartialTransaction(transaction);
 
                                 tracker.SetTransferStatus(crossChainTransfers[i],
                                     CrossChainTransferStatus.SeenInBlock, withdrawal.BlockHash, withdrawal.BlockNumber);
@@ -1045,8 +1027,14 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
             return res;
         }
 
+        private OutPoint EarliestOutput(Transaction transaction)
+        {
+            var comparer = Comparer<OutPoint>.Create((x, y) => this.federationWalletManager.CompareOutpoints(x, y));
+            return transaction.Inputs.Select(i => i.PrevOut).OrderByDescending(t => t, comparer).FirstOrDefault();
+        }
+
         /// <inheritdoc />
-        public Task<Dictionary<uint256, Transaction>> GetTransactionsByStatusAsync(CrossChainTransferStatus status)
+        public Task<Dictionary<uint256, Transaction>> GetTransactionsByStatusAsync(CrossChainTransferStatus status, bool sort = false)
         {
             return Task.Run(() =>
             {
@@ -1066,6 +1054,14 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
                     }
 
                     this.logger.LogTrace("(-)");
+                    if (sort)
+                    {
+                        return partialTransfers
+                            .Where(t => t.PartialTransaction != null)
+                            .OrderBy(t => EarliestOutput(t.PartialTransaction), Comparer<OutPoint>.Create((x, y) => this.federationWalletManager.CompareOutpoints(x, y)))
+                            .ToDictionary(t => t.DepositTransactionId, t => t.PartialTransaction);
+                    }
+
                     return partialTransfers
                         .Where(t => t.PartialTransaction != null)
                         .ToDictionary(t => t.DepositTransactionId, t => t.PartialTransaction);

@@ -399,6 +399,18 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.Wallet
 
             bool foundReceivingTrx = false, foundSendingTrx = false;
 
+            // Remove this transaction if already present and unspent.
+            IWithdrawal withdrawal = this.withdrawalExtractor.ExtractWithdrawalFromTransaction(transaction, block?.GetHash(), blockHeight ?? 0);
+            if (withdrawal != null)
+            {
+                // Exit if final.
+                if (withdrawal.BlockNumber != 0)
+                    return false;
+
+                // Remove this to prevent duplicates if the transaction hash has changed.
+                this.RemoveTransientTransactions(withdrawal.DepositId);
+            }
+
             lock (this.lockObject)
             {
                 // Check the outputs.
@@ -760,16 +772,17 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.Wallet
         }
 
         /// <inheritdoc />
-        public bool RemoveTransientTransactions(uint256 transactionId = null)
+        public bool RemoveTransientTransactions(uint256 depositId = null)
         {
             lock (this.lockObject)
             {
                 // Remove transient transactions not seen in a block yet.
                 bool walletUpdated = false;
 
-                foreach ((Transaction transaction, TransactionData transactionData) in FindWithdrawalTransactions(transactionId: transactionId)
+                foreach ((Transaction transaction, TransactionData transactionData) in FindWithdrawalTransactions(depositId)
                     .Where(w => w.Item2.BlockHash == null))
                 {
+                    Guard.Assert(transactionData.SpendingDetails == null);
                     RemoveTransaction(transaction);
                 }
 
@@ -833,6 +846,18 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.Wallet
         }
 
         /// <inheritdoc />
+        public int CompareOutpoints(OutPoint outPoint1, OutPoint outPoint2)
+        {
+            lock (this.lockObject)
+            {
+                TransactionData transactionData1 = this.outpointLookup[outPoint1];
+                TransactionData transactionData2 = this.outpointLookup[outPoint2];
+
+                return FederationWalletTransactionHandler.CompareTransactionData(transactionData1, transactionData2);
+            }
+        }
+
+        /// <inheritdoc />
         public bool ValidateTransaction(Transaction transaction, bool checkSignature = false)
         {
             lock (this.lockObject)
@@ -843,11 +868,15 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.Wallet
                 if (!TransactionHasValidUTXOs(transaction, coins))
                     return false;
 
-                // Verify that the deposit does not have an earlier transaction.
-                IWithdrawal myWithdrawal = this.withdrawalExtractor.ExtractWithdrawalFromTransaction(transaction, 0, 0);
-                (Transaction walletTran, _) = this.FindWithdrawalTransactions(myWithdrawal.DepositId).FirstOrDefault();
-                if (walletTran != null && walletTran.GetHash() != transaction.GetHash())
-                    return false;
+                // Verify that there are no earler unspent UTXOs.
+                var comparer = Comparer<TransactionData>.Create((x, y) => FederationWalletTransactionHandler.CompareTransactionData(x, y));
+                TransactionData earliestUnspent = this.Wallet.MultiSigAddress.Transactions.Where(t => t.SpendingDetails == null).OrderBy(t => t, comparer).FirstOrDefault();
+                if (earliestUnspent != null)
+                {
+                    TransactionData oldestInput = transaction.Inputs.Select(i => this.outpointLookup[i.PrevOut]).OrderByDescending(t => t, comparer).FirstOrDefault();
+                    if (oldestInput != null && FederationWalletTransactionHandler.CompareTransactionData(earliestUnspent, oldestInput) < 0)
+                        return false;
+                }
 
                 // Verify that all inputs are signed.
                 if (checkSignature)
@@ -860,48 +889,6 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.Wallet
                 }
 
                 return true;
-            }
-        }
-
-        /// <inheritdoc />
-        public void UpdateTransientTransactionDetails(uint256 oldTransactionId, Transaction transaction)
-        {
-            lock (this.lockObject)
-            {
-                ICollection<TransactionData> transactions = this.Wallet.MultiSigAddress.Transactions;
-                TransactionData transactionData = transactions.Where(t => t.Id == oldTransactionId).FirstOrDefault();
-                if (transactionData == null)
-                    return;
-
-                // If the transaction already exists then just remove the old transaction if it exists.
-                uint256 transactionId = transaction.GetHash();
-                if (transactions.Any(t => t.Id == transactionId))
-                {
-                    this.RemoveTransientTransactions(transactionData.Id);
-                    return;
-                }
-
-                Guard.Assert(transactionData.IsPropagated != true);
-
-                // If the transaction is being spent then we can't change its hash.
-                Guard.Assert((transactionData.SpendingDetails?.Payments?.Count ?? 0) == 0);
-
-                string transactionHex = transaction.ToHex(this.network);
-
-                // Find transactions for which the new transaction has become the spender.
-                foreach (SpendingDetails spendingDetails in transactions
-                    .Select(t => t.SpendingDetails)
-                    .Where(s => s != null && s.TransactionId == oldTransactionId))
-                {
-                    spendingDetails.TransactionId = transactionId;
-                    spendingDetails.Hex = transactionHex;
-                }
-
-                transactionData.Id = transactionId;
-                transactionData.Hex = transactionHex;
-
-                this.outpointLookup.Clear();
-                this.LoadKeysLookupLock();
             }
         }
 
