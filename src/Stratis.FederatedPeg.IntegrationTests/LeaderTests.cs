@@ -6,7 +6,6 @@ using Stratis.Bitcoin.IntegrationTests.Common;
 using Stratis.Bitcoin.IntegrationTests.Common.EnvironmentMockUpHelpers;
 using Stratis.FederatedPeg.Features.FederationGateway;
 using Stratis.FederatedPeg.Features.FederationGateway.Interfaces;
-using Stratis.FederatedPeg.IntegrationTests.Tools;
 using Stratis.FederatedPeg.IntegrationTests.Utils;
 
 using Xunit;
@@ -22,13 +21,13 @@ namespace Stratis.FederatedPeg.IntegrationTests
         [Fact]
         public void LeaderChange()
         {
-            using (FederationGatewayNodeBuilder builder = FederationGatewayNodeBuilder.CreateFederationGatewayNodeBuilder(this))
+            using (SidechainNodeBuilder builder = SidechainNodeBuilder.CreateSidechainNodeBuilder(this))
             {
                 builder.ConfigParameters.Add("sidechain", "true");
                 builder.ConfigParameters.Add("redeemscript", this.scriptAndAddresses.payToMultiSig.ToString());
                 builder.ConfigParameters.Add("publickey", this.pubKeysByMnemonic[this.mnemonics[0]].ToString());
 
-                CoreNode node = builder.CreateFederationGatewayNode(this.sidechainNetwork, this.sidechainNetwork.FederationKeys[0]);
+                CoreNode node = builder.CreateSidechainNode(this.sidechainNetwork, this.sidechainNetwork.FederationKeys[0]);
                 node.Start();
                 node.EnableFastMining();
 

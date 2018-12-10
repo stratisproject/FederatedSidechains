@@ -10,7 +10,7 @@ namespace Stratis.FederatedPeg.IntegrationTests.Utils
     {
         protected readonly Network mainchainNetwork;
 
-        protected readonly FederatedPegTest sidechainNetwork;
+        protected readonly FederatedPegRegTest sidechainNetwork;
 
         protected readonly IList<Mnemonic> mnemonics;
 
@@ -25,7 +25,7 @@ namespace Stratis.FederatedPeg.IntegrationTests.Utils
         public TestBase()
         {
             this.mainchainNetwork = Networks.Stratis.Testnet();
-            this.sidechainNetwork = (FederatedPegTest)FederatedPegNetwork.NetworksSelector.Testnet();
+            this.sidechainNetwork = (FederatedPegRegTest)FederatedPegNetwork.NetworksSelector.Testnet();
 
             this.mnemonics = this.sidechainNetwork.FederationMnemonics;
             this.pubKeysByMnemonic = this.mnemonics.ToDictionary(m => m, m => m.DeriveExtKey().PrivateKey.PubKey);
