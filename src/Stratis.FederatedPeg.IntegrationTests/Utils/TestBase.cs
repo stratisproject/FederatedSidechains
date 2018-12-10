@@ -25,7 +25,7 @@ namespace Stratis.FederatedPeg.IntegrationTests.Utils
         public TestBase()
         {
             this.mainchainNetwork = Networks.Stratis.Testnet();
-            this.sidechainNetwork = (FederatedPegRegTest)FederatedPegNetwork.NetworksSelector.Testnet();
+            this.sidechainNetwork = (FederatedPegRegTest)FederatedPegNetwork.NetworksSelector.Regtest();
 
             this.mnemonics = this.sidechainNetwork.FederationMnemonics;
             this.pubKeysByMnemonic = this.mnemonics.ToDictionary(m => m, m => m.DeriveExtKey().PrivateKey.PubKey);
