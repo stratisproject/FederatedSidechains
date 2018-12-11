@@ -37,18 +37,16 @@ namespace Stratis.FederatedPeg.IntegrationTests.Utils
             this.FullNode = (FullNode)new FullNodeBuilder()
                 .UseNodeSettings(settings)
                 .UseBlockStore()
-                .AddFederationGateway()
                 .AddSmartContracts()
-                .UseReflectionExecutor()
-                .UseFederatedPegPoAMining()
                 .UseSmartContractWallet()
+                .UseReflectionExecutor()
+                .AddFederationGateway()
+                .UseFederatedPegPoAMining()
                 .UseMempool()
-                .UseBlockNotification()
                 .UseTransactionNotification()
-                .UseWallet()
+                .UseBlockNotification()
                 .UseApi()
                 .AddRPC()
-                .MockIBD()
                 .Build();
         }
     }
