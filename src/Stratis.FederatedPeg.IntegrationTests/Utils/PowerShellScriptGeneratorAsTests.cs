@@ -15,8 +15,6 @@ namespace Stratis.FederatedPeg.Tests.Utils
     {
         private readonly ITestOutputHelper output;
 
-        private StringBuilder stringBuilder;
-
         private Dictionary<int, string> consoleColors;
 
         private Action<string> newLine;
@@ -29,7 +27,8 @@ namespace Stratis.FederatedPeg.Tests.Utils
         [Fact]
         public void Generate_PS1_Fragment()
         {
-            this.stringBuilder = new StringBuilder();
+            var stringBuilder = new StringBuilder();
+            this.newLine = s => stringBuilder.AppendLine(s);
 
             SetFolderVariables();
             CopyStratisChainFiles();
@@ -83,10 +82,10 @@ namespace Stratis.FederatedPeg.Tests.Utils
             federationMemberIndexes.ForEach(i => {
                 this.newLine($"# Federation member {i} main and side");
                 this.newLine(
-                    $"start-process cmd -ArgumentList \"/k color {this.consoleColors[i + 1]} && dotnet run --no-build -mainchain -testnet -agentprefix=fed{i + 1}main -datadir=$root_datadir\\gateway{i + 1} -port=36{GetPortNumberSuffix(this.chains[0], i)} -apiport=38{GetPortNumberSuffix(this.chains[0], i)} -counterchainapiport=38{GetPortNumberSuffix(this.chains[1], i)} -federationips=$mainchain_federationips -redeemscript=\"\"$redeemscript\"\" -publickey=$gateway{i + 1}_public_key -mincoinmaturity=1 -mindepositconfirmations=1\"");
+                    $"start-process cmd -ArgumentList \"/k color {this.consoleColors[i + 1]} && dotnet run -mainchain -testnet -agentprefix=fed{i + 1}main -datadir=$root_datadir\\gateway{i + 1} -port=36{GetPortNumberSuffix(this.chains[0], i)} -apiport=38{GetPortNumberSuffix(this.chains[0], i)} -counterchainapiport=38{GetPortNumberSuffix(this.chains[1], i)} -federationips=$mainchain_federationips -redeemscript=\"\"$redeemscript\"\" -publickey=$gateway{i + 1}_public_key -mincoinmaturity=1 -mindepositconfirmations=1\"");
                 this.newLine("timeout $long_interval_time");
                 this.newLine(
-                    $"start-process cmd -ArgumentList \"/k color {this.consoleColors[i + 1]} && dotnet run --no-build -sidechain -regtest -agentprefix=fed{i + 1}side -datadir=$root_datadir\\gateway{i + 1} -port=36{GetPortNumberSuffix(this.chains[1], i)} -apiport=38{GetPortNumberSuffix(this.chains[1], i)} -counterchainapiport=38{GetPortNumberSuffix(this.chains[0], i)} -federationips=$sidechain_federationips -redeemscript=\"\"$redeemscript\"\" -publickey=$gateway{i + 1}_public_key -mincoinmaturity=1 -mindepositconfirmations=1 -txindex=1\"");
+                    $"start-process cmd -ArgumentList \"/k color {this.consoleColors[i + 1]} && dotnet run -sidechain -regtest -agentprefix=fed{i + 1}side -datadir=$root_datadir\\gateway{i + 1} -port=36{GetPortNumberSuffix(this.chains[1], i)} -apiport=38{GetPortNumberSuffix(this.chains[1], i)} -counterchainapiport=38{GetPortNumberSuffix(this.chains[0], i)} -federationips=$sidechain_federationips -redeemscript=\"\"$redeemscript\"\" -publickey=$gateway{i + 1}_public_key -mincoinmaturity=1 -mindepositconfirmations=1 -txindex=1\"");
                 this.newLine("timeout $long_interval_time");
                 this.newLine(Environment.NewLine);
             });
