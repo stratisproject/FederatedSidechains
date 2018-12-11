@@ -309,8 +309,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway
                                             provider => provider.GetService<ConsensusQuery>())
                                         .AddSingleton<IGetUnspentTransaction, ConsensusQuery>(
                                             provider => provider.GetService<ConsensusQuery>());
-                                    new PoAConsensusRulesRegistration().RegisterRules(
-                                        fullNodeBuilder.Network.Consensus);
+                                    new SmartContractPoARuleRegistration(fullNodeBuilder.Network).RegisterRules(fullNodeBuilder.Network.Consensus);
                                 });
                     });
 
