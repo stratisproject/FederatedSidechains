@@ -40,7 +40,7 @@ namespace Stratis.FederatedPeg.IntegrationTests
                 Transaction coinbase = block.Transactions[0];
                 Assert.Single(coinbase.Outputs);
                 Assert.Equal(node.FullNode.Network.Consensus.PremineReward, coinbase.Outputs[0].Value);
-                Assert.Equal(this.scriptAndAddresses.payToMultiSig, coinbase.Outputs[0].ScriptPubKey);
+                Assert.Equal(this.scriptAndAddresses.payToMultiSig.PaymentScript, coinbase.Outputs[0].ScriptPubKey);
             }
         }
 
