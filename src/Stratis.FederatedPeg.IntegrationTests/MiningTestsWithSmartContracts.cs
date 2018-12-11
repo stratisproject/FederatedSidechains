@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net;
 using System.Text;
 using FluentAssertions;
 using NBitcoin;
@@ -18,20 +19,35 @@ namespace Stratis.FederatedPeg.IntegrationTests
 {
     public class MiningTestsWithSmartContracts : TestBase
     {
+        //[Fact]
+        //public void Premine_Received_To_Federation()
+        //{
+        //    using (SidechainNodeBuilder builder = SidechainNodeBuilder.CreateSidechainNodeBuilder(this))
+        //    {
+
+        //    }
+        //}
+
 
         [Fact]
-        public void PremineIsReceived()
+        public void Nodes_Can_Connect()
         {
             using (SidechainNodeBuilder builder = SidechainNodeBuilder.CreateSidechainNodeBuilder(this))
             {
+                // Set up builder and nodes
                 builder.ConfigParameters.Add("sidechain", "true");
                 builder.ConfigParameters.Add("redeemscript", this.scriptAndAddresses.payToMultiSig.ToString());
                 builder.ConfigParameters.Add("publickey", this.pubKeysByMnemonic[this.mnemonics[0]].ToString());
+                CoreNode node1 = builder.CreateSidechainNodeWithSmartContracts(this.sidechainNetwork, this.sidechainNetwork.FederationKeys[0]);
+                builder.ConfigParameters["publickey"] = this.pubKeysByMnemonic[this.mnemonics[1]].ToString();
+                CoreNode node2 = builder.CreateSidechainNodeWithSmartContracts(this.sidechainNetwork, this.sidechainNetwork.FederationKeys[1]);
 
-                CoreNode node = builder.CreateSidechainNodeWithSmartContracts(this.sidechainNetwork, this.sidechainNetwork.FederationKeys[0]);
-                node.Start();
+                // Start both nodes
+                node1.Start();
+                node2.Start();
 
-                TestHelper.WaitLoop(() => node.FullNode.Chain.Height > 1);
+                // Connect nodes. Will fail with timeout if not.
+                TestHelper.Connect(node1, node2);
             }
         }
 
