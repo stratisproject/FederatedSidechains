@@ -1,6 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Runtime.CompilerServices;
@@ -21,6 +19,8 @@ using Stratis.Bitcoin.Features.Consensus.CoinViews;
 using Stratis.Bitcoin.Features.Miner;
 using Stratis.Bitcoin.Features.Notifications;
 using Stratis.Bitcoin.Features.PoA;
+using Stratis.Bitcoin.Features.SmartContracts;
+using Stratis.Bitcoin.Features.SmartContracts.PoA;
 using Stratis.Bitcoin.Interfaces;
 using Stratis.Bitcoin.P2P.Protocol.Payloads;
 using Stratis.Bitcoin.Signals;
@@ -288,6 +288,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway
                                     services.AddSingleton<IPoAMiner, PoAMiner>();
                                     services.AddSingleton<SlotsManager>();
                                     services.AddSingleton<BlockDefinition, FederatedPegBlockDefinition>();
+                                    services.AddSingleton<IBlockBufferGenerator, BlockBufferGenerator>();
                                 });
                     });
 
@@ -301,15 +302,12 @@ namespace Stratis.FederatedPeg.Features.FederationGateway
                                     services.AddSingleton<DBreezeCoinView>();
                                     services.AddSingleton<ICoinView, CachedCoinView>();
                                     services.AddSingleton<ConsensusController>();
-                                    services.AddSingleton<IConsensusRuleEngine, PoAConsensusRuleEngine>();
+                                    services.AddSingleton<IConsensusRuleEngine, SmartContractPoARuleEngine>();
                                     services.AddSingleton<IChainState, ChainState>();
                                     services.AddSingleton<ConsensusQuery>()
-                                        .AddSingleton<INetworkDifficulty, ConsensusQuery>(
-                                            provider => provider.GetService<ConsensusQuery>())
-                                        .AddSingleton<IGetUnspentTransaction, ConsensusQuery>(
-                                            provider => provider.GetService<ConsensusQuery>());
-                                    new PoAConsensusRulesRegistration().RegisterRules(
-                                        fullNodeBuilder.Network.Consensus);
+                                        .AddSingleton<INetworkDifficulty, ConsensusQuery>(provider => provider.GetService<ConsensusQuery>())
+                                        .AddSingleton<IGetUnspentTransaction, ConsensusQuery>(provider => provider.GetService<ConsensusQuery>());
+                                    new SmartContractPoARuleRegistration(fullNodeBuilder.Network).RegisterRules(fullNodeBuilder.Network.Consensus);
                                 });
                     });
 
