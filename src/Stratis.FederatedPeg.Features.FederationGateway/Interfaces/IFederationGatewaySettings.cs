@@ -30,6 +30,11 @@ namespace Stratis.FederatedPeg.Features.FederationGateway
         string PublicKey { get; }
 
         /// <summary>
+        /// The API Host used to communicate with node on the counter chain.
+        /// </summary>
+        int CounterChainApiHost { get; }
+
+        /// <summary>
         /// The API port used to communicate with node on the counter chain.
         /// </summary>
         int CounterChainApiPort { get; }
