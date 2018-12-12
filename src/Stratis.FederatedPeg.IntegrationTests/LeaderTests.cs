@@ -1,4 +1,5 @@
-﻿using FluentAssertions;
+﻿using System.Linq;
+using FluentAssertions;
 
 using NBitcoin;
 using Stratis.Bitcoin.Features.PoA.IntegrationTests.Common;
@@ -14,6 +15,16 @@ namespace Stratis.FederatedPeg.IntegrationTests
 {
     public class LeaderTests : TestBase
     {
+        [Fact]
+        // Move this into it's own test class.
+        public void NodeSetup()
+        {
+            this.StartNodes(Chain.Main);
+            this.StartNodes(Chain.Side);
+
+            this.ConnectSideChainNodes();
+        }
+
         /// <summary>
         /// https://stratisplatform.sharepoint.com/:x:/g/EehmhCsUSRFKnUgJ1nZNDxoBlyxcGcmfwmCdgg7MJqkYgA?e=0iChWb
         /// ST-1_Standard_txt_in_sidechain
@@ -21,32 +32,25 @@ namespace Stratis.FederatedPeg.IntegrationTests
         [Fact]
         public void LeaderChange()
         {
-            using (SidechainNodeBuilder builder = SidechainNodeBuilder.CreateSidechainNodeBuilder(this))
-            {
-                builder.ConfigParameters.Add("sidechain", "true");
-                builder.ConfigParameters.Add("redeemscript", this.scriptAndAddresses.payToMultiSig.ToString());
-                builder.ConfigParameters.Add("publickey", this.pubKeysByMnemonic[this.mnemonics[0]].ToString());
+            this.StartAndConnectNodes();
 
-                CoreNode node = builder.CreateSidechainNode(this.sidechainNetwork, this.sidechainNetwork.FederationKeys[0]);
-                node.Start();
-                node.EnableFastMining();
+            IFederationGatewaySettings federationGatewaySettings = new FederationGatewaySettings(this.MainAndSideChainNodeMap["fedSide1"].Node.FullNode.Settings);
+            ILeaderProvider leaderProvider = new LeaderProvider(federationGatewaySettings);
 
-                IFederationGatewaySettings federationGatewaySettings = new FederationGatewaySettings(node.FullNode.Settings);
-                ILeaderProvider leaderProvider = new LeaderProvider(federationGatewaySettings);
+            PubKey currentLeader = leaderProvider.CurrentLeader;
 
-                PubKey currentLeader = leaderProvider.CurrentLeader;
+            var tipBefore = this.MainAndSideChainNodeMap["fedSide1"].Node.GetTip().Height;
 
-                var tipBefore = node.GetTip().Height;
+            // TODO check blocks get mined and make sure the block notification will change
+            // the leader.
+            TestHelper.WaitLoop(
+                () =>
+                {
+                    return this.MainAndSideChainNodeMap["fedSide1"].Node.GetTip().Height >= tipBefore + 5;
+                }
+            );
 
-                TestHelper.WaitLoop(
-                    () =>
-                    {
-                        return node.GetTip().Height >= tipBefore + 5;
-                    }
-                    );
-
-                leaderProvider.CurrentLeader.Should().NotBe(currentLeader);
-            }
+            leaderProvider.CurrentLeader.Should().NotBe(currentLeader);
         }
     }
 }

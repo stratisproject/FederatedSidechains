@@ -14,6 +14,8 @@ using Stratis.Bitcoin.Features.Notifications;
 using Stratis.Bitcoin.Features.PoA;
 using Stratis.Bitcoin.Features.PoA.IntegrationTests.Common;
 using Stratis.Bitcoin.Features.RPC;
+using Stratis.Bitcoin.Features.SmartContracts;
+using Stratis.Bitcoin.Features.SmartContracts.Wallet;
 using Stratis.Bitcoin.Features.Wallet;
 using Stratis.Bitcoin.IntegrationTests.Common;
 using Stratis.Bitcoin.IntegrationTests.Common.Runners;
@@ -40,6 +42,9 @@ namespace Stratis.FederatedPeg.IntegrationTests.Utils
             this.FullNode = (FullNode)new FullNodeBuilder()
                 .UseNodeSettings(settings)
                 .UseBlockStore()
+                .AddSmartContracts()
+                .UseSmartContractWallet()
+                .UseReflectionExecutor()
                 .AddFederationGateway()
                 .UseFederatedPegPoAMining()
                 .UseMempool()
@@ -49,8 +54,8 @@ namespace Stratis.FederatedPeg.IntegrationTests.Utils
                 .UseApi()
                 .AddRPC()
                 .MockIBD()
-                .ReplaceTimeProvider(this.timeProvider)
-                .AddFastMiningCapability()
+                //.ReplaceTimeProvider(this.timeProvider)
+                //.AddFastMiningCapability()
                 .Build();
         }
     }

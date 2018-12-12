@@ -29,7 +29,8 @@ namespace Stratis.FederatedPeg.Tests.Utils
         [Fact]
         public void Generate_PS1_Fragment()
         {
-            this.stringBuilder = new StringBuilder();
+            var stringBuilder = new StringBuilder();
+            this.newLine = s => stringBuilder.AppendLine(s);
 
             SetFolderVariables();
             CopyStratisChainFiles();
