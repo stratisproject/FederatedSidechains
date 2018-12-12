@@ -66,6 +66,7 @@ namespace Stratis.FederatedPeg.IntegrationTests.Utils
             this.scriptAndAddresses = this.GenerateScriptAndAddresses(this.mainchainNetwork, this.sidechainNetwork, 2, this.pubKeysByMnemonic);
 
             this.federationMemberIndexes = Enumerable.Range(0, this.pubKeysByMnemonic.Count).ToList();
+            this.chains = new[] { "mainchain", "sidechain" }.ToList();
 
             this.nodeBuilder = NodeBuilder.Create(this);
             this.mainUser = this.nodeBuilder.CreateStratisPosNode(this.mainchainNetwork, nameof(this.mainUser));

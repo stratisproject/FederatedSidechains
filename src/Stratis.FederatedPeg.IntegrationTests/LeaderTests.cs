@@ -15,16 +15,6 @@ namespace Stratis.FederatedPeg.IntegrationTests
 {
     public class LeaderTests : TestBase
     {
-        [Fact]
-        // Move this into it's own test class.
-        public void NodeSetup()
-        {
-            this.StartNodes(Chain.Main);
-            this.StartNodes(Chain.Side);
-
-            this.ConnectSideChainNodes();
-        }
-
         /// <summary>
         /// https://stratisplatform.sharepoint.com/:x:/g/EehmhCsUSRFKnUgJ1nZNDxoBlyxcGcmfwmCdgg7MJqkYgA?e=0iChWb
         /// ST-1_Standard_txt_in_sidechain
