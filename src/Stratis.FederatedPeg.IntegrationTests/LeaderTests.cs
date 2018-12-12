@@ -18,8 +18,7 @@ namespace Stratis.FederatedPeg.IntegrationTests
         /// https://stratisplatform.sharepoint.com/:x:/g/EehmhCsUSRFKnUgJ1nZNDxoBlyxcGcmfwmCdgg7MJqkYgA?e=0iChWb
         /// ST-1_Standard_txt_in_sidechain
         /// </summary>
-        //[Fact]
-        [Fact(Skip = "TODO: Check blocks get mined and make sure the block notification will alter the fed leader.")]
+        [Fact]
         public void LeaderChange()
         {
             using (SidechainNodeBuilder builder = SidechainNodeBuilder.CreateSidechainNodeBuilder(this))
@@ -39,16 +38,14 @@ namespace Stratis.FederatedPeg.IntegrationTests
 
                 var tipBefore = node.GetTip().Height;
 
-                // TODO check blocks get mined and make sure the block notification will change
-                // the leader
-                //TestHelper.WaitLoop(
-                //    () =>
-                //    {
-                //        return node.GetTip().Height >= tipBefore + 5;
-                //    }
-                //    );
+                TestHelper.WaitLoop(
+                    () =>
+                    {
+                        return node.GetTip().Height >= tipBefore + 5;
+                    }
+                    );
 
-                //leaderProvider.CurrentLeader.Should().NotBe(currentLeader);
+                leaderProvider.CurrentLeader.Should().NotBe(currentLeader);
             }
         }
     }
