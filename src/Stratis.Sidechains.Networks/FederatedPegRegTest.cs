@@ -72,7 +72,7 @@ namespace Stratis.Sidechains.Networks
                 maxBlockSigopsCost: 20_000,
                 maxStandardTxSigopsCost: 20_000 / 5,
                 federationPublicKeys: federationPubKeys,
-                targetSpacingSeconds: 3 // For integration tests
+                targetSpacingSeconds: 16 // Even for integration tests
             );
 
             var buriedDeployments = new BuriedDeploymentsArray
