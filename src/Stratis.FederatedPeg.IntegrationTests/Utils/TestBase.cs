@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using NBitcoin;
 using Stratis.Bitcoin.IntegrationTests.Common;
@@ -42,7 +43,7 @@ namespace Stratis.FederatedPeg.IntegrationTests.Utils
             Side
         }
 
-        protected struct NodeChain
+        protected class NodeChain
         {
             public CoreNode Node { get; private set; }
             public Chain ChainType { get; private set; }
@@ -88,10 +89,8 @@ namespace Stratis.FederatedPeg.IntegrationTests.Utils
             this.sidechainNodeBuilder.ConfigParameters.AddOrReplace(FederationGatewaySettings.PublicKeyParam, this.pubKeysByMnemonic[this.mnemonics[2]].ToString());
             this.fedSide3 = this.sidechainNodeBuilder.CreateSidechainNode(this.sidechainNetwork, this.sidechainNetwork.FederationKeys[2]);
 
-            // TODO - Not picking up below config in FederationGatewaySettings ctor.
-
-            this.AppliFederationIPs(this.fedMain1, this.fedMain2, this.fedMain3);
-            this.AppliFederationIPs(this.fedSide1, this.fedSide2, this.fedSide3);
+            this.ApplyFederationIPs(this.fedMain1, this.fedMain2, this.fedMain3);
+            this.ApplyFederationIPs(this.fedSide1, this.fedSide2, this.fedSide3);
 
             this.ApplyCounterChainAPIPort(this.fedMain1, this.fedSide1);
             this.ApplyCounterChainAPIPort(this.fedMain2, this.fedSide2);
@@ -167,7 +166,7 @@ namespace Stratis.FederatedPeg.IntegrationTests.Utils
         {
             try
             {
-               // TestHelper.Connect(this.sideUser, this.fedSide1);
+                TestHelper.Connect(this.sideUser, this.fedSide1);
                 TestHelper.Connect(this.fedSide1, this.fedSide2);
                 TestHelper.Connect(this.fedSide1, this.fedSide3);
                 TestHelper.Connect(this.fedSide2, this.fedSide1);
@@ -182,19 +181,33 @@ namespace Stratis.FederatedPeg.IntegrationTests.Utils
             }
         }
 
-        private void AppliFederationIPs(CoreNode fed1, CoreNode fed2, CoreNode fed3)
+        private void CreateNodesWithExtraConfig()
+        {
+
+        }
+
+        private void ApplyFederationIPs(CoreNode fed1, CoreNode fed2, CoreNode fed3)
         {
             var fedIps = $"{fed1.Endpoint},{fed2.Endpoint},{fed3.Endpoint}";
 
-            fed1.ConfigParameters.Add(FederationGatewaySettings.FederationIpsParam, fedIps);
-            fed2.ConfigParameters.Add(FederationGatewaySettings.FederationIpsParam, fedIps);
-            fed3.ConfigParameters.Add(FederationGatewaySettings.FederationIpsParam, fedIps);
+            this.AppendToConfig(fed1, $"{FederationGatewaySettings.FederationIpsParam}={fedIps}");
+            this.AppendToConfig(fed2, $"{FederationGatewaySettings.FederationIpsParam}={fedIps}");
+            this.AppendToConfig(fed3, $"{FederationGatewaySettings.FederationIpsParam}={fedIps}");
         }
+
 
         private void ApplyCounterChainAPIPort(CoreNode fromNode, CoreNode toNode)
         {
-            fromNode.ConfigParameters.Add(FederationGatewaySettings.CounterChainApiPortParam, toNode.ApiPort.ToString());
-            toNode.ConfigParameters.Add(FederationGatewaySettings.CounterChainApiPortParam, fromNode.ApiPort.ToString());
+            this.AppendToConfig(fromNode, $"{FederationGatewaySettings.CounterChainApiPortParam}={toNode.ApiPort.ToString()}");
+            this.AppendToConfig(toNode, $"{FederationGatewaySettings.CounterChainApiPortParam}={fromNode.ApiPort.ToString()}");
+        }
+
+        private void AppendToConfig(CoreNode node, string configKeyValueIten)
+        {
+            using (StreamWriter sw = File.AppendText(node.Config))
+            {
+                sw.WriteLine(configKeyValueIten);
+            }
         }
 
         public void Dispose()

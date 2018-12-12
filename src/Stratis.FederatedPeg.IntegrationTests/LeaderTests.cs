@@ -29,7 +29,8 @@ namespace Stratis.FederatedPeg.IntegrationTests
         /// https://stratisplatform.sharepoint.com/:x:/g/EehmhCsUSRFKnUgJ1nZNDxoBlyxcGcmfwmCdgg7MJqkYgA?e=0iChWb
         /// ST-1_Standard_txt_in_sidechain
         /// </summary>
-        [Fact]
+        //[Fact]
+        [Fact(Skip = "Check out the  block is being notified as this will cause the leader to changee. At the moment in this test the leader doesn't change.")]
         public void LeaderChange()
         {
             this.StartAndConnectNodes();
