@@ -26,6 +26,7 @@ namespace Stratis.FederatedPeg.IntegrationTests
             {
                 // Set up builder and node
                 builder.ConfigParameters.Add("sidechain", "true");
+                builder.ConfigParameters.Add("federationips", "127.0.0.1");
                 builder.ConfigParameters.Add("redeemscript", this.scriptAndAddresses.payToMultiSig.ToString());
                 builder.ConfigParameters.Add("publickey", this.pubKeysByMnemonic[this.mnemonics[0]].ToString());
                 CoreNode node = builder.CreateSidechainNodeWithSmartContracts(this.sidechainNetwork, this.sidechainNetwork.FederationKeys[0]);
@@ -52,6 +53,7 @@ namespace Stratis.FederatedPeg.IntegrationTests
             {
                 // Set up builder and nodes
                 builder.ConfigParameters.Add("sidechain", "true");
+                builder.ConfigParameters.Add("federationips", "127.0.0.1");
                 builder.ConfigParameters.Add("redeemscript", this.scriptAndAddresses.payToMultiSig.ToString());
                 builder.ConfigParameters.Add("publickey", this.pubKeysByMnemonic[this.mnemonics[0]].ToString());
                 CoreNode node1 = builder.CreateSidechainNodeWithSmartContracts(this.sidechainNetwork, this.sidechainNetwork.FederationKeys[0]);
