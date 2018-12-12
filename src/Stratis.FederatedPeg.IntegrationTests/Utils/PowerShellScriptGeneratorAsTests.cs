@@ -3,34 +3,17 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
-
 using NBitcoin;
-
-using Stratis.Bitcoin.Networks;
-using Stratis.Sidechains.Networks;
+using Stratis.FederatedPeg.IntegrationTests.Utils;
 
 using Xunit;
 using Xunit.Abstractions;
 
 namespace Stratis.FederatedPeg.Tests.Utils
 {
-    public class PowerShellScriptGeneratorAsTests
+    public class PowerShellScriptGeneratorAsTests : TestBase
     {
         private readonly ITestOutputHelper output;
-
-        private Network mainchainNetwork;
-
-        private FederatedPegRegTest sidechainNetwork;
-
-        private IList<Mnemonic> mnemonics;
-
-        private Dictionary<Mnemonic, PubKey> pubKeysByMnemonic;
-
-        private (Script payToMultiSig, BitcoinAddress sidechainMultisigAddress, BitcoinAddress mainchainMultisigAddress) scriptAndAddresses;
-
-        private List<int> federationMemberIndexes;
-
-        private List<string> chains;
 
         private Dictionary<int, string> consoleColors;
 
@@ -44,17 +27,6 @@ namespace Stratis.FederatedPeg.Tests.Utils
         [Fact]
         public void Generate_PS1_Fragment()
         {
-            this.mainchainNetwork = Networks.Stratis.Regtest();
-            this.sidechainNetwork = (FederatedPegRegTest)FederatedPegNetwork.NetworksSelector.Regtest();
-
-            this.mnemonics = this.sidechainNetwork.FederationMnemonics;
-            this.pubKeysByMnemonic = this.mnemonics.ToDictionary(m => m, m => m.DeriveExtKey().PrivateKey.PubKey);
-
-            this.scriptAndAddresses = GenerateScriptAndAddresses(this.mainchainNetwork, this.sidechainNetwork, 2, this.pubKeysByMnemonic);
-
-            this.federationMemberIndexes = Enumerable.Range(0, this.pubKeysByMnemonic.Count).ToList();
-            this.chains = new[] { "mainchain", "sidechain" }.ToList();
-
             var stringBuilder = new StringBuilder();
             this.newLine = s => stringBuilder.AppendLine(s);
 
@@ -110,10 +82,10 @@ namespace Stratis.FederatedPeg.Tests.Utils
             federationMemberIndexes.ForEach(i => {
                 this.newLine($"# Federation member {i} main and side");
                 this.newLine(
-                    $"start-process cmd -ArgumentList \"/k color {this.consoleColors[i + 1]} && dotnet run --no-build -mainchain -testnet -agentprefix=fed{i + 1}main -datadir=$root_datadir\\gateway{i + 1} -port=36{GetPortNumberSuffix(this.chains[0], i)} -apiport=38{GetPortNumberSuffix(this.chains[0], i)} -counterchainapiport=38{GetPortNumberSuffix(this.chains[1], i)} -federationips=$mainchain_federationips -redeemscript=\"\"$redeemscript\"\" -publickey=$gateway{i + 1}_public_key -mincoinmaturity=1 -mindepositconfirmations=1\"");
+                    $"start-process cmd -ArgumentList \"/k color {this.consoleColors[i + 1]} && dotnet run -mainchain -testnet -agentprefix=fed{i + 1}main -datadir=$root_datadir\\gateway{i + 1} -port=36{GetPortNumberSuffix(this.chains[0], i)} -apiport=38{GetPortNumberSuffix(this.chains[0], i)} -counterchainapiport=38{GetPortNumberSuffix(this.chains[1], i)} -federationips=$mainchain_federationips -redeemscript=\"\"$redeemscript\"\" -publickey=$gateway{i + 1}_public_key -mincoinmaturity=1 -mindepositconfirmations=1\"");
                 this.newLine("timeout $long_interval_time");
                 this.newLine(
-                    $"start-process cmd -ArgumentList \"/k color {this.consoleColors[i + 1]} && dotnet run --no-build -sidechain -regtest -agentprefix=fed{i + 1}side -datadir=$root_datadir\\gateway{i + 1} -port=36{GetPortNumberSuffix(this.chains[1], i)} -apiport=38{GetPortNumberSuffix(this.chains[1], i)} -counterchainapiport=38{GetPortNumberSuffix(this.chains[0], i)} -federationips=$sidechain_federationips -redeemscript=\"\"$redeemscript\"\" -publickey=$gateway{i + 1}_public_key -mincoinmaturity=1 -mindepositconfirmations=1 -txindex=1\"");
+                    $"start-process cmd -ArgumentList \"/k color {this.consoleColors[i + 1]} && dotnet run -sidechain -regtest -agentprefix=fed{i + 1}side -datadir=$root_datadir\\gateway{i + 1} -port=36{GetPortNumberSuffix(this.chains[1], i)} -apiport=38{GetPortNumberSuffix(this.chains[1], i)} -counterchainapiport=38{GetPortNumberSuffix(this.chains[0], i)} -federationips=$sidechain_federationips -redeemscript=\"\"$redeemscript\"\" -publickey=$gateway{i + 1}_public_key -mincoinmaturity=1 -mindepositconfirmations=1 -txindex=1\"");
                 this.newLine("timeout $long_interval_time");
                 this.newLine(Environment.NewLine);
             });
@@ -249,23 +221,6 @@ namespace Stratis.FederatedPeg.Tests.Utils
             this.consoleColors =
                 new Dictionary<int, string>() { { 1, "0E" }, { 2, "0A" }, { 3, "09" }, { 4, "0C" }, { 5, "0D" }, };
             this.newLine(Environment.NewLine);
-        }
-
-        private IList<Mnemonic> GenerateMnemonics(int keyCount)
-        {
-            return Enumerable.Range(0, keyCount)
-                .Select(k => new Mnemonic(Wordlist.English, WordCount.Twelve))
-                .ToList();
-        }
-
-
-        private (Script payToMultiSig, BitcoinAddress sidechainMultisigAddress, BitcoinAddress mainchainMultisigAddress)
-            GenerateScriptAndAddresses(Network mainchainNetwork, Network sidechainNetwork, int quorum, Dictionary<Mnemonic, PubKey> pubKeysByMnemonic)
-        {
-            Script payToMultiSig = PayToMultiSigTemplate.Instance.GenerateScriptPubKey(quorum, pubKeysByMnemonic.Values.ToArray());
-            BitcoinAddress sidechainMultisigAddress = payToMultiSig.Hash.GetAddress(sidechainNetwork);
-            BitcoinAddress mainchainMultisigAddress = payToMultiSig.Hash.GetAddress(mainchainNetwork);
-            return (payToMultiSig, sidechainMultisigAddress, mainchainMultisigAddress);
         }
     }
 }
