@@ -99,14 +99,14 @@ namespace Stratis.FederatedPeg.IntegrationTests.Utils
 
             this.MainAndSideChainNodeMap = new Dictionary<string, NodeChain>()
             {
-                { nameof (this.mainUser), new NodeChain (this.mainUser, Chain.Main) },
-                { nameof (this.fedMain1), new NodeChain (this.fedMain1, Chain.Main) },
-                { nameof (this.fedMain2), new NodeChain (this.fedMain2, Chain.Main) },
-                { nameof (this.fedMain3), new NodeChain (this.fedMain3, Chain.Main) },
-                { nameof (this.sideUser), new NodeChain (this.sideUser, Chain.Side) },
-                { nameof (this.fedSide1), new NodeChain (this.fedSide1, Chain.Side) },
-                { nameof (this.fedSide2), new NodeChain (this.fedSide2, Chain.Side) },
-                { nameof (this.fedSide3), new NodeChain (this.fedSide3, Chain.Side) }
+                { nameof(this.mainUser), new NodeChain(this.mainUser, Chain.Main) },
+                { nameof(this.fedMain1), new NodeChain(this.fedMain1, Chain.Main) },
+                { nameof(this.fedMain2), new NodeChain(this.fedMain2, Chain.Main) },
+                { nameof(this.fedMain3), new NodeChain(this.fedMain3, Chain.Main) },
+                { nameof(this.sideUser), new NodeChain(this.sideUser, Chain.Side) },
+                { nameof(this.fedSide1), new NodeChain(this.fedSide1, Chain.Side) },
+                { nameof(this.fedSide2), new NodeChain(this.fedSide2, Chain.Side) },
+                { nameof(this.fedSide3), new NodeChain(this.fedSide3, Chain.Side) }
             };
         }
 
@@ -154,8 +154,14 @@ namespace Stratis.FederatedPeg.IntegrationTests.Utils
             try
             {
                 TestHelper.Connect(this.mainUser, this.fedMain1);
+                TestHelper.Connect(this.mainUser, this.fedMain2);
+                TestHelper.Connect(this.mainUser, this.fedMain3);
                 TestHelper.Connect(this.fedMain1, this.fedMain2);
                 TestHelper.Connect(this.fedMain1, this.fedMain3);
+                TestHelper.Connect(this.fedMain2, this.fedMain1);
+                TestHelper.Connect(this.fedMain2, this.fedMain3);
+                TestHelper.Connect(this.fedMain3, this.fedMain1);
+                TestHelper.Connect(this.fedMain3, this.fedMain2);
             }
             catch (Exception)
             {
@@ -168,6 +174,8 @@ namespace Stratis.FederatedPeg.IntegrationTests.Utils
             try
             {
                 TestHelper.Connect(this.sideUser, this.fedSide1);
+                TestHelper.Connect(this.sideUser, this.fedSide2);
+                TestHelper.Connect(this.sideUser, this.fedSide3);
                 TestHelper.Connect(this.fedSide1, this.fedSide2);
                 TestHelper.Connect(this.fedSide1, this.fedSide3);
                 TestHelper.Connect(this.fedSide2, this.fedSide1);
