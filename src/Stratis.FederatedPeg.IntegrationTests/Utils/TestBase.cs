@@ -184,7 +184,7 @@
         protected void EnableWallets(List<CoreNode> nodes)
         {
             this.MainAndSideChainNodeMap["fedMain3"].Node.State.Should().Be(CoreNodeState.Running);
-            this.MainAndSideChainNodeMap["fedMain2"].Node.State.Should().Be(CoreNodeState.Running);
+            this.MainAndSideChainNodeMap["fedSide3"].Node.State.Should().Be(CoreNodeState.Running);
 
             nodes.ForEach(node =>
             {
@@ -202,7 +202,7 @@
                     }).Result.StatusCode.Should().Be(HttpStatusCode.OK);
                 });
             });
-        }|
+        }
 
         private void ApplyFederationIPs(CoreNode fed1, CoreNode fed2, CoreNode fed3)
         {
