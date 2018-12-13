@@ -74,6 +74,7 @@ namespace Stratis.FederatedPeg.Tests.Utils
                 timeout: "$interval_time"
             );
 
+            this.newLine("# SidechainUser");
             CallStartNode(
                 path: "$path_to_sidechaind",
                 title: "SIDE Chain User",
