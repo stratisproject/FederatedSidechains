@@ -201,9 +201,8 @@
                         Password = "password"
                     }).Result.StatusCode.Should().Be(HttpStatusCode.OK);
                 });
-
             });
-        }
+        }|
 
         private void ApplyFederationIPs(CoreNode fed1, CoreNode fed2, CoreNode fed3)
         {
