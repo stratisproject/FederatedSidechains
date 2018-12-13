@@ -70,7 +70,7 @@ namespace Stratis.FederatedPeg.Tests.Utils
                 path: "$path_to_stratisd",
                 title: "MAIN Chain User",
                 color: this.consoleColors[5],
-                args: $"-testnet -port=36178 -apiport=38221 -agentprefix=mainuser -datadir=$root_datadir\\MainchainUser -addnode=13.70.81.5 -addnode=52.151.76.252 -whitelist=52.151.76.252 -gateway=1",
+                args: $"-testnet -port=36178 -apiport=38221 -agentprefix=mainuser -datadir=$root_datadir\\MainchainUser -addnode=13.70.81.5 -addnode=52.151.76.252 -whitelist=52.151.76.252",
                 timeout: "$interval_time"
             );
 
