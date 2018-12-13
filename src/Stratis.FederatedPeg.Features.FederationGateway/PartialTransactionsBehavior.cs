@@ -11,7 +11,7 @@ using Stratis.FederatedPeg.Features.FederationGateway.NetworkHelpers;
 
 namespace Stratis.FederatedPeg.Features.FederationGateway
 {
-    private class PartialTransactionsBehavior : NetworkPeerBehavior
+    public class PartialTransactionsBehavior : NetworkPeerBehavior
     {
         private readonly ILoggerFactory loggerFactory;
 
