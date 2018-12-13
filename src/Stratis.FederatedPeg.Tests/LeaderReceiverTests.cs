@@ -44,7 +44,7 @@ namespace Stratis.FederatedPeg.Tests
 
             receivedLeaderCount.Should().Be(LeaderCount);
 
-            string logMsg = string.Format("Received federated leader: {0}", PublicKey);
+            string logMsg = $"Received federated leader: {PublicKey}.";
 
             this.logger.Received(receivedLeaderCount).Log(LogLevel.Debug,
                 Arg.Any<EventId>(),
