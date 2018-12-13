@@ -8,7 +8,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.Interfaces
     /// </summary>
     public interface ILeaderProvider
     {
-        /// <summary>Public key for the current leader.</summary>
+        /// <summary>Public key of the current leader.</summary>
         PubKey CurrentLeaderKey { get; }
 
         void Update(BlockTipModel blockTipModel);
