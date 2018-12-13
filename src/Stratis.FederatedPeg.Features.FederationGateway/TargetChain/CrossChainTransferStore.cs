@@ -130,7 +130,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
                     // Initialize the lookups.
                     foreach (Row<byte[], byte[]> transferRow in dbreezeTransaction.SelectForward<byte[], byte[]>(transferTableName))
                     {
-                        CrossChainTransfer transfer = new CrossChainTransfer();
+                        var transfer = new CrossChainTransfer();
                         transfer.FromBytes(transferRow.Value, this.network.Consensus.ConsensusFactory);
                         this.depositsIdsByStatus[transfer.Status].Add(transfer.DepositTransactionId);
 
@@ -481,7 +481,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
 
                             IDeposit deposit = deposits[i];
                             Transaction transaction = null;
-                            CrossChainTransferStatus status = CrossChainTransferStatus.Suspended;
+                            var status = CrossChainTransferStatus.Suspended;
                             Script scriptPubKey = BitcoinAddress.Create(deposit.TargetAddress, this.network).ScriptPubKey;
 
                             if (!haveSuspendedTransfers)
@@ -791,7 +791,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
             if (this.chain.GetBlock(tipToChase.Hash) == null)
             {
                 ICollection<uint256> locators = this.federationWalletManager.GetWallet().BlockLocator;
-                BlockLocator blockLocator = new BlockLocator { Blocks = locators.ToList() };
+                var blockLocator = new BlockLocator { Blocks = locators.ToList() };
                 ChainedHeader fork = this.chain.FindFork(blockLocator);
                 this.federationWalletManager.RemoveBlocks(fork);
                 tipToChase = this.TipToChase();
@@ -1043,7 +1043,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
 
                 if (transferRow.Exists)
                 {
-                    CrossChainTransfer crossChainTransfer = new CrossChainTransfer();
+                    var crossChainTransfer = new CrossChainTransfer();
                     crossChainTransfer.FromBytes(transferRow.Value, this.network.Consensus.ConsensusFactory);
                     res[kv.Value] = crossChainTransfer;
                 }

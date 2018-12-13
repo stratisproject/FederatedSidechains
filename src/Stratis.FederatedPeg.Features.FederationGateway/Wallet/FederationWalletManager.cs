@@ -968,7 +968,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.Wallet
                 throw new WalletException("A federation wallet already exists.");
             }
 
-            FederationWallet wallet = new FederationWallet
+            var wallet = new FederationWallet
             {
                 CreationTime = this.dateTimeProvider.GetTimeOffset(),
                 Network = this.network,

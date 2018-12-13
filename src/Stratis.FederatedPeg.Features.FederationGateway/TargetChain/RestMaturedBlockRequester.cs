@@ -55,7 +55,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
                 string successJson = response.Content?.ReadAsStringAsync().GetAwaiter().GetResult();
                 if (successJson != null)
                 {
-                    MaturedBlockDepositsModel[] blockDeposits = JsonConvert.DeserializeObject<MaturedBlockDepositsModel[]>(successJson);
+                    var blockDeposits = JsonConvert.DeserializeObject<MaturedBlockDepositsModel[]>(successJson);
 
                     if (blockDeposits.Length > 0)
                     {

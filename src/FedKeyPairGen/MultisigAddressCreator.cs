@@ -26,7 +26,7 @@ namespace FederationSetup
             Network sidechainNetwork = FederatedPegNetwork.NetworksSelector.Testnet();
 
             // Create a mnemonic and get the corresponding pubKey.
-            PubKey[] pubKeys = new PubKey[1];
+            var pubKeys = new PubKey[1];
             var mnemonic = new Mnemonic(Wordlist.English, WordCount.Twelve);
             pubKeys[0] = mnemonic.DeriveExtKey().PrivateKey.PubKey;
 
