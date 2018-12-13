@@ -30,13 +30,13 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
         private const int synchronizationBatchSize = 1000;
 
         /// <summary>This contains deposits ids indexed by block hash of the corresponding transaction.</summary>
-        private Dictionary<uint256, HashSet<uint256>> depositIdsByBlockHash = new Dictionary<uint256, HashSet<uint256>>();
+        private readonly Dictionary<uint256, HashSet<uint256>> depositIdsByBlockHash = new Dictionary<uint256, HashSet<uint256>>();
 
         /// <summary>This contains the block heights by block hashes for only the blocks of interest in our chain.</summary>
-        private Dictionary<uint256, int> blockHeightsByBlockHash = new Dictionary<uint256, int>();
+        private readonly Dictionary<uint256, int> blockHeightsByBlockHash = new Dictionary<uint256, int>();
 
         /// <summary>This table contains deposits ids by status.</summary>
-        private Dictionary<CrossChainTransferStatus, HashSet<uint256>> depositsIdsByStatus = new Dictionary<CrossChainTransferStatus, HashSet<uint256>>();
+        private readonly Dictionary<CrossChainTransferStatus, HashSet<uint256>> depositsIdsByStatus = new Dictionary<CrossChainTransferStatus, HashSet<uint256>>();
 
         /// <inheritdoc />
         public int NextMatureDepositHeight { get; private set; }

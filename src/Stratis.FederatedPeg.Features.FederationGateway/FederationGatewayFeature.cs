@@ -188,7 +188,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway
             this.crossChainTransferStore.Dispose();
         }
 
-        public void AddInlineStats(StringBuilder benchLogs)
+        private void AddInlineStats(StringBuilder benchLogs)
         {
             if (this.federationWalletManager == null) return;
             int height = this.federationWalletManager.LastBlockHeight();
@@ -212,7 +212,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway
                 );
        }
 
-        public void AddComponentStats(StringBuilder benchLog)
+        private void AddComponentStats(StringBuilder benchLog)
         {
             benchLog.AppendLine();
             benchLog.AppendLine("====== Federation Wallet ======");
