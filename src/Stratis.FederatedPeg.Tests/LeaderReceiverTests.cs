@@ -37,7 +37,7 @@ namespace Stratis.FederatedPeg.Tests
             this.streamSubscription = this.leaderReceiver.LeaderProvidersStream.Subscribe(
                 _ => { receivedLeaderCount++; });
 
-            this.leaderProvider.CurrentLeader.Returns(new NBitcoin.PubKey(PublicKey));
+            this.leaderProvider.CurrentLeaderKey.Returns(new NBitcoin.PubKey(PublicKey));
 
             for (int i = 0; i < LeaderCount; i++)
                 this.leaderReceiver.ReceiveLeader(this.leaderProvider);
