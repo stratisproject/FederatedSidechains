@@ -29,7 +29,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
         /// <inheritdoc />
         public void ReceiveLeader(ILeaderProvider leaderProvider)
         {
-            this.logger.LogDebug("Received federated leader: {0}.", leaderProvider.CurrentLeader);
+            this.logger.LogDebug("Received federated leader: {0}.", leaderProvider.CurrentLeaderKey);
             this.leaderProvidersStream.OnNext(leaderProvider);
         }
 
