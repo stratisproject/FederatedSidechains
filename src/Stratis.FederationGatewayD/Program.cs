@@ -36,8 +36,8 @@ namespace Stratis.FederationGatewayD
         {
             try
             {
-                var isMainchainNode = args.FirstOrDefault(a => a.ToLower() == MainchainArgument) != null;
-                var isSidechainNode = args.FirstOrDefault(a => a.ToLower() == SidechainArgument) != null;
+                bool isMainchainNode = args.FirstOrDefault(a => a.ToLower() == MainchainArgument) != null;
+                bool isSidechainNode = args.FirstOrDefault(a => a.ToLower() == SidechainArgument) != null;
 
                 if (isSidechainNode == isMainchainNode)
                 {

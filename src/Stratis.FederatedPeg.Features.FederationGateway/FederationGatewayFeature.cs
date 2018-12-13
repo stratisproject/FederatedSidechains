@@ -33,7 +33,6 @@ using Stratis.FederatedPeg.Features.FederationGateway.Notifications;
 using Stratis.FederatedPeg.Features.FederationGateway.SourceChain;
 using Stratis.FederatedPeg.Features.FederationGateway.TargetChain;
 using Stratis.FederatedPeg.Features.FederationGateway.Wallet;
-using BlockObserver = Stratis.FederatedPeg.Features.FederationGateway.Notifications.BlockObserver;
 
 [assembly: InternalsVisibleTo("Stratis.FederatedPeg.Features.FederationGateway.Tests")]
 [assembly: InternalsVisibleTo("Stratis.FederatedPeg.IntegrationTests")]
@@ -73,7 +72,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway
 
         private readonly IFederationGatewaySettings federationGatewaySettings;
 
-        private IFullNode fullNode;
+        private readonly IFullNode fullNode;
 
         private readonly ILoggerFactory loggerFactory;
 
