@@ -14,8 +14,8 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
     {
         public const int MaxBlocksToCatchup = 1000;
 
-        private ICrossChainTransferStore crossChainTransferStore;
-        private IMaturedBlockReceiver maturedBlockReceiver;
+        private readonly ICrossChainTransferStore crossChainTransferStore;
+        private readonly IMaturedBlockReceiver maturedBlockReceiver;
 
         public RestMaturedBlockRequester(
             ILoggerFactory loggerFactory,
