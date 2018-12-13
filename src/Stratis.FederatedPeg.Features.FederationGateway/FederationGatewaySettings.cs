@@ -12,13 +12,13 @@ namespace Stratis.FederatedPeg.Features.FederationGateway
     /// <inheritdoc />
     public sealed class FederationGatewaySettings : IFederationGatewaySettings
     {
-        private const string CounterChainApiPortParam = "counterchainapiport";
+        internal const string CounterChainApiPortParam = "counterchainapiport";
 
-        private const string RedeemScriptParam = "redeemscript";
+        internal const string RedeemScriptParam = "redeemscript";
 
-        private const string PublicKeyParam = "publickey";
+        internal const string PublicKeyParam = "publickey";
 
-        private const string FederationIpsParam = "federationips";
+        internal const string FederationIpsParam = "federationips";
 
         private const string MinCoinMaturityParam = "mincoinmaturity";
 
