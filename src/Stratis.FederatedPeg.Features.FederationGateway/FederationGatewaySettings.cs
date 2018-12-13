@@ -12,13 +12,13 @@ namespace Stratis.FederatedPeg.Features.FederationGateway
     /// <inheritdoc />
     public sealed class FederationGatewaySettings : IFederationGatewaySettings
     {
-        protected internal const string CounterChainApiPortParam = "counterchainapiport";
+        private const string CounterChainApiPortParam = "counterchainapiport";
 
-        protected internal const string RedeemScriptParam = "redeemscript";
+        private const string RedeemScriptParam = "redeemscript";
 
-        protected internal const string PublicKeyParam = "publickey";
+        private const string PublicKeyParam = "publickey";
 
-        protected internal const string FederationIpsParam = "federationips";
+        private const string FederationIpsParam = "federationips";
 
         private const string MinCoinMaturityParam = "mincoinmaturity";
 
@@ -30,7 +30,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway
         {
             Guard.NotNull(nodeSettings, nameof(nodeSettings));
 
-            var configReader = nodeSettings.ConfigReader;
+            TextFileConfiguration configReader = nodeSettings.ConfigReader;
 
             this.IsMainChain = configReader.GetOrDefault<bool>("mainchain", false);
             if (!this.IsMainChain && !configReader.GetOrDefault("sidechain", false))
@@ -42,7 +42,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway
                 throw new ConfigurationException($"could not find {RedeemScriptParam} configuration parameter");
             this.MultiSigRedeemScript = new Script(redeemScriptRaw);
             this.MultiSigAddress = this.MultiSigRedeemScript.Hash.GetAddress(nodeSettings.Network);
-            var payToMultisigScriptParams = PayToMultiSigTemplate.Instance.ExtractScriptPubKeyParameters(this.MultiSigRedeemScript);
+            PayToMultiSigTemplateParameters payToMultisigScriptParams = PayToMultiSigTemplate.Instance.ExtractScriptPubKeyParameters(this.MultiSigRedeemScript);
             this.MultiSigM = payToMultisigScriptParams.SignatureCount;
             this.MultiSigN = payToMultisigScriptParams.PubKeys.Length;
             this.FederationPublicKeys = payToMultisigScriptParams.PubKeys;
