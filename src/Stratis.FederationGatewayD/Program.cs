@@ -74,6 +74,7 @@ namespace Stratis.FederationGatewayD
                 .AddRPC()
                 .AddFederationGateway()
                 .Build();
+
             return node;
         }
 
@@ -95,6 +96,7 @@ namespace Stratis.FederationGatewayD
                 .UseApi()
                 .AddRPC()
                 .Build();
+
             return node;
         }
     }
