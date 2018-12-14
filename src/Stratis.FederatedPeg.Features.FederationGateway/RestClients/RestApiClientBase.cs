@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Net;
 using System.Net.Http;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
@@ -39,17 +40,17 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.RestClients
                 {
                     this.logger.LogDebug("Sending request of type '{0}' to Uri '{1}'.", requestModel.GetType().FullName, publicationUri);
 
+
                     response = await client.PostAsync(publicationUri, request).ConfigureAwait(false);
                     this.logger.LogDebug("Response received: {0}", response);
                 }
-                catch (Exception e)
+                catch (Exception ex)
                 {
-                    return null;
-                    // TODO handle
-                    //this.backOffUntil = DateTime.Now.AddSeconds(10); // WTF IS THIS? wait for 10 sec of any exception and retry
-                    //this.logger.LogError("The counter-chain daemon is not ready to receive API calls at this time ({0})", publicationUri);
-                    //this.logger.LogDebug(ex, "Failed to send {0}", requestModel);
-                    //return new HttpResponseMessage() { ReasonPhrase = ex.Message, StatusCode = HttpStatusCode.InternalServerError };
+                    // TODO handle using polly in the next PR
+
+                    this.logger.LogError("The counter-chain daemon is not ready to receive API calls at this time ({0})", publicationUri);
+                    this.logger.LogDebug(ex, "Failed to send {0}", requestModel);
+                    return new HttpResponseMessage() { ReasonPhrase = ex.Message, StatusCode = HttpStatusCode.InternalServerError };
                 }
             }
 

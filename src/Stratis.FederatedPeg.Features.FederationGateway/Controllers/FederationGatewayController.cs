@@ -16,11 +16,13 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.Controllers
 {
     public static class FederationGatewayRouteEndPoint
     {
-        public const string PushMaturedBlocks = "receive-matured-blocks";
-        public const string PushCurrentBlockTip = "receive-current-block-tip";
+        public const string PushMaturedBlocks = "push_matured_blocks";
+        public const string PushCurrentBlockTip = "push_current_block_tip";
         public const string GetMaturedBlockDeposits = "get_matured_block_deposits";
-        public const string CreateSessionOnCounterChain = "create-session-oncounterchain";
-        public const string ProcessSessionOnCounterChain = "process-session-oncounterchain";
+
+        // TODO commented out since those constants are unused. Remove them later or start using.
+        //public const string CreateSessionOnCounterChain = "create-session-oncounterchain";
+        //public const string ProcessSessionOnCounterChain = "process-session-oncounterchain";
     }
 
     /// <summary>
@@ -36,33 +38,21 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.Controllers
 
         private readonly ILeaderProvider leaderProvider;
 
-        private readonly ConcurrentChain chain;
-
         private readonly IMaturedBlocksProvider maturedBlocksProvider;
-
-        private readonly IMaturedBlocksRequester maturedBlocksRequester;
-
-        private readonly IDepositExtractor depositExtractor;
 
         private readonly ILeaderReceiver leaderReceiver;
 
         public FederationGatewayController(
             ILoggerFactory loggerFactory,
             IMaturedBlockReceiver maturedBlockReceiver,
-            IMaturedBlocksRequester maturedBlocksRequester,
             ILeaderProvider leaderProvider,
-            ConcurrentChain chain,
             IMaturedBlocksProvider maturedBlocksProvider,
-            IDepositExtractor depositExtractor,
             ILeaderReceiver leaderReceiver)
         {
             this.logger = loggerFactory.CreateLogger(this.GetType().FullName);
             this.maturedBlockReceiver = maturedBlockReceiver;
-            this.maturedBlocksRequester = maturedBlocksRequester;
             this.leaderProvider = leaderProvider;
-            this.chain = chain;
             this.maturedBlocksProvider = maturedBlocksProvider;
-            this.depositExtractor = depositExtractor;
             this.leaderReceiver = leaderReceiver;
         }
 
@@ -140,8 +130,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.Controllers
         private static IActionResult BuildErrorResponse(ModelStateDictionary modelState)
         {
             List<ModelError> errors = modelState.Values.SelectMany(e => e.Errors).ToList();
-            return ErrorHelpers.BuildErrorResponse(
-                HttpStatusCode.BadRequest,
+            return ErrorHelpers.BuildErrorResponse(HttpStatusCode.BadRequest,
                 string.Join(Environment.NewLine, errors.Select(m => m.ErrorMessage)),
                 string.Join(Environment.NewLine, errors.Select(m => m.Exception?.Message)));
         }

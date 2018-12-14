@@ -56,6 +56,18 @@ namespace Stratis.FederatedPeg.Tests
             this.leaderReceiver = Substitute.For<ILeaderReceiver>();
         }
 
+        private FederationGatewayController CreateController()
+        {
+            var controller = new FederationGatewayController(
+                this.loggerFactory,
+                this.maturedBlockReceiver,
+                this.leaderProvider,
+                this.GetMaturedBlocksProvider(),
+                this.leaderReceiver);
+
+            return controller;
+        }
+
         private MaturedBlocksProvider GetMaturedBlocksProvider()
         {
             var blockRepository = Substitute.For<IBlockRepository>();
@@ -85,15 +97,7 @@ namespace Stratis.FederatedPeg.Tests
         {
             this.chain = Substitute.For<ConcurrentChain>();
 
-            var controller = new FederationGatewayController(
-                this.loggerFactory,
-                this.maturedBlockReceiver,
-                this.maturedBlocksRequester,
-                this.leaderProvider,
-                this.chain,
-                this.GetMaturedBlocksProvider(),
-                this.depositExtractor,
-                this.leaderReceiver);
+            FederationGatewayController controller = this.CreateController();
 
             ChainedHeader chainedHeader = this.BuildChain(3).GetBlock(2);
             this.chain.Tip.Returns(chainedHeader);
@@ -123,15 +127,7 @@ namespace Stratis.FederatedPeg.Tests
             // 0 - 1 - 2 - 3 - 4
             this.chain = this.BuildChain(5);
 
-            var controller = new FederationGatewayController(
-                this.loggerFactory,
-                this.maturedBlockReceiver,
-                this.maturedBlocksRequester,
-                this.leaderProvider,
-                this.chain,
-                this.GetMaturedBlocksProvider(),
-                this.depositExtractor,
-                this.leaderReceiver);
+            FederationGatewayController controller = this.CreateController();
 
             // Minimum deposit confirmations : 2
             this.depositExtractor.MinimumDepositConfirmations.Returns((uint)2);
@@ -167,15 +163,7 @@ namespace Stratis.FederatedPeg.Tests
         {
             this.chain = this.BuildChain(10);
 
-            var controller = new FederationGatewayController(
-                this.loggerFactory,
-                this.maturedBlockReceiver,
-                this.maturedBlocksRequester,
-                this.leaderProvider,
-                this.chain,
-                GetMaturedBlocksProvider(),
-                this.depositExtractor,
-                this.leaderReceiver);
+            FederationGatewayController controller = this.CreateController();
 
             ChainedHeader earlierBlock = this.chain.GetBlock(2);
 
@@ -202,15 +190,7 @@ namespace Stratis.FederatedPeg.Tests
         [Fact]
         public void ReceiveCurrentBlockTip_Should_Call_LeaderProdvider_Update()
         {
-            var controller = new FederationGatewayController(
-                this.loggerFactory,
-                this.maturedBlockReceiver,
-                this.maturedBlocksRequester,
-                this.leaderProvider,
-                this.chain,
-                GetMaturedBlocksProvider(),
-                this.depositExtractor,
-                this.leaderReceiver);
+            FederationGatewayController controller = this.CreateController();
 
             var model = new BlockTipModel(TestingValues.GetUint256(), TestingValues.GetPositiveInt(), TestingValues.GetPositiveInt());
 
@@ -229,15 +209,7 @@ namespace Stratis.FederatedPeg.Tests
         [Fact]
         public void ReceiveMaturedBlock_Should_Call_ReceivedMatureBlockDeposits()
         {
-            var controller = new FederationGatewayController(
-                this.loggerFactory,
-                this.maturedBlockReceiver,
-                this.maturedBlocksRequester,
-                this.leaderProvider,
-                this.chain,
-                GetMaturedBlocksProvider(),
-                this.depositExtractor,
-                this.leaderReceiver);
+            FederationGatewayController controller = this.CreateController();
 
             HashHeightPair hashHeightPair = TestingValues.GetHashHeightPair();
             var deposits = new MaturedBlockDepositsModel(new MaturedBlockModel()
