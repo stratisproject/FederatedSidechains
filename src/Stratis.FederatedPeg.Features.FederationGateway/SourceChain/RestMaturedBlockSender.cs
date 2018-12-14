@@ -9,9 +9,13 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.SourceChain
 {
     public class RestMaturedBlockSender : RestSenderBase, IMaturedBlockSender
     {
+        private readonly ILogger logger;
+
         public RestMaturedBlockSender(ILoggerFactory loggerFactory, IFederationGatewaySettings settings, IHttpClientFactory httpClientFactory)
             : base(loggerFactory, settings, httpClientFactory)
         {
+            this.logger = loggerFactory.CreateLogger(this.GetType().FullName);
+
         }
 
         /// <inheritdoc />
@@ -19,6 +23,11 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.SourceChain
         {
             if (this.CanSend())
             {
+                foreach (IDeposit deposit in maturedBlockDeposits.Deposits)
+                {
+                    this.logger.LogDebug("Mature deposit {0} ", deposit);
+                }
+
                 await this.SendAsync((MaturedBlockDepositsModel)maturedBlockDeposits, FederationGatewayRouteEndPoint.ReceiveMaturedBlocks).ConfigureAwait(false);
             }
         }
