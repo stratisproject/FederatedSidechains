@@ -13,6 +13,7 @@ using Stratis.FederatedPeg.Features.FederationGateway.Controllers;
 using Stratis.FederatedPeg.Features.FederationGateway.Interfaces;
 using Stratis.FederatedPeg.Features.FederationGateway.Models;
 using Stratis.FederatedPeg.Features.FederationGateway.SourceChain;
+using Stratis.FederatedPeg.Features.FederationGateway.TargetChain;
 using Stratis.FederatedPeg.Tests.Utils;
 using Stratis.Sidechains.Networks;
 using Xunit;
@@ -28,10 +29,6 @@ namespace Stratis.FederatedPeg.Tests
         private readonly ILogger logger;
 
         private readonly IMaturedBlockReceiver maturedBlockReceiver;
-
-        private readonly IMaturedBlocksProvider maturedBlocksProvider;
-
-        private readonly IMaturedBlocksRequester maturedBlocksRequester;
 
         private readonly ILeaderProvider leaderProvider;
 
@@ -49,8 +46,6 @@ namespace Stratis.FederatedPeg.Tests
             this.logger = Substitute.For<ILogger>();
             this.loggerFactory.CreateLogger(null).ReturnsForAnyArgs(this.logger);
             this.maturedBlockReceiver = Substitute.For<IMaturedBlockReceiver>();
-            this.maturedBlocksRequester = Substitute.For<IMaturedBlocksRequester>();
-            this.maturedBlocksProvider = Substitute.For<IMaturedBlocksProvider>();
             this.leaderProvider = Substitute.For<ILeaderProvider>();
             this.depositExtractor = Substitute.For<IDepositExtractor>();
             this.leaderReceiver = Substitute.For<ILeaderReceiver>();

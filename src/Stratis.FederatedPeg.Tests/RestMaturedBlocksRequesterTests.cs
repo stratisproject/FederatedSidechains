@@ -58,7 +58,7 @@ namespace Stratis.FederatedPeg.Tests
             this.httpClientFactory.CreateClient(Arg.Any<string>()).Returns(this.httpClient);
 
             var restRequester = new RestMaturedBlockRequester(this.loggerFactory, this.federationSettings, this.httpClientFactory, this.crossChainTransferStore, this.maturedBlocksReceiver);
-            restRequester.Start();
+            restRequester.GetMoreBlocksAsync().GetAwaiter().GetResult();
 
             // Wait one minute max.
             for (int i = 0; i < 600 && !called; i++)

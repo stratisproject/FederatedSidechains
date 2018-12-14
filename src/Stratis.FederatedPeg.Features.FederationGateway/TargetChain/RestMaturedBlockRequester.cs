@@ -9,6 +9,15 @@ using Stratis.FederatedPeg.Features.FederationGateway.SourceChain;
 
 namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
 {
+    public interface IMaturedBlocksRequester
+    {
+        /// <summary>
+        /// Gets more blocks from the counter node.
+        /// </summary>
+        /// <returns><c>True</c> if more blocks were found and <c>false</c> otherwise.</returns>
+        Task<bool> GetMoreBlocksAsync();
+    }
+
     public class RestMaturedBlockRequester : RestSenderBase, IMaturedBlocksRequester
     {
         public const int MaxBlocksToCatchup = 1000;
@@ -26,12 +35,6 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
         {
             this.crossChainTransferStore = crossChainTransferStore;
             this.maturedBlockReceiver = maturedBlockReceiver;
-        }
-
-        /// <inheritdoc />
-        public void Start()
-        {
-            this.GetMoreBlocksAsync().GetAwaiter().GetResult();
         }
 
         /// <inheritdoc />
@@ -54,7 +57,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
                 string successJson = response.Content?.ReadAsStringAsync().GetAwaiter().GetResult();
                 if (successJson != null)
                 {
-                    var blockDeposits = JsonConvert.DeserializeObject<MaturedBlockDepositsModel[]>(successJson);
+                    MaturedBlockDepositsModel[] blockDeposits = JsonConvert.DeserializeObject<MaturedBlockDepositsModel[]>(successJson);
 
                     if (blockDeposits.Length > 0)
                     {
