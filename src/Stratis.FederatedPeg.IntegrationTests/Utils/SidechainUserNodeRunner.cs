@@ -11,6 +11,7 @@ using Stratis.Bitcoin.Features.MemoryPool;
 using Stratis.Bitcoin.Features.Notifications;
 using Stratis.Bitcoin.Features.RPC;
 using Stratis.Bitcoin.Features.SmartContracts;
+using Stratis.Bitcoin.Features.SmartContracts.PoA;
 using Stratis.Bitcoin.Features.SmartContracts.Wallet;
 using Stratis.Bitcoin.Features.Wallet;
 using Stratis.Bitcoin.IntegrationTests.Common;
@@ -39,17 +40,14 @@ namespace Stratis.FederatedPeg.IntegrationTests.Utils
                 .UseNodeSettings(settings)
                 .UseBlockStore()
                 .AddSmartContracts()
+                .UseSmartContractPoAConsensus()
+                .UseSmartContractPoAMining()
                 .UseSmartContractWallet()
                 .UseReflectionExecutor()
-                .AddFederationGateway()
-                .UseFederatedPegPoAMining()
                 .UseMempool()
-                .UseWallet()
-                .UseTransactionNotification()
-                .UseBlockNotification()
                 .UseApi()
-                .AddRPC()
                 .MockIBD()
+                .AddRPC()
                 .Build();
         }
     }
