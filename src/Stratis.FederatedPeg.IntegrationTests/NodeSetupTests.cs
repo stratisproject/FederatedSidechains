@@ -28,7 +28,7 @@ namespace Stratis.FederatedPeg.IntegrationTests
             this.MainAndSideChainNodeMap["fedSide3"].Node.State.Should().Be(CoreNodeState.Running);
         }
 
-        [Fact(Skip ="SideChain Nodes starting but can't execute endpoints when enabling wallets - make sure side chains in TestBase are running as normal.")]
+        [Fact(Skip ="Sidechain Nodes starting but can't execute endpoints when enabling wallets - make sure sidechains in TestBase are running as normal.")]
         public void EnableNodeWallets()
         {
             this.StartAndConnectNodes();
