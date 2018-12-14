@@ -24,7 +24,7 @@ namespace Stratis.FederatedPeg.IntegrationTests.Utils
 
     public class TestBase : IDisposable
     {
-        private const string WalletName = "wallet";
+        private const string WalletName = "mywallet";
         private const string WalletPassword = "password";
         private const string WalletPassphrase = "passphrase";
 
@@ -214,6 +214,18 @@ namespace Stratis.FederatedPeg.IntegrationTests.Utils
             });
         }
 
+        /// <summary>
+        /// Get balance of the local wallet.
+        /// </summary>
+        protected Money GetBalance(CoreNode node)
+        {
+            IEnumerable<Bitcoin.Features.Wallet.UnspentOutputReference> spendableOutputs = node.FullNode.WalletManager().GetSpendableTransactionsInWallet(WalletName);
+            return spendableOutputs.Sum(x => x.Transaction.Amount);
+        }
+
+        /// <summary>
+        /// Helper method to build and send a deposit transaction to the federation on the main chain.
+        /// </summary>
         protected async Task DepositToSideChain(CoreNode node, decimal amount, string sidechainDepositAddress)
         {
             HttpResponseMessage depositTransaction = await $"http://localhost:{node.ApiPort}/api"
@@ -301,7 +313,7 @@ namespace Stratis.FederatedPeg.IntegrationTests.Utils
 
         public void Dispose()
         {
-            this.nodeBuilder?.Dispose();
+            //this.nodeBuilder?.Dispose();
             this.sidechainNodeBuilder?.Dispose();
         }
     }
