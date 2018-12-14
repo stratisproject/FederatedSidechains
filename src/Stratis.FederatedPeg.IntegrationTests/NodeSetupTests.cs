@@ -1,4 +1,3 @@
-using System.Collections.Generic;
 using System.Linq;
 using FluentAssertions;
 using Stratis.Bitcoin.Features.Wallet.Models;
@@ -57,5 +56,6 @@ namespace Stratis.FederatedPeg.IntegrationTests
 
             Assert.Equal(this.mainchainNetwork.Consensus.ProofOfWorkReward, GetBalance(mainUser.Node));
         }
+
     }
 }
