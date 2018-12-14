@@ -249,3 +249,4 @@ ModelManifest.xml
 
 /src/Stratis.FederationGatewayD/Properties/PublishProfiles/FolderProfile.pubxml
 /src/Stratis.FederatedSidechains.AdminDashboard/Properties/launchSettings.json
+/src/Stratis.FederationGatewayD/$root_datadir
