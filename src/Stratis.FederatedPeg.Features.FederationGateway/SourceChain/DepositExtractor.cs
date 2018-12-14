@@ -81,7 +81,8 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.SourceChain
             var maturedBlock = new MaturedBlockModel()
             {
                 BlockHash = newlyMaturedBlock.ChainedHeader.HashBlock,
-                BlockHeight = newlyMaturedBlock.ChainedHeader.Height
+                BlockHeight = newlyMaturedBlock.ChainedHeader.Height,
+                BlockTime = newlyMaturedBlock.ChainedHeader.Header.Time
             };
 
             IReadOnlyList<IDeposit> deposits =

@@ -66,8 +66,6 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
                 blockHeight,
                 blockHash);
 
-            this.logger.LogInformation("Processing received transaction : {0}.", withdrawal);
-
             return withdrawal;
         }
 
