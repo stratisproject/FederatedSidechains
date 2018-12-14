@@ -17,21 +17,21 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.RestClients
         }
 
         /// <summary><see cref="FederationGatewayController.PushMaturedBlock"/></summary>
-        public async Task PushMaturedBlockAsync(MaturedBlockDepositsModel model)
+        public Task PushMaturedBlockAsync(MaturedBlockDepositsModel model)
         {
-            await this.SendPostRequestAsync(model, FederationGatewayRouteEndPoint.PushMaturedBlocks).ConfigureAwait(false);
+            return this.SendPostRequestAsync(model, FederationGatewayRouteEndPoint.PushMaturedBlocks);
         }
 
         /// <summary><see cref="FederationGatewayController.PushCurrentBlockTip"/></summary>
-        public async Task PushCurrentBlockTipAsync(BlockTipModel model)
+        public Task PushCurrentBlockTipAsync(BlockTipModel model)
         {
-            await this.SendPostRequestAsync(model, FederationGatewayRouteEndPoint.PushCurrentBlockTip).ConfigureAwait(false);
+            return this.SendPostRequestAsync(model, FederationGatewayRouteEndPoint.PushCurrentBlockTip);
         }
 
         /// <summary><see cref="FederationGatewayController.GetMaturedBlockDepositsAsync"/></summary>
-        public async Task<List<IMaturedBlockDeposits>> GetMaturedBlockDepositsAsync(MaturedBlockRequestModel model)
+        public Task<List<IMaturedBlockDeposits>> GetMaturedBlockDepositsAsync(MaturedBlockRequestModel model)
         {
-            return await this.SendPostRequestAsync<MaturedBlockRequestModel, List<IMaturedBlockDeposits>>(model, FederationGatewayRouteEndPoint.GetMaturedBlockDeposits).ConfigureAwait(false);
+            return this.SendPostRequestAsync<MaturedBlockRequestModel, List<IMaturedBlockDeposits>>(model, FederationGatewayRouteEndPoint.GetMaturedBlockDeposits);
         }
     }
 }
