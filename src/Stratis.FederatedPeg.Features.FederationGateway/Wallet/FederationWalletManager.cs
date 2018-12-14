@@ -532,7 +532,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.Wallet
 
             lock (this.lockObject)
             {
-                removedTransactions.UnionWith(this.Wallet.MultiSigAddress.Transactions.Select(t => (t.Id, t.CreationTime)));
+                removedTransactions = this.Wallet.MultiSigAddress.Transactions.Select(t => (t.Id, t.CreationTime)).ToHashSet();
                 this.Wallet.MultiSigAddress.Transactions.Clear();
             }
 
