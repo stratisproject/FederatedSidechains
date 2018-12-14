@@ -47,9 +47,11 @@ namespace Stratis.FederatedPeg.IntegrationTests
             this.ConnectSideChainNodes();
 
             CoreNode node = this.MainAndSideChainNodeMap["sideUser"].Node;
+            CoreNode fedSide1 = this.MainAndSideChainNodeMap["fedSide1"].Node;
 
             // Wait for node to reach premine height 
             TestHelper.WaitLoop(() => node.FullNode.Chain.Height == node.FullNode.Network.Consensus.PremineHeight);
+            TestHelper.WaitForNodeToSync(node, fedSide1);
 
             // Ensure that coinbase contains premine reward and it goes to the fed.
             Block block = node.FullNode.Chain.Tip.Block;
