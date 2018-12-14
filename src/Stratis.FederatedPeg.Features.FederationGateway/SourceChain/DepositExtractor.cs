@@ -68,7 +68,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.SourceChain
             if (!this.opReturnDataReader.TryGetTargetAddress(transaction, out string targetAddress))
                 return null;
 
-            this.logger.LogInformation("Processing received transaction with address: {0}. Transaction hash: {1}.",
+            this.logger.LogInformation("Processing a received deposit transaction with address: {0}. Transaction hash: {1}.",
                 targetAddress, transaction.GetHash());
 
             return new Deposit(transaction.GetHash(), depositsToMultisig.Sum(o => o.Value), targetAddress, blockHeight, blockHash);

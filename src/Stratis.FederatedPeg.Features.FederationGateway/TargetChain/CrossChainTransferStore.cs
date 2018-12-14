@@ -550,6 +550,8 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
                             }
                             catch (Exception err)
                             {
+                                this.logger.LogError("An error accrued when pricessing deposits {0}", err);
+
                                 // Undo reserved UTXO's.
                                 if (walletUpdated)
                                 {
