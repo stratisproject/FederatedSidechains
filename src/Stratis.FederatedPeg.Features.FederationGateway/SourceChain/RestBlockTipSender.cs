@@ -18,7 +18,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.SourceChain
         {
             if (this.CanSend())
             {
-                await this.SendAsync((BlockTipModel)blockTip, FederationGatewayRouteEndPoint.ReceiveCurrentBlockTip).ConfigureAwait(false);
+                await this.SendAsync((BlockTipModel)blockTip, FederationGatewayRouteEndPoint.PushCurrentBlockTip).ConfigureAwait(false);
             }
         }
     }

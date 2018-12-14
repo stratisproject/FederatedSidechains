@@ -19,7 +19,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.SourceChain
         {
             if (this.CanSend())
             {
-                await this.SendAsync((MaturedBlockDepositsModel)maturedBlockDeposits, FederationGatewayRouteEndPoint.ReceiveMaturedBlocks).ConfigureAwait(false);
+                await this.SendAsync((MaturedBlockDepositsModel)maturedBlockDeposits, FederationGatewayRouteEndPoint.PushMaturedBlocks).ConfigureAwait(false);
             }
         }
     }

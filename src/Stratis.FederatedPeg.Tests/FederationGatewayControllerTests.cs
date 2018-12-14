@@ -220,7 +220,7 @@ namespace Stratis.FederatedPeg.Tests
                 leaderProviderCallCount++;
             });
 
-            IActionResult result = controller.ReceiveCurrentBlockTip(model);
+            IActionResult result = controller.PushCurrentBlockTip(model);
 
             result.Should().BeOfType<OkResult>();
             leaderProviderCallCount.Should().Be(1);
@@ -246,12 +246,12 @@ namespace Stratis.FederatedPeg.Tests
                     hashHeightPair.Height, hashHeightPair.Hash) });
 
             int callCount = 0;
-            this.maturedBlockReceiver.When(x => x.ReceiveMaturedBlockDeposits(Arg.Any<IMaturedBlockDeposits[]>())).Do(info =>
+            this.maturedBlockReceiver.When(x => x.PushMaturedBlockDeposits(Arg.Any<IMaturedBlockDeposits[]>())).Do(info =>
             {
                 callCount++;
             });
 
-            controller.ReceiveMaturedBlock(deposits);
+            controller.PushMaturedBlock(deposits);
             callCount.Should().Be(1);
         }
 

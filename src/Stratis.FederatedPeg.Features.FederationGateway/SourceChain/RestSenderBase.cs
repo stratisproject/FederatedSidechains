@@ -49,7 +49,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.SourceChain
                 }
                 catch (Exception ex)
                 {
-                    this.backOffUntil = DateTime.Now.AddSeconds(10);
+                    this.backOffUntil = DateTime.Now.AddSeconds(10); // WTF IS THIS? wait for 10 sec of any exception and retry
                     this.logger.LogError("The counter-chain daemon is not ready to receive API calls at this time ({0})", publicationUri);
                     this.logger.LogDebug(ex, "Failed to send {0}", model);
                     return new HttpResponseMessage() { ReasonPhrase = ex.Message, StatusCode = HttpStatusCode.InternalServerError };

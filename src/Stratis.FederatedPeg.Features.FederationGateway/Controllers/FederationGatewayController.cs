@@ -16,8 +16,8 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.Controllers
 {
     public static class FederationGatewayRouteEndPoint
     {
-        public const string ReceiveMaturedBlocks = "receive-matured-blocks";
-        public const string ReceiveCurrentBlockTip = "receive-current-block-tip";
+        public const string PushMaturedBlocks = "receive-matured-blocks";
+        public const string PushCurrentBlockTip = "receive-current-block-tip";
         public const string GetMaturedBlockDeposits = "get_matured_block_deposits";
         public const string CreateSessionOnCounterChain = "create-session-oncounterchain";
         public const string ProcessSessionOnCounterChain = "process-session-oncounterchain";
@@ -66,21 +66,19 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.Controllers
             this.leaderReceiver = leaderReceiver;
         }
 
-        [Route(FederationGatewayRouteEndPoint.ReceiveMaturedBlocks)]
+        [Route(FederationGatewayRouteEndPoint.PushMaturedBlocks)]
         [HttpPost]
-        public void ReceiveMaturedBlock([FromBody] MaturedBlockDepositsModel maturedBlockDeposits)
+        public void PushMaturedBlock([FromBody] MaturedBlockDepositsModel maturedBlockDeposits)
         {
-            this.maturedBlockReceiver.ReceiveMaturedBlockDeposits(new[] { maturedBlockDeposits });
+            this.maturedBlockReceiver.PushMaturedBlockDeposits(new[] { maturedBlockDeposits });
         }
 
-        /// <summary>
-        /// Receives the current block tip to be used for updating the federated leader in a round robin fashion.
-        /// </summary>
+        /// <summary>Pushes the current block tip to be used for updating the federated leader in a round robin fashion.</summary>
         /// <param name="blockTip"><see cref="BlockTipModel"/>Block tip Hash and Height received.</param>
         /// <returns><see cref="IActionResult"/>OK on success.</returns>
-        [Route(FederationGatewayRouteEndPoint.ReceiveCurrentBlockTip)]
+        [Route(FederationGatewayRouteEndPoint.PushCurrentBlockTip)]
         [HttpPost]
-        public IActionResult ReceiveCurrentBlockTip([FromBody] BlockTipModel blockTip)
+        public IActionResult PushCurrentBlockTip([FromBody] BlockTipModel blockTip)
         {
             Guard.NotNull(blockTip, nameof(blockTip));
 
@@ -93,13 +91,13 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.Controllers
             {
                 this.leaderProvider.Update(new BlockTipModel(blockTip.Hash, blockTip.Height, blockTip.MatureConfirmations));
 
-                this.leaderReceiver.ReceiveLeader(this.leaderProvider);
+                this.leaderReceiver.PushLeader(this.leaderProvider);
 
                 return this.Ok();
             }
             catch (Exception e)
             {
-                this.logger.LogError("Exception thrown calling /api/FederationGateway/{0}: {1}.", FederationGatewayRouteEndPoint.ReceiveCurrentBlockTip, e.Message);
+                this.logger.LogError("Exception thrown calling /api/FederationGateway/{0}: {1}.", FederationGatewayRouteEndPoint.PushCurrentBlockTip, e.Message);
                 return ErrorHelpers.BuildErrorResponse(HttpStatusCode.BadRequest, $"Could not select the next federated leader: {e.Message}", e.ToString());
             }
         }

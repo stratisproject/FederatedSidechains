@@ -58,7 +58,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
 
                     if (blockDeposits.Length > 0)
                     {
-                        this.maturedBlockReceiver.ReceiveMaturedBlockDeposits(blockDeposits);
+                        this.maturedBlockReceiver.PushMaturedBlockDeposits(blockDeposits);
 
                         if (blockDeposits.Length < maxBlocksToRequest)
                         {
