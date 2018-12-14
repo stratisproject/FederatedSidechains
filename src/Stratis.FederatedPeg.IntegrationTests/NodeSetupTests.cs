@@ -2,6 +2,8 @@ using System.Linq;
 using FluentAssertions;
 using NBitcoin;
 using Stratis.Bitcoin.IntegrationTests.Common;
+using Stratis.Bitcoin.Features.Wallet.Models;
+using Stratis.Bitcoin.IntegrationTests.Common;
 using Stratis.Bitcoin.IntegrationTests.Common.EnvironmentMockUpHelpers;
 using Stratis.FederatedPeg.IntegrationTests.Utils;
 using Xunit;
@@ -40,6 +42,23 @@ namespace Stratis.FederatedPeg.IntegrationTests
                 Select(v => v.Value.Node).ToList());
         }
 
+        [Fact]
+        public void FundMainChainNode()
+        {
+            this.StartNodes(Chain.Main);
+            this.ConnectMainChainNodes();
+
+            NodeChain mainUser = this.MainAndSideChainNodeMap["mainUser"];
+            NodeChain fedMain1 = this.MainAndSideChainNodeMap["fedMain1"];
+            NodeChain fedMain2 = this.MainAndSideChainNodeMap["fedMain2"];
+            NodeChain fedMain3 = this.MainAndSideChainNodeMap["fedMain3"];
+
+            TestHelper.MineBlocks(mainUser.Node, (int)this.mainchainNetwork.Consensus.CoinbaseMaturity + 1);
+            TestHelper.WaitForNodeToSync(mainUser.Node, fedMain1.Node, fedMain2.Node, fedMain3.Node);
+
+            Assert.Equal(this.mainchainNetwork.Consensus.ProofOfWorkReward, GetBalance(mainUser.Node));
+        }
+        
         [Fact]
         public void Sidechain_Premine_Received()
         {
