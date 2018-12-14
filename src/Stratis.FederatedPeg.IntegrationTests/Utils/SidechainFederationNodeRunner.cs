@@ -18,15 +18,12 @@ using Stratis.FederatedPeg.Features.FederationGateway;
 
 namespace Stratis.FederatedPeg.IntegrationTests.Utils
 {
-    public class SidechainNodeRunner : NodeRunner
+    public class SidechainFederationNodeRunner : NodeRunner
     {
-        private IDateTimeProvider timeProvider;
-
-        public SidechainNodeRunner(string dataDir, string agent, Network network, EditableTimeProvider timeProvider)
+        public SidechainFederationNodeRunner(string dataDir, string agent, Network network)
             : base(dataDir, agent)
         {
             this.Network = network;
-            this.timeProvider = timeProvider;
         }
 
         public override void BuildNode()
@@ -48,8 +45,6 @@ namespace Stratis.FederatedPeg.IntegrationTests.Utils
                 .UseApi()
                 .AddRPC()
                 .MockIBD()
-                //.ReplaceTimeProvider(this.timeProvider)
-                //.AddFastMiningCapability()
                 .Build();
         }
     }

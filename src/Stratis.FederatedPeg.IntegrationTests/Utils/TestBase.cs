@@ -81,10 +81,10 @@
             this.fedMain3 = this.nodeBuilder.CreateStratisPosNode(this.mainchainNetwork, nameof(this.fedMain3));
 
             this.sidechainNodeBuilder = SidechainNodeBuilder.CreateSidechainNodeBuilder(this);
-            this.sideUser = this.nodeBuilder.CreateStratisPosNode(this.sidechainNetwork);
-            this.fedSide1 = this.sidechainNodeBuilder.CreateSidechainNode(this.sidechainNetwork, this.sidechainNetwork.FederationKeys[0]);
-            this.fedSide2 = this.sidechainNodeBuilder.CreateSidechainNode(this.sidechainNetwork, this.sidechainNetwork.FederationKeys[1]);
-            this.fedSide3 = this.sidechainNodeBuilder.CreateSidechainNode(this.sidechainNetwork, this.sidechainNetwork.FederationKeys[2]);
+            this.sideUser = this.sidechainNodeBuilder.CreateSidechainNode(this.sidechainNetwork);
+            this.fedSide1 = this.sidechainNodeBuilder.CreateSidechainFederationNode(this.sidechainNetwork, this.sidechainNetwork.FederationKeys[0]);
+            this.fedSide2 = this.sidechainNodeBuilder.CreateSidechainFederationNode(this.sidechainNetwork, this.sidechainNetwork.FederationKeys[1]);
+            this.fedSide3 = this.sidechainNodeBuilder.CreateSidechainFederationNode(this.sidechainNetwork, this.sidechainNetwork.FederationKeys[2]);
 
             this.MainAndSideChainNodeMap = new Dictionary<string, NodeChain>()
             {
@@ -230,14 +230,17 @@
 
         private void ApplyConfigParametersToNodes()
         {
+            this.AppendToConfig(this.sideUser, $"{ConfigSideChain}=1");
             this.AppendToConfig(this.fedSide1, $"{ConfigSideChain}=1");
             this.AppendToConfig(this.fedSide2, $"{ConfigSideChain}=1");
             this.AppendToConfig(this.fedSide3, $"{ConfigSideChain}=1");
 
+            this.AppendToConfig(this.sideUser, $"{FederationGatewaySettings.RedeemScriptParam}={this.scriptAndAddresses.payToMultiSig.ToString()}");
             this.AppendToConfig(this.fedSide1, $"{FederationGatewaySettings.RedeemScriptParam}={this.scriptAndAddresses.payToMultiSig.ToString()}");
             this.AppendToConfig(this.fedSide2, $"{FederationGatewaySettings.RedeemScriptParam}={this.scriptAndAddresses.payToMultiSig.ToString()}");
             this.AppendToConfig(this.fedSide3, $"{FederationGatewaySettings.RedeemScriptParam}={this.scriptAndAddresses.payToMultiSig.ToString()}");
 
+            this.AppendToConfig(this.sideUser, $"{FederationGatewaySettings.PublicKeyParam}={this.pubKeysByMnemonic[this.mnemonics[0]].ToString()}");
             this.AppendToConfig(this.fedSide1, $"{FederationGatewaySettings.PublicKeyParam}={this.pubKeysByMnemonic[this.mnemonics[0]].ToString()}");
             this.AppendToConfig(this.fedSide2, $"{FederationGatewaySettings.PublicKeyParam}={this.pubKeysByMnemonic[this.mnemonics[1]].ToString()}");
             this.AppendToConfig(this.fedSide3, $"{FederationGatewaySettings.PublicKeyParam}={this.pubKeysByMnemonic[this.mnemonics[2]].ToString()}");
