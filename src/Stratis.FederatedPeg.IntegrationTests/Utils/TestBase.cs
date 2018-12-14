@@ -230,17 +230,14 @@
 
         private void ApplyConfigParametersToNodes()
         {
-            this.AppendToConfig(this.sideUser, $"{ConfigSideChain}=1");
             this.AppendToConfig(this.fedSide1, $"{ConfigSideChain}=1");
             this.AppendToConfig(this.fedSide2, $"{ConfigSideChain}=1");
             this.AppendToConfig(this.fedSide3, $"{ConfigSideChain}=1");
 
-            this.AppendToConfig(this.sideUser, $"{FederationGatewaySettings.RedeemScriptParam}={this.scriptAndAddresses.payToMultiSig.ToString()}");
             this.AppendToConfig(this.fedSide1, $"{FederationGatewaySettings.RedeemScriptParam}={this.scriptAndAddresses.payToMultiSig.ToString()}");
             this.AppendToConfig(this.fedSide2, $"{FederationGatewaySettings.RedeemScriptParam}={this.scriptAndAddresses.payToMultiSig.ToString()}");
             this.AppendToConfig(this.fedSide3, $"{FederationGatewaySettings.RedeemScriptParam}={this.scriptAndAddresses.payToMultiSig.ToString()}");
 
-            this.AppendToConfig(this.sideUser, $"{FederationGatewaySettings.PublicKeyParam}={this.pubKeysByMnemonic[this.mnemonics[0]].ToString()}");
             this.AppendToConfig(this.fedSide1, $"{FederationGatewaySettings.PublicKeyParam}={this.pubKeysByMnemonic[this.mnemonics[0]].ToString()}");
             this.AppendToConfig(this.fedSide2, $"{FederationGatewaySettings.PublicKeyParam}={this.pubKeysByMnemonic[this.mnemonics[1]].ToString()}");
             this.AppendToConfig(this.fedSide3, $"{FederationGatewaySettings.PublicKeyParam}={this.pubKeysByMnemonic[this.mnemonics[2]].ToString()}");
