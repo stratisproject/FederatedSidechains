@@ -313,7 +313,7 @@ namespace Stratis.FederatedPeg.IntegrationTests.Utils
 
         public void Dispose()
         {
-            //this.nodeBuilder?.Dispose();
+            this.nodeBuilder?.Dispose();
             this.sidechainNodeBuilder?.Dispose();
         }
     }
