@@ -7,6 +7,13 @@ using Stratis.FederatedPeg.Features.FederationGateway.Wallet;
 
 namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
 {
+    /// <summary>
+    /// The purpose of this class is to sign externally provided withdrawal transactions if they
+    /// are deemed valid. Transaction are signed in response to signature requests from the federation
+    /// leader. The federation is required to be active as the wallet password is supplied during
+    /// activation. Transaction's are validated to ensure that they are expected as per
+    /// the deposits received on the source chain.
+    /// </summary>
     public class SignatureProvider: ISignatureProvider
     {
         private readonly IFederationWalletManager federationWalletManager;
