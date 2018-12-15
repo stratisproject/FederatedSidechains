@@ -911,6 +911,55 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.Wallet
         }
 
         /// <inheritdoc />
+        public Transaction SignTransaction(Transaction transaction, Func<Transaction, IWithdrawal, bool> isValid)
+        {
+            Guard.NotNull(transaction, nameof(transaction));
+            Guard.NotNull(isValid, nameof(isValid));
+
+            this.logger.LogTrace("({0}:'{1}')", nameof(transaction), transaction.ToHex(this.network));
+
+            IWithdrawal withdrawal = this.withdrawalExtractor.ExtractWithdrawalFromTransaction(transaction, 0, 0);
+            if (withdrawal == null)
+            {
+                this.logger.LogTrace("(-)[NOT_WITHDRAWAL]");
+                return null;
+            }
+
+            if (!isValid(transaction, withdrawal))
+            {
+                this.logger.LogTrace("(-)[INVALID_WITHDRAWAL]");
+                return null;
+            }
+
+            var coins = new List<Coin>();
+            if (!TransactionHasValidUTXOs(transaction, coins))
+            {
+                this.logger.LogTrace("(-)[INVALID_UTXOS]");
+                return null;
+            }
+
+            var builder = new TransactionBuilder(this.network);
+
+            Transaction signedTransaction = null;
+            try
+            {
+                signedTransaction = builder
+                    .AddCoins(coins)
+                    .SignTransactionInPlace(transaction);
+            }
+            catch (Exception ex)
+            {
+                this.logger.LogTrace("Exception occurred: {0}", ex.ToString());
+                this.logger.LogTrace("(-)[COULD_NOT_SIGN]");
+                return null;
+            }
+
+            this.logger.LogTrace("(-):{0}", signedTransaction.ToHex(this.network));
+
+            return signedTransaction;
+        }
+
+        /// <inheritdoc />
         public bool IsFederationActive()
         {
             // If federation is acive then the extended key in the wallet can be used to derive the public key.
