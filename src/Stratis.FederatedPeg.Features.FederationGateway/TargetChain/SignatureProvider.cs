@@ -1,6 +1,9 @@
 ﻿using System.Linq;
+using Microsoft.Extensions.Logging;
 using NBitcoin;
+using Stratis.Bitcoin.Utilities;
 using Stratis.FederatedPeg.Features.FederationGateway.Interfaces;
+using Stratis.FederatedPeg.Features.FederationGateway.Wallet;
 
 namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
 {
@@ -8,13 +11,24 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
     {
         private readonly IFederationWalletManager federationWalletManager;
         private readonly ICrossChainTransferStore crossChainTransferStore;
+        private readonly IFederationGatewaySettings federationGatewaySettings;
         private readonly Network network;
+        private readonly ILogger logger;
 
         public SignatureProvider(
             IFederationWalletManager federationWalletManager,
             ICrossChainTransferStore crossChainTransferStore,
-            Network network)
+            IFederationGatewaySettings federationGatewaySettings,
+            Network network,
+            ILoggerFactory loggerFactory)
         {
+            Guard.NotNull(federationWalletManager, nameof(federationWalletManager));
+            Guard.NotNull(crossChainTransferStore, nameof(crossChainTransferStore));
+            Guard.NotNull(federationGatewaySettings, nameof(federationGatewaySettings));
+            Guard.NotNull(network, nameof(network));
+            Guard.NotNull(loggerFactory, nameof(loggerFactory));
+
+            this.logger = loggerFactory.CreateLogger(this.GetType().FullName);
             this.federationWalletManager = federationWalletManager;
             this.crossChainTransferStore = crossChainTransferStore;
             this.network = network;
@@ -44,16 +58,41 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
             return true;
         }
 
-        private Transaction SignTransaction(Transaction transaction)
+        private Transaction SignTransaction(Transaction transaction, Key key)
         {
-            return this.federationWalletManager.SignTransaction(transaction, IsAuthorized);
+            return this.federationWalletManager.SignTransaction(transaction, IsAuthorized, key);
         }
 
         /// <inheritdoc />
-        public string SignTransaction(string transactionHex)
+        public string[] SignTransactions(string[] transactionHex)
         {
-            Transaction transaction = this.network.CreateTransaction(transactionHex);
-            return SignTransaction(transaction)?.ToHex(this.network);
+            Guard.NotNull(transactionHex, nameof(transactionHex));
+
+            this.logger.LogTrace("():{0}", transactionHex);
+
+            FederationWallet wallet = this.federationWalletManager.GetWallet();
+            if (wallet == null || this.federationWalletManager.Secret == null)
+            {
+                this.logger.LogTrace("(-)[FEDERATION_INACTIVE]");
+                return null;
+            }
+
+            Key key = wallet.MultiSigAddress.GetPrivateKey(wallet.EncryptedSeed, this.federationWalletManager.Secret.WalletPassword, this.network);
+            if (key.PubKey.ToHex() != this.federationGatewaySettings.PublicKey)
+            {
+                this.logger.LogTrace("(-)[FEDERATION_KEY_INVALID]");
+                return null;
+            }
+
+            for (int i = 0; i < transactionHex.Length; i++)
+            {
+                Transaction transaction = this.network.CreateTransaction(transactionHex[i]);
+                transactionHex[i] = SignTransaction(transaction, key)?.ToHex(this.network);
+            }
+
+            this.logger.LogTrace("(-):{0}", transactionHex);
+
+            return transactionHex;
         }
     }
 }
