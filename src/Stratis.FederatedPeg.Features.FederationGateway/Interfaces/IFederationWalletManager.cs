@@ -136,8 +136,9 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.Interfaces
         /// </summary>
         /// <param name="transaction">The transaction.</param>
         /// <param name="isValid">A function that determines the validity of the withdrawal.</param>
+        /// <param name="key">The key to use.</param>
         /// <returns><c>True</c> if the withdrawal is valid and <c>false</c> otherwise.</returns>
-        Transaction SignTransaction(Transaction transaction, Func<Transaction, IWithdrawal, bool> isValid);
+        Transaction SignTransaction(Transaction transaction, Func<Transaction, IWithdrawal, bool> isValid, Key key);
 
         /// <summary>
         /// Determines if federation has been activated.

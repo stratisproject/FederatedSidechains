@@ -911,26 +911,12 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.Wallet
         }
 
         /// <inheritdoc />
-        public Transaction SignTransaction(Transaction externalTransaction, Func<Transaction, IWithdrawal, bool> isValid)
+        public Transaction SignTransaction(Transaction externalTransaction, Func<Transaction, IWithdrawal, bool> isValid, Key key)
         {
             Guard.NotNull(externalTransaction, nameof(externalTransaction));
             Guard.NotNull(isValid, nameof(isValid));
 
             this.logger.LogTrace("({0}:'{1}')", nameof(externalTransaction), externalTransaction.ToHex(this.network));
-
-            FederationWallet wallet = this.Wallet;
-            if (wallet == null || this.Secret == null)
-            {
-                this.logger.LogTrace("(-)[FEDERATION_INACTIVE]");
-                return null;
-            }
-
-            Key key = wallet.MultiSigAddress.GetPrivateKey(wallet.EncryptedSeed, this.Secret.WalletPassword, this.network);
-            if (key.PubKey.ToHex() != this.federationGatewaySettings.PublicKey)
-            {
-                this.logger.LogTrace("(-)[FEDERATION_KEY_INVALID]");
-                return null;
-            }
 
             IWithdrawal withdrawal = this.withdrawalExtractor.ExtractWithdrawalFromTransaction(externalTransaction, 0, 0);
             if (withdrawal == null)

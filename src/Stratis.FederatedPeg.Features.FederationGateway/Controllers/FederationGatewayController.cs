@@ -115,12 +115,9 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.Controllers
 
             try
             {
-                for (int i = 0; i < authRequest.TransactionHex.Length; i++)
-                {
-                    authRequest.TransactionHex[i] = this.signatureProvider.SignTransaction(authRequest.TransactionHex[i]);
-                }
+                string[] result = this.signatureProvider.SignTransactions(authRequest.TransactionHex);
 
-                return this.Json(authRequest.TransactionHex);
+                return this.Json(result);
             }
             catch (Exception e)
             {

@@ -5,8 +5,8 @@
         /// <summary>
         /// Signs a transaction if it can be authorized.
         /// </summary>
-        /// <param name="transactionHex">The hexadecimal representation transaction to sign.</param>
-        /// <returns>The signed transaction or <c>null</c> if it can't be signed.</returns>
-        string SignTransaction(string transactionHex);
+        /// <param name="transactionHex">The hexadecimal representations of transactions to sign.</param>
+        /// <returns>An array of signed transactions (in hex) or <c>null</c> for transactions that can't be signed.</returns>
+        string[] SignTransactions(string[] transactionHex);
     }
 }
