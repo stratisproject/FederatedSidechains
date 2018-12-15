@@ -28,20 +28,24 @@ namespace Stratis.FederatedPeg.IntegrationTests.Utils
         private const string WalletPassword = "password";
         private const string WalletPassphrase = "passphrase";
 
-        public readonly Network mainchainNetwork;
-        public readonly FederatedPegRegTest sidechainNetwork;
+        // TODO: Make these private, or move to public immutable properties. Will happen naturally over time.
+
         public readonly IList<Mnemonic> mnemonics;
         public readonly Dictionary<Mnemonic, PubKey> pubKeysByMnemonic;
         public readonly (Script payToMultiSig, BitcoinAddress sidechainMultisigAddress, BitcoinAddress mainchainMultisigAddress) scriptAndAddresses;
         public readonly List<int> federationMemberIndexes;
         public readonly List<string> chains;
 
+        private readonly NodeBuilder nodeBuilder;
+        private readonly SidechainNodeBuilder sidechainNodeBuilder;
+
+        public Network MainChainNetwork { get; }
+
+        public FederatedPegRegTest SideChainNetwork { get; }
+
         public IReadOnlyList<CoreNode> MainChainNodes { get; }
 
         public IReadOnlyList<CoreNode> SideChainNodes { get; }
-
-        private readonly NodeBuilder nodeBuilder;
-        private readonly SidechainNodeBuilder sidechainNodeBuilder;
 
         public CoreNode MainUser{ get; }
         public CoreNode FedMain1 { get; }
@@ -58,29 +62,29 @@ namespace Stratis.FederatedPeg.IntegrationTests.Utils
 
         public SidechainTestContext()
         {
-            this.mainchainNetwork = Networks.Stratis.Regtest();
-            this.sidechainNetwork = (FederatedPegRegTest)FederatedPegNetwork.NetworksSelector.Regtest();
+            this.MainChainNetwork = Networks.Stratis.Regtest();
+            this.SideChainNetwork = (FederatedPegRegTest)FederatedPegNetwork.NetworksSelector.Regtest();
 
-            this.mnemonics = this.sidechainNetwork.FederationMnemonics;
+            this.mnemonics = this.SideChainNetwork.FederationMnemonics;
             this.pubKeysByMnemonic = this.mnemonics.ToDictionary(m => m, m => m.DeriveExtKey().PrivateKey.PubKey);
 
-            this.scriptAndAddresses = this.GenerateScriptAndAddresses(this.mainchainNetwork, this.sidechainNetwork, 2, this.pubKeysByMnemonic);
+            this.scriptAndAddresses = this.GenerateScriptAndAddresses(this.MainChainNetwork, this.SideChainNetwork, 2, this.pubKeysByMnemonic);
 
             this.federationMemberIndexes = Enumerable.Range(0, this.pubKeysByMnemonic.Count).ToList();
             this.chains = new[] { "mainchain", "sidechain" }.ToList();
 
             this.nodeBuilder = NodeBuilder.Create(this);
-            this.MainUser = this.nodeBuilder.CreateStratisPosNode(this.mainchainNetwork, nameof(this.MainUser)).WithWallet(); // TODO: Do we need wallets like this on every node?
-            this.FedMain1 = this.nodeBuilder.CreateStratisPosNode(this.mainchainNetwork, nameof(this.FedMain1));
-            this.FedMain2 = this.nodeBuilder.CreateStratisPosNode(this.mainchainNetwork, nameof(this.FedMain2));
-            this.FedMain3 = this.nodeBuilder.CreateStratisPosNode(this.mainchainNetwork, nameof(this.FedMain3));
+            this.MainUser = this.nodeBuilder.CreateStratisPosNode(this.MainChainNetwork, nameof(this.MainUser)).WithWallet(); // TODO: Do we need wallets like this on every node?
+            this.FedMain1 = this.nodeBuilder.CreateStratisPosNode(this.MainChainNetwork, nameof(this.FedMain1));
+            this.FedMain2 = this.nodeBuilder.CreateStratisPosNode(this.MainChainNetwork, nameof(this.FedMain2));
+            this.FedMain3 = this.nodeBuilder.CreateStratisPosNode(this.MainChainNetwork, nameof(this.FedMain3));
 
             this.sidechainNodeBuilder = SidechainNodeBuilder.CreateSidechainNodeBuilder(this);
-            this.SideUser = this.sidechainNodeBuilder.CreateSidechainNode(this.sidechainNetwork);
+            this.SideUser = this.sidechainNodeBuilder.CreateSidechainNode(this.SideChainNetwork);
 
-            this.FedSide1 = this.sidechainNodeBuilder.CreateSidechainFederationNode(this.sidechainNetwork, this.sidechainNetwork.FederationKeys[0]);
-            this.FedSide2 = this.sidechainNodeBuilder.CreateSidechainFederationNode(this.sidechainNetwork, this.sidechainNetwork.FederationKeys[1]);
-            this.FedSide3 = this.sidechainNodeBuilder.CreateSidechainFederationNode(this.sidechainNetwork, this.sidechainNetwork.FederationKeys[2]);
+            this.FedSide1 = this.sidechainNodeBuilder.CreateSidechainFederationNode(this.SideChainNetwork, this.SideChainNetwork.FederationKeys[0]);
+            this.FedSide2 = this.sidechainNodeBuilder.CreateSidechainFederationNode(this.SideChainNetwork, this.SideChainNetwork.FederationKeys[1]);
+            this.FedSide3 = this.sidechainNodeBuilder.CreateSidechainFederationNode(this.SideChainNetwork, this.SideChainNetwork.FederationKeys[2]);
 
             this.SideChainNodes = new List<CoreNode>()
             {

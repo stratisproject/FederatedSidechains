@@ -56,10 +56,10 @@ namespace Stratis.FederatedPeg.IntegrationTests
                 context.StartMainNodes();
                 context.ConnectMainChainNodes();
 
-                TestHelper.MineBlocks(context.MainUser, (int)context.mainchainNetwork.Consensus.CoinbaseMaturity + 1);
+                TestHelper.MineBlocks(context.MainUser, (int)context.MainChainNetwork.Consensus.CoinbaseMaturity + 1);
                 TestHelper.WaitForNodeToSync(context.MainUser, context.FedMain1, context.FedMain2, context.FedMain3);
 
-                Assert.Equal(context.mainchainNetwork.Consensus.ProofOfWorkReward, context.GetBalance(context.MainUser));
+                Assert.Equal(context.MainChainNetwork.Consensus.ProofOfWorkReward, context.GetBalance(context.MainUser));
             }
         }
         
@@ -79,7 +79,7 @@ namespace Stratis.FederatedPeg.IntegrationTests
                 Block block = context.SideUser.FullNode.Chain.Tip.Block;
                 Transaction coinbase = block.Transactions[0];
                 Assert.Single(coinbase.Outputs);
-                Assert.Equal(context.sidechainNetwork.Consensus.PremineReward, coinbase.Outputs[0].Value);
+                Assert.Equal(context.SideChainNetwork.Consensus.PremineReward, coinbase.Outputs[0].Value);
                 Assert.Equal(context.scriptAndAddresses.payToMultiSig.PaymentScript, coinbase.Outputs[0].ScriptPubKey);
             }
         }
