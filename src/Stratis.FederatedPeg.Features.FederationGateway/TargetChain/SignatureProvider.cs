@@ -30,6 +30,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
 
             this.logger = loggerFactory.CreateLogger(this.GetType().FullName);
             this.federationWalletManager = federationWalletManager;
+            this.federationGatewaySettings = federationGatewaySettings;
             this.crossChainTransferStore = crossChainTransferStore;
             this.network = network;
         }

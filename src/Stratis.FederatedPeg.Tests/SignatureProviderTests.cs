@@ -85,9 +85,14 @@ namespace Stratis.FederatedPeg.Tests
                     Assert.True(crossChainTransferStore2.ValidateTransaction(transaction2));
 
                     // The first instance acts as signatory for the transaction coming from the second instance.
-                    ISignatureProvider signatureProvider = new SignatureProvider(this.federationWalletManager, crossChainTransferStore, this.network);
+                    ISignatureProvider signatureProvider = new SignatureProvider(
+                        this.federationWalletManager,
+                        crossChainTransferStore,
+                        this.federationGatewaySettings,
+                        this.network,
+                        this.loggerFactory);
 
-                    string signedTransactionHex = signatureProvider.SignTransaction(transaction2.ToHex(this.network));
+                    string signedTransactionHex = signatureProvider.SignTransactions(new[] { transaction2.ToHex(this.network) }).FirstOrDefault();
                     Assert.NotNull(signedTransactionHex);
 
                     // The second instance parses the hex.
