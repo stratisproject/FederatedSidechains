@@ -911,6 +911,64 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.Wallet
         }
 
         /// <inheritdoc />
+        public Transaction SignTransaction(Transaction externalTransaction, Func<Transaction, IWithdrawal, bool> isValid, Key key)
+        {
+            // TODO: Check that the transaction is spending exactly the expected UTXO(s).
+            // TODO: Check that the transaction is serving the next expected UTXO(s).
+
+            Guard.NotNull(externalTransaction, nameof(externalTransaction));
+            Guard.NotNull(isValid, nameof(isValid));
+
+            this.logger.LogTrace("({0}:'{1}')", nameof(externalTransaction), externalTransaction.ToHex(this.network));
+
+            IWithdrawal withdrawal = this.withdrawalExtractor.ExtractWithdrawalFromTransaction(externalTransaction, 0, 0);
+            if (withdrawal == null)
+            {
+                this.logger.LogTrace("(-)[NOT_WITHDRAWAL]");
+                return null;
+            }
+
+            // Checks that the deposit id in the transaction is associated with a valid transfer.
+            if (!isValid(externalTransaction, withdrawal))
+            {
+                this.logger.LogTrace("(-)[INVALID_WITHDRAWAL]");
+                return null;
+            }
+
+            var coins = new List<Coin>();
+            foreach (TxIn input in externalTransaction.Inputs)
+            {
+                TransactionData transactionData = this.outpointLookup[input.PrevOut];
+                if (transactionData == null)
+                {
+                    this.logger.LogTrace("(-)[INVALID_UTXOS]");
+                    return null;
+                }
+                coins.Add(new Coin(transactionData.Id, (uint)transactionData.Index, transactionData.Amount, transactionData.ScriptPubKey));
+            }
+
+            Transaction signedTransaction = null;
+            try
+            {
+                var builder = new TransactionBuilder(this.network);
+                signedTransaction = builder
+                    .AddKeys(key)
+                    .AddCoins(coins)
+                    .SignTransactionInPlace(externalTransaction);
+            }
+            catch (Exception ex)
+            {
+                this.logger.LogTrace("Exception occurred: {0}", ex.ToString());
+                this.logger.LogTrace("(-)[COULD_NOT_SIGN]");
+                return null;
+            }
+
+            this.logger.LogTrace("(-):{0}", signedTransaction?.ToHex(this.network));
+
+            return signedTransaction;
+        }
+
+        /// <inheritdoc />
         public bool IsFederationActive()
         {
             // If federation is acive then the extended key in the wallet can be used to derive the public key.

@@ -132,6 +132,15 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.Interfaces
         int CompareOutpoints(OutPoint outPoint1, OutPoint outPoint2);
 
         /// <summary>
+        /// Signs a transaction if it is valid.
+        /// </summary>
+        /// <param name="transaction">The transaction.</param>
+        /// <param name="isValid">A function that determines the validity of the withdrawal.</param>
+        /// <param name="key">The key to use.</param>
+        /// <returns><c>True</c> if the withdrawal is valid and <c>false</c> otherwise.</returns>
+        Transaction SignTransaction(Transaction transaction, Func<Transaction, IWithdrawal, bool> isValid, Key key);
+
+        /// <summary>
         /// Determines if federation has been activated.
         /// </summary>
         /// <returns><c>True</c> if federation is active and <c>false</c> otherwise.</returns>

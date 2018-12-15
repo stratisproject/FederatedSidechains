@@ -6,7 +6,6 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
 using Microsoft.Extensions.Logging;
-using NBitcoin;
 using Stratis.Bitcoin.Utilities;
 using Stratis.Bitcoin.Utilities.JsonErrors;
 using Stratis.FederatedPeg.Features.FederationGateway.Interfaces;
@@ -19,6 +18,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.Controllers
         public const string PushMaturedBlocks = "push_matured_blocks";
         public const string PushCurrentBlockTip = "push_current_block_tip";
         public const string GetMaturedBlockDeposits = "get_matured_block_deposits";
+        public const string AuthorizeWithdrawals = "authorize_withdrawals";
 
         // TODO commented out since those constants are unused. Remove them later or start using.
         //public const string CreateSessionOnCounterChain = "create-session-oncounterchain";
@@ -42,18 +42,22 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.Controllers
 
         private readonly ILeaderReceiver leaderReceiver;
 
+        private readonly ISignatureProvider signatureProvider;
+
         public FederationGatewayController(
             ILoggerFactory loggerFactory,
             IMaturedBlockReceiver maturedBlockReceiver,
             ILeaderProvider leaderProvider,
             IMaturedBlocksProvider maturedBlocksProvider,
-            ILeaderReceiver leaderReceiver)
+            ILeaderReceiver leaderReceiver,
+            ISignatureProvider signatureProvider)
         {
             this.logger = loggerFactory.CreateLogger(this.GetType().FullName);
             this.maturedBlockReceiver = maturedBlockReceiver;
             this.leaderProvider = leaderProvider;
             this.maturedBlocksProvider = maturedBlocksProvider;
             this.leaderReceiver = leaderReceiver;
+            this.signatureProvider = signatureProvider;
         }
 
         [Route(FederationGatewayRouteEndPoint.PushMaturedBlocks)]
@@ -89,6 +93,36 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.Controllers
             {
                 this.logger.LogError("Exception thrown calling /api/FederationGateway/{0}: {1}.", FederationGatewayRouteEndPoint.PushCurrentBlockTip, e.Message);
                 return ErrorHelpers.BuildErrorResponse(HttpStatusCode.BadRequest, $"Could not select the next federated leader: {e.Message}", e.ToString());
+            }
+        }
+
+        /// <summary>
+        /// Authorizes withdrawals.
+        /// </summary>
+        /// <param name="authRequest">A structure containing one or more transactions to authorize.</param>
+        /// <returns>An array containing one or more signed transaction or <c>null</c> for transaction that could not be authorized.</returns>
+        [Route(FederationGatewayRouteEndPoint.AuthorizeWithdrawals)]
+        [HttpPost]
+        public IActionResult AuthorizeWithdrawals([FromBody] AuthorizeWithdrawalsModel authRequest)
+        {
+            Guard.NotNull(authRequest, nameof(authRequest));
+
+            if (!this.ModelState.IsValid)
+            {
+                IEnumerable<string> errors = this.ModelState.Values.SelectMany(e => e.Errors.Select(m => m.ErrorMessage));
+                return ErrorHelpers.BuildErrorResponse(HttpStatusCode.BadRequest, "Formatting error", string.Join(Environment.NewLine, errors));
+            }
+
+            try
+            {
+                string result = this.signatureProvider.SignTransaction(authRequest.TransactionHex);
+
+                return this.Json(result);
+            }
+            catch (Exception e)
+            {
+                this.logger.LogTrace("Exception thrown calling /api/FederationGateway/{0}: {1}.", FederationGatewayRouteEndPoint.AuthorizeWithdrawals, e.Message);
+                return ErrorHelpers.BuildErrorResponse(HttpStatusCode.BadRequest, $"Could not authorize withdrawals: {e.Message}", e.ToString());
             }
         }
 

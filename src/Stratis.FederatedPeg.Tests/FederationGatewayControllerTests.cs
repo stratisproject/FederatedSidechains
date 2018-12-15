@@ -38,6 +38,8 @@ namespace Stratis.FederatedPeg.Tests
 
         private readonly ILeaderReceiver leaderReceiver;
 
+        private readonly ISignatureProvider signatureProvider;
+
         public FederationGatewayControllerTests()
         {
             this.network = FederatedPegNetwork.NetworksSelector.Regtest();
@@ -49,6 +51,7 @@ namespace Stratis.FederatedPeg.Tests
             this.leaderProvider = Substitute.For<ILeaderProvider>();
             this.depositExtractor = Substitute.For<IDepositExtractor>();
             this.leaderReceiver = Substitute.For<ILeaderReceiver>();
+            this.signatureProvider = Substitute.For<ISignatureProvider>();
         }
 
         private FederationGatewayController CreateController()
@@ -58,7 +61,8 @@ namespace Stratis.FederatedPeg.Tests
                 this.maturedBlockReceiver,
                 this.leaderProvider,
                 this.GetMaturedBlocksProvider(),
-                this.leaderReceiver);
+                this.leaderReceiver,
+                this.signatureProvider);
 
             return controller;
         }
