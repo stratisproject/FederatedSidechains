@@ -24,7 +24,6 @@ namespace FederationSetup
         private const string SwitchMineGenesisBlock = "g";
         private const string SwitchGenerateFedPublicPrivateKeys = "p";
         private const string SwitchGenerateMultiSigAddresses = "m";
-        private const string SwitchGeneratePowershellScript = "s";
         private const string SwitchMenu = "menu";
         private const string SwitchExit = "exit";
 
@@ -83,11 +82,6 @@ namespace FederationSetup
                         case SwitchGenerateMultiSigAddresses:
                         {
                             HandleSwitchGenerateMultiSigAddressesCommand(args);
-                            break;
-                        }
-                        case SwitchGeneratePowershellScript:
-                        {
-                            HandleSwitchGeneratePowershellScriptCommand(args);
                             break;
                         }
                     }
@@ -158,19 +152,6 @@ namespace FederationSetup
 
             Console.WriteLine($"Creating multisig addresses for {mainChain.Name} and {sideChain.Name}.");
             Console.WriteLine(new MultisigAddressCreator().CreateMultisigAddresses(mainChain, sideChain, federatedPublicKeys.Select(f => new PubKey(f)).ToArray(), quorum));
-        }
-
-        private static void HandleSwitchGeneratePowershellScriptCommand(string[] args)
-        {
-            var generator = new PowerShellScriptGeneratorAsTests(new TestOutputHelper());
-            string script = generator.CreatePowershellScript();
-
-            string folder = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
-            string savePath = Path.Combine(folder, "PSScript.ps1");
-
-            File.WriteAllText(savePath, script);
-
-            Console.WriteLine($"Script was generated and saved to {savePath}.");
         }
 
         private static void GeneratePublicPrivateKeys()

@@ -40,7 +40,6 @@ namespace FederationSetup
             builder.AppendLine("              quorum:     The minimum number of federated members needed to sign transactions.");
             builder.AppendLine("              fedpubkeys: Federation members' public keys. Must have an odd number of up to fifteen members."); // // fed admin will do -m and number (3 qurom + the public keys for the signing of transactions)
             builder.AppendLine("              Example:    m -network=testnet -quorum=2 -fedpubkeys=PublicKey1,PublicKey2,PublicKey3,PublicKey4,PublicKey5");
-            builder.AppendLine("s       Create powershell script.");
             builder.AppendLine("menu    Show this menu.");
             builder.AppendLine("exit    Close the utility.");
 
