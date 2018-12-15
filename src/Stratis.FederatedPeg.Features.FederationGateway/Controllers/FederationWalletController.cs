@@ -12,6 +12,7 @@ using Stratis.Bitcoin.Features.Wallet;
 using Stratis.Bitcoin.Features.Wallet.Models;
 using Stratis.Bitcoin.Utilities;
 using Stratis.Bitcoin.Utilities.JsonErrors;
+using Stratis.Bitcoin.Utilities.ModelStateErrors;
 using Stratis.FederatedPeg.Features.FederationGateway.Interfaces;
 using Stratis.FederatedPeg.Features.FederationGateway.Models;
 using Stratis.FederatedPeg.Features.FederationGateway.Wallet;
@@ -125,7 +126,6 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.Controllers
         /// This is for demo and testing use only.
         /// </summary>
         /// <param name="model">The hash of the block from which to start syncing.</param>
-        /// <returns></returns>
         [HttpPost]
         [Route("sync")]
         public IActionResult Sync([FromBody] HashModel model)
@@ -150,7 +150,6 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.Controllers
         /// Imports the federation member's mnemonic key.
         /// </summary>
         /// <param name="request">The object containing the parameters used to recover a wallet.</param>
-        /// <returns></returns>
         [Route("import-key")]
         [HttpPost]
         public IActionResult ImportMemberKey([FromBody]ImportMemberKeyRequest request)
@@ -208,6 +207,59 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.Controllers
 
                 this.walletManager.Secret = new WalletSecret() { WalletPassword = request.Password };
                 return this.Ok();
+            }
+            catch (Exception e)
+            {
+                this.logger.LogError("Exception occurred: {0}", e.ToString());
+                return ErrorHelpers.BuildErrorResponse(HttpStatusCode.BadRequest, e.Message, e.ToString());
+            }
+        }
+
+        /// <summary>
+        /// Remove all transactions from the wallet.
+        /// </summary>
+        [Route("remove-transactions")]
+        [HttpDelete]
+        public IActionResult RemoveTransactions([FromQuery]RemoveFederationTransactionsModel request)
+        {
+            Guard.NotNull(request, nameof(request));
+
+            // Checks the request is valid.
+            if (!this.ModelState.IsValid)
+            {
+                return ModelStateErrors.BuildErrorResponse(this.ModelState);
+            }
+
+            try
+            {
+                HashSet<(uint256 transactionId, DateTimeOffset creationTime)> result;
+
+                result = this.walletManager.RemoveAllTransactions();
+
+                // If the user chose to resync the wallet after removing transactions.
+                if (result.Any() && request.ReSync)
+                {
+                    // From the list of removed transactions, check which one is the oldest and retrieve the block right before that time.
+                    DateTimeOffset earliestDate = result.Min(r => r.creationTime);
+                    ChainedHeader chainedHeader = this.chain.GetBlock(this.chain.GetHeightAtTime(earliestDate.DateTime));
+
+                    // Update the wallet and save it to the file system.
+                    FederationWallet wallet = this.walletManager.GetWallet();
+                    wallet.LastBlockSyncedHeight = chainedHeader.Height;
+                    wallet.LastBlockSyncedHash = chainedHeader.HashBlock;
+                    this.walletManager.SaveWallet();
+
+                    // Start the syncing process from the block before the earliest transaction was seen.
+                    this.walletSyncManager.SyncFromHeight(chainedHeader.Height - 1);
+                }
+
+                IEnumerable<RemovedTransactionModel> model = result.Select(r => new RemovedTransactionModel
+                {
+                    TransactionId = r.transactionId,
+                    CreationTime = r.creationTime
+                });
+
+                return this.Json(model);
             }
             catch (Exception e)
             {

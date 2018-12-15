@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
@@ -33,6 +35,7 @@ using Stratis.FederatedPeg.Features.FederationGateway.Notifications;
 using Stratis.FederatedPeg.Features.FederationGateway.SourceChain;
 using Stratis.FederatedPeg.Features.FederationGateway.TargetChain;
 using Stratis.FederatedPeg.Features.FederationGateway.Wallet;
+using Stratis.FederatedPeg.Features.FederationGateway.RestClients;
 
 [assembly: InternalsVisibleTo("Stratis.FederatedPeg.Features.FederationGateway.Tests")]
 [assembly: InternalsVisibleTo("Stratis.FederatedPeg.IntegrationTests")]
@@ -46,13 +49,9 @@ namespace Stratis.FederatedPeg.Features.FederationGateway
     {
         public const string FederationGatewayFeatureNamespace = "federationgateway";
 
-        private readonly IMaturedBlockSender maturedBlockSender;
-
         private readonly IMaturedBlocksRequester maturedBlockRequester;
 
         private readonly IMaturedBlocksProvider maturedBlocksProvider;
-
-        private readonly IBlockTipSender blockTipSender;
 
         private readonly Signals signals;
 
@@ -88,12 +87,12 @@ namespace Stratis.FederatedPeg.Features.FederationGateway
 
         private readonly IPartialTransactionRequester partialTransactionRequester;
 
+        private readonly IFederationGatewayClient federationGatewayClient;
+
         public FederationGatewayFeature(
             ILoggerFactory loggerFactory,
-            IMaturedBlockSender maturedBlockSender,
             IMaturedBlocksRequester maturedBlocksRequester,
             IMaturedBlocksProvider maturedBlocksProvider,
-            IBlockTipSender blockTipSender,
             Signals signals,
             IDepositExtractor depositExtractor,
             IWithdrawalExtractor withdrawalExtractor,
@@ -108,13 +107,12 @@ namespace Stratis.FederatedPeg.Features.FederationGateway
             ConcurrentChain chain,
             INodeStats nodeStats,
             ICrossChainTransferStore crossChainTransferStore,
-            IPartialTransactionRequester partialTransactionRequester)
+            IPartialTransactionRequester partialTransactionRequester,
+            IFederationGatewayClient federationGatewayClient)
         {
             this.loggerFactory = loggerFactory;
-            this.maturedBlockSender = maturedBlockSender;
             this.maturedBlockRequester = maturedBlocksRequester;
             this.maturedBlocksProvider = maturedBlocksProvider;
-            this.blockTipSender = blockTipSender;
             this.signals = signals;
             this.depositExtractor = depositExtractor;
             this.withdrawalExtractor = withdrawalExtractor;
@@ -129,6 +127,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway
             this.network = network;
             this.crossChainTransferStore = crossChainTransferStore;
             this.partialTransactionRequester = partialTransactionRequester;
+            this.federationGatewayClient = federationGatewayClient;
 
             // add our payload
             var payloadProvider = (PayloadProvider)this.fullNode.Services.ServiceProvider.GetService(typeof(PayloadProvider));
@@ -147,9 +146,8 @@ namespace Stratis.FederatedPeg.Features.FederationGateway
                     this.depositExtractor,
                     this.withdrawalExtractor,
                     this.withdrawalReceiver,
-                    this.maturedBlockSender,
-                    this.maturedBlocksProvider,
-                    this.blockTipSender));
+                    this.federationGatewayClient,
+                    this.maturedBlocksProvider));
 
             this.transactionSubscriberDisposable = this.signals.SubscribeForTransactions(new TransactionObserver(this.walletSyncManager));
 
@@ -159,7 +157,8 @@ namespace Stratis.FederatedPeg.Features.FederationGateway
             this.walletSyncManager.Start();
             this.crossChainTransferStore.Start();
             this.partialTransactionRequester.Start();
-            this.maturedBlockRequester.Start();
+            // TODO investiagte why are we doing this. Looks incorrect.
+            this.maturedBlockRequester.GetMoreBlocksAsync().GetAwaiter().GetResult();
 
             // Connect the node to the other federation members.
             foreach (IPEndPoint federationMemberIp in this.federationGatewaySettings.FederationNodeIpEndPoints)
@@ -192,17 +191,6 @@ namespace Stratis.FederatedPeg.Features.FederationGateway
             benchLogs.AppendLine("Fed. Wallet.Height: ".PadRight(LoggingConfiguration.ColumnLength + 1) +
                                  (federationWallet != null ? height.ToString().PadRight(8) : "No Wallet".PadRight(8)) +
                                  (federationWallet != null ? (" Fed. Wallet.Hash: ".PadRight(LoggingConfiguration.ColumnLength - 1) + hashBlock) : string.Empty));
-
-            benchLogs.AppendLine(
-                "NodeStore.Height: ".PadRight(LoggingConfiguration.ColumnLength + 1) +
-                this.crossChainTransferStore.TipHashAndHeight.Height.ToString().PadRight(9) +
-                "NodeStore.Hash: ".PadRight(LoggingConfiguration.ColumnLength - 2) +
-                this.crossChainTransferStore.TipHashAndHeight.HashBlock.ToString() + "  " +
-                "NodeStore.NextDepositHeight: ".PadRight(LoggingConfiguration.ColumnLength + 1) +
-                this.crossChainTransferStore.NextMatureDepositHeight.ToString().PadRight(8) +
-                "NodeStore.HasSuspended: ".PadRight(LoggingConfiguration.ColumnLength + 1) +
-                this.crossChainTransferStore.HasSuspended().ToString().PadRight(8)
-                );
         }
 
         private void AddComponentStats(StringBuilder benchLog)
@@ -216,6 +204,47 @@ namespace Stratis.FederatedPeg.Features.FederationGateway
                                 + " Unconfirmed balance: " + balances.UnConfirmedAmount.ToString().PadRight(LoggingConfiguration.ColumnLength)
                                 + " Federation Status: " + (this.federationWalletManager.IsFederationActive() ? "Active" : "Inactive"));
             benchLog.AppendLine();
+
+
+            benchLog.AppendLine("====== NodeStore ======");
+            this.AddBenchmarkLine(benchLog, new (string, int)[] {
+                ("Height:", LoggingConfiguration.ColumnLength),
+                (this.crossChainTransferStore.TipHashAndHeight.Height.ToString(), LoggingConfiguration.ColumnLength),
+                ("Hash:",LoggingConfiguration.ColumnLength),
+                (this.crossChainTransferStore.TipHashAndHeight.HashBlock.ToString(), 0),
+                ("NextDepositHeight:", LoggingConfiguration.ColumnLength),
+                (this.crossChainTransferStore.NextMatureDepositHeight.ToString(), LoggingConfiguration.ColumnLength),
+                ("HasSuspended:",LoggingConfiguration.ColumnLength),
+                (this.crossChainTransferStore.HasSuspended().ToString(), 0)
+            },
+            4);
+
+            AddBenchmarkLine(benchLog,
+                this.crossChainTransferStore.GetCrossChainTransferStatusCounter().SelectMany(item => new (string, int)[]{
+                    (item.Key.ToString()+":", LoggingConfiguration.ColumnLength),
+                    (item.Value.ToString(), LoggingConfiguration.ColumnLength)
+                    }).ToArray(),
+                4);
+
+            benchLog.AppendLine();
+        }
+
+        private void AddBenchmarkLine(StringBuilder benchLog, (string Value, int ValuePadding)[] items, int maxItemsPerLine = int.MaxValue)
+        {
+            if (items != null)
+            {
+                int itemsAdded = 0;
+                foreach (var item in items)
+                {
+                    if (itemsAdded++ >= maxItemsPerLine)
+                    {
+                        benchLog.AppendLine();
+                        itemsAdded = 1;
+                    }
+                    benchLog.Append(item.Value.PadRight(item.ValuePadding));
+                }
+                benchLog.AppendLine();
+            }
         }
     }
 
@@ -237,9 +266,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway
                         services.AddSingleton<IHttpClientFactory, HttpClientFactory>();
                         services.AddSingleton<IMaturedBlockReceiver, MaturedBlockReceiver>();
                         services.AddSingleton<IMaturedBlocksRequester, RestMaturedBlockRequester>();
-                        services.AddSingleton<IMaturedBlockSender, RestMaturedBlockSender>();
                         services.AddSingleton<IMaturedBlocksProvider, MaturedBlocksProvider>();
-                        services.AddSingleton<IBlockTipSender, RestBlockTipSender>();
                         services.AddSingleton<IFederationGatewaySettings, FederationGatewaySettings>();
                         services.AddSingleton<IOpReturnDataReader, OpReturnDataReader>();
                         services.AddSingleton<IDepositExtractor, DepositExtractor>();
@@ -256,6 +283,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway
                         services.AddSingleton<ILeaderReceiver, LeaderReceiver>();
                         services.AddSingleton<ISignedMultisigTransactionBroadcaster, SignedMultisigTransactionBroadcaster>();
                         services.AddSingleton<IPartialTransactionRequester, PartialTransactionRequester>();
+                        services.AddSingleton<IFederationGatewayClient, FederationGatewayClient>();
                     });
             });
             return fullNodeBuilder;

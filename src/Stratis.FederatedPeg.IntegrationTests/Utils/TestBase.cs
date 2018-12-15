@@ -1,4 +1,10 @@
-﻿namespace Stratis.FederatedPeg.IntegrationTests.Utils
+using System.Net.Http;
+using System.Threading;
+using System.Threading.Tasks;
+using Newtonsoft.Json;
+using Stratis.Bitcoin.Features.Wallet.Models;
+
+namespace Stratis.FederatedPeg.IntegrationTests.Utils
 {
     using System;
     using System.Collections.Generic;
@@ -18,6 +24,10 @@
 
     public class TestBase : IDisposable
     {
+        private const string WalletName = "mywallet";
+        private const string WalletPassword = "password";
+        private const string WalletPassphrase = "passphrase";
+
         protected readonly Network mainchainNetwork;
         protected readonly FederatedPegRegTest sidechainNetwork;
         protected readonly IList<Mnemonic> mnemonics;
@@ -75,13 +85,14 @@
             this.chains = new[] { "mainchain", "sidechain" }.ToList();
 
             this.nodeBuilder = NodeBuilder.Create(this);
-            this.mainUser = this.nodeBuilder.CreateStratisPosNode(this.mainchainNetwork, nameof(this.mainUser));
+            this.mainUser = this.nodeBuilder.CreateStratisPosNode(this.mainchainNetwork, nameof(this.mainUser)).WithWallet(); // TODO: Do we need wallets like this on every node?
             this.fedMain1 = this.nodeBuilder.CreateStratisPosNode(this.mainchainNetwork, nameof(this.fedMain1));
             this.fedMain2 = this.nodeBuilder.CreateStratisPosNode(this.mainchainNetwork, nameof(this.fedMain2));
             this.fedMain3 = this.nodeBuilder.CreateStratisPosNode(this.mainchainNetwork, nameof(this.fedMain3));
 
             this.sidechainNodeBuilder = SidechainNodeBuilder.CreateSidechainNodeBuilder(this);
             this.sideUser = this.sidechainNodeBuilder.CreateSidechainNode(this.sidechainNetwork);
+
             this.fedSide1 = this.sidechainNodeBuilder.CreateSidechainFederationNode(this.sidechainNetwork, this.sidechainNetwork.FederationKeys[0]);
             this.fedSide2 = this.sidechainNodeBuilder.CreateSidechainFederationNode(this.sidechainNetwork, this.sidechainNetwork.FederationKeys[1]);
             this.fedSide3 = this.sidechainNodeBuilder.CreateSidechainFederationNode(this.sidechainNetwork, this.sidechainNetwork.FederationKeys[2]);
@@ -190,18 +201,64 @@
             {
                 this.federationMemberIndexes.ForEach(i =>
                 {
-                    $"http://localhost:{node.ApiPort}/api".AppendPathSegment("FederationWallet/import-key").PostJsonAsync(new ImportMemberKeyRequest
+                    $"http://localhost:{node.Endpoint.Port}/api".AppendPathSegment("FederationWallet/import-key").PostJsonAsync(new ImportMemberKeyRequest
                     {
                         Mnemonic = this.mnemonics[i].ToString(),
                         Password = "password"
                     }).Result.StatusCode.Should().Be(HttpStatusCode.OK);
 
-                    $"http://localhost:{node.ApiPort}/api".AppendPathSegment("FederationWallet/enable-federation").PostJsonAsync(new EnableFederationRequest
+                    $"http://localhost:{node.Endpoint.Port}/api".AppendPathSegment("FederationWallet/enable-federation").PostJsonAsync(new EnableFederationRequest
                     {
                         Password = "password"
                     }).Result.StatusCode.Should().Be(HttpStatusCode.OK);
                 });
             });
+        }
+
+        /// <summary>
+        /// Get balance of the local wallet.
+        /// </summary>
+        protected Money GetBalance(CoreNode node)
+        {
+            IEnumerable<Bitcoin.Features.Wallet.UnspentOutputReference> spendableOutputs = node.FullNode.WalletManager().GetSpendableTransactionsInWallet(WalletName);
+            return spendableOutputs.Sum(x => x.Transaction.Amount);
+        }
+
+        /// <summary>
+        /// Helper method to build and send a deposit transaction to the federation on the main chain.
+        /// </summary>
+        protected async Task DepositToSideChain(CoreNode node, decimal amount, string sidechainDepositAddress)
+        {
+            HttpResponseMessage depositTransaction = await $"http://localhost:{node.ApiPort}/api"
+                .AppendPathSegment("wallet/build-transaction")
+                .PostJsonAsync(new
+                {
+                    walletName = WalletName,
+                    accountName = "account 0",
+                    password =  WalletPassphrase,
+                    opReturnData = sidechainDepositAddress,
+                    feeAmount = "0.01",
+                    recipients = new[]
+                    {
+                        new
+                        {
+                            destinationAddress = this.scriptAndAddresses.mainchainMultisigAddress.ToString(),
+                            amount = amount
+                        }
+                    }
+                });
+
+            string result = await depositTransaction.Content.ReadAsStringAsync();
+            WalletBuildTransactionModel walletBuildTxModel = JsonConvert.DeserializeObject<WalletBuildTransactionModel>(result);
+
+            HttpResponseMessage sendTransaction = await $"http://localhost:{node.ApiPort}/api"
+                .AppendPathSegment("wallet/send-transaction")
+                .PostJsonAsync(new
+                {
+                    hex = walletBuildTxModel.Hex
+                });
+
+            // TODO: Check transaction sent without errors
         }
 
         private void ApplyFederationIPs(CoreNode fed1, CoreNode fed2, CoreNode fed3)
@@ -220,27 +277,24 @@
             this.AppendToConfig(toNode, $"{FederationGatewaySettings.CounterChainApiPortParam}={fromNode.ApiPort.ToString()}");
         }
 
-        private void AppendToConfig(CoreNode node, string configKeyValueIten)
+        private void AppendToConfig(CoreNode node, string configKeyValueItem)
         {
             using (StreamWriter sw = File.AppendText(node.Config))
             {
-                sw.WriteLine(configKeyValueIten);
+                sw.WriteLine(configKeyValueItem);
             }
         }
 
         private void ApplyConfigParametersToNodes()
         {
-            this.AppendToConfig(this.sideUser, $"{ConfigSideChain}=1");
             this.AppendToConfig(this.fedSide1, $"{ConfigSideChain}=1");
             this.AppendToConfig(this.fedSide2, $"{ConfigSideChain}=1");
             this.AppendToConfig(this.fedSide3, $"{ConfigSideChain}=1");
 
-            this.AppendToConfig(this.sideUser, $"{FederationGatewaySettings.RedeemScriptParam}={this.scriptAndAddresses.payToMultiSig.ToString()}");
             this.AppendToConfig(this.fedSide1, $"{FederationGatewaySettings.RedeemScriptParam}={this.scriptAndAddresses.payToMultiSig.ToString()}");
             this.AppendToConfig(this.fedSide2, $"{FederationGatewaySettings.RedeemScriptParam}={this.scriptAndAddresses.payToMultiSig.ToString()}");
             this.AppendToConfig(this.fedSide3, $"{FederationGatewaySettings.RedeemScriptParam}={this.scriptAndAddresses.payToMultiSig.ToString()}");
 
-            this.AppendToConfig(this.sideUser, $"{FederationGatewaySettings.PublicKeyParam}={this.pubKeysByMnemonic[this.mnemonics[0]].ToString()}");
             this.AppendToConfig(this.fedSide1, $"{FederationGatewaySettings.PublicKeyParam}={this.pubKeysByMnemonic[this.mnemonics[0]].ToString()}");
             this.AppendToConfig(this.fedSide2, $"{FederationGatewaySettings.PublicKeyParam}={this.pubKeysByMnemonic[this.mnemonics[1]].ToString()}");
             this.AppendToConfig(this.fedSide3, $"{FederationGatewaySettings.PublicKeyParam}={this.pubKeysByMnemonic[this.mnemonics[2]].ToString()}");
@@ -252,9 +306,16 @@
             this.ApplyCounterChainAPIPort(this.fedMain2, this.fedSide2);
             this.ApplyCounterChainAPIPort(this.fedMain3, this.fedSide3);
 
-            this.MainAndSideChainNodeMap.ToList().ForEach(n =>
+            this.ApplyAgentPrefix(this.MainAndSideChainNodeMap);
+        }
+
+        private void ApplyAgentPrefix(IReadOnlyDictionary<string, NodeChain> nodes)
+        {
+            nodes.ToList().ForEach(n =>
             {
-                this.AppendToConfig(n.Value.Node, $"{ConfigAgentPrefix}={n.Key}");
+                string text = File.ReadAllText(n.Value.Node.Config);
+                text = text.Replace($"{ConfigAgentPrefix}=node{n.Value.Node.Endpoint.Port}", $"{ConfigAgentPrefix}={n.Key}");
+                File.WriteAllText(n.Value.Node.Config, text);
             });
         }
 
