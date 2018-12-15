@@ -913,6 +913,9 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.Wallet
         /// <inheritdoc />
         public Transaction SignTransaction(Transaction externalTransaction, Func<Transaction, IWithdrawal, bool> isValid, Key key)
         {
+            // TODO: Check that the transaction is spending exactly the expected UTXO(s).
+            // TODO: Check that the transaction is serving the next expected UTXO(s).
+
             Guard.NotNull(externalTransaction, nameof(externalTransaction));
             Guard.NotNull(isValid, nameof(isValid));
 

@@ -85,7 +85,6 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
                 return null;
             }
 
-            // Check that the transactions are spending exactly all the oldest UTXOs.
             Transaction transaction = this.network.CreateTransaction(transactionHex);
 
             transactionHex = SignTransaction(transaction, key)?.ToHex(this.network);
