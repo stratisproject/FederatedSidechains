@@ -911,41 +911,61 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.Wallet
         }
 
         /// <inheritdoc />
-        public Transaction SignTransaction(Transaction transaction, Func<Transaction, IWithdrawal, bool> isValid)
+        public Transaction SignTransaction(Transaction externalTransaction, Func<Transaction, IWithdrawal, bool> isValid)
         {
-            Guard.NotNull(transaction, nameof(transaction));
+            Guard.NotNull(externalTransaction, nameof(externalTransaction));
             Guard.NotNull(isValid, nameof(isValid));
 
-            this.logger.LogTrace("({0}:'{1}')", nameof(transaction), transaction.ToHex(this.network));
+            this.logger.LogTrace("({0}:'{1}')", nameof(externalTransaction), externalTransaction.ToHex(this.network));
 
-            IWithdrawal withdrawal = this.withdrawalExtractor.ExtractWithdrawalFromTransaction(transaction, 0, 0);
+            FederationWallet wallet = this.Wallet;
+            if (wallet == null || this.Secret == null)
+            {
+                this.logger.LogTrace("(-)[FEDERATION_INACTIVE]");
+                return null;
+            }
+
+            Key key = wallet.MultiSigAddress.GetPrivateKey(wallet.EncryptedSeed, this.Secret.WalletPassword, this.network);
+            if (key.PubKey.ToHex() != this.federationGatewaySettings.PublicKey)
+            {
+                this.logger.LogTrace("(-)[FEDERATION_KEY_INVALID]");
+                return null;
+            }
+
+            IWithdrawal withdrawal = this.withdrawalExtractor.ExtractWithdrawalFromTransaction(externalTransaction, 0, 0);
             if (withdrawal == null)
             {
                 this.logger.LogTrace("(-)[NOT_WITHDRAWAL]");
                 return null;
             }
 
-            if (!isValid(transaction, withdrawal))
+            // Checks that the deposit id in the transaction is associated with a valid transfer.
+            if (!isValid(externalTransaction, withdrawal))
             {
                 this.logger.LogTrace("(-)[INVALID_WITHDRAWAL]");
                 return null;
             }
 
             var coins = new List<Coin>();
-            if (!TransactionHasValidUTXOs(transaction, coins))
+            foreach (TxIn input in externalTransaction.Inputs)
             {
-                this.logger.LogTrace("(-)[INVALID_UTXOS]");
-                return null;
+                TransactionData transactionData = this.outpointLookup[input.PrevOut];
+                if (transactionData == null)
+                {
+                    this.logger.LogTrace("(-)[INVALID_UTXOS]");
+                    return null;
+                }
+                coins.Add(new Coin(transactionData.Id, (uint)transactionData.Index, transactionData.Amount, transactionData.ScriptPubKey));
             }
-
-            var builder = new TransactionBuilder(this.network);
 
             Transaction signedTransaction = null;
             try
             {
+                var builder = new TransactionBuilder(this.network);
                 signedTransaction = builder
+                    .AddKeys(key)
                     .AddCoins(coins)
-                    .SignTransactionInPlace(transaction);
+                    .SignTransactionInPlace(externalTransaction);
             }
             catch (Exception ex)
             {
@@ -954,7 +974,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.Wallet
                 return null;
             }
 
-            this.logger.LogTrace("(-):{0}", signedTransaction.ToHex(this.network));
+            this.logger.LogTrace("(-):{0}", signedTransaction?.ToHex(this.network));
 
             return signedTransaction;
         }
