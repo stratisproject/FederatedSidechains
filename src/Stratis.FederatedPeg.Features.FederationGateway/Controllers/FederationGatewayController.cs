@@ -18,7 +18,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.Controllers
         public const string PushMaturedBlocks = "push_matured_blocks";
         public const string PushCurrentBlockTip = "push_current_block_tip";
         public const string GetMaturedBlockDeposits = "get_matured_block_deposits";
-        public const string AuthorizeWithdrawals = "authorize_withdrwals";
+        public const string AuthorizeWithdrawals = "authorize_withdrawals";
 
         // TODO commented out since those constants are unused. Remove them later or start using.
         //public const string CreateSessionOnCounterChain = "create-session-oncounterchain";
