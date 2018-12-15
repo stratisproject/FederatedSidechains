@@ -10,7 +10,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.Models
     /// </summary>
     public class AuthorizeWithdrawalsModel : RequestModel, IAuthorizeWithdrawalsModel
     {
-        [Required(ErrorMessage = "An array of transactions is required")]
-        public string[] TransactionHex { get; set; }
+        [Required(ErrorMessage = "The transaction to authorize")]
+        public string TransactionHex { get; set; }
     }
 }

@@ -92,7 +92,7 @@ namespace Stratis.FederatedPeg.Tests
                         this.network,
                         this.loggerFactory);
 
-                    string signedTransactionHex = signatureProvider.SignTransactions(new[] { transaction2.ToHex(this.network) }).FirstOrDefault();
+                    string signedTransactionHex = signatureProvider.SignTransaction(transaction2.ToHex(this.network));
                     Assert.NotNull(signedTransactionHex);
 
                     // The second instance parses the hex.

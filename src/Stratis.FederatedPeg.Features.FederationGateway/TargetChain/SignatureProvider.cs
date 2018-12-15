@@ -65,7 +65,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
         }
 
         /// <inheritdoc />
-        public string[] SignTransactions(string[] transactionHex)
+        public string SignTransaction(string transactionHex)
         {
             Guard.NotNull(transactionHex, nameof(transactionHex));
 
@@ -85,11 +85,10 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
                 return null;
             }
 
-            for (int i = 0; i < transactionHex.Length; i++)
-            {
-                Transaction transaction = this.network.CreateTransaction(transactionHex[i]);
-                transactionHex[i] = SignTransaction(transaction, key)?.ToHex(this.network);
-            }
+            // Check that the transactions are spending exactly all the oldest UTXOs.
+            Transaction transaction = this.network.CreateTransaction(transactionHex);
+
+            transactionHex = SignTransaction(transaction, key)?.ToHex(this.network);
 
             this.logger.LogTrace("(-):{0}", transactionHex);
 

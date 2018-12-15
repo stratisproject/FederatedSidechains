@@ -2,6 +2,6 @@
 {
     public interface IAuthorizeWithdrawalsModel
     {
-        string[] TransactionHex { get; }
+        string TransactionHex { get; }
     }
 }
