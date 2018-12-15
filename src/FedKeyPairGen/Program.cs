@@ -12,10 +12,11 @@ using Stratis.Sidechains.Networks;
 
 namespace FederationSetup
 {
-    // The Stratis Federation set-up is a console app that can be sent to Federation Members
-    // in order to set-up the network and generate their Private (and Public) keys without a need to run a Node at this stage.
-    // See the "Use Case - Generate Federation Member Key Pairs" located in the Requirements folder in the
-    // project repository.
+    /// <summary>
+    /// The Stratis Federation set-up is a console app that can be sent to Federation Members
+    /// in order to set-up the network and generate their Private (and Public) keys without a need to run a Node at this stage.
+    /// See the "Use Case - Generate Federation Member Key Pairs" located in the Requirements folder in the project repository.
+    /// </summary>
     class Program
     {
         private const string SwitchMineGenesisBlock = "g";
@@ -28,15 +29,11 @@ namespace FederationSetup
 
         static void Main(string[] args)
         {
-            Console.SetIn(new StreamReader(Console.OpenStandardInput(),
-                Console.InputEncoding,
-                false,
-                bufferSize: 1024));
+            Console.SetIn(new StreamReader(Console.OpenStandardInput(), Console.InputEncoding, false, bufferSize: 1024));
 
             // Start with the banner and the help message.
             FederationSetup.OutputHeader();
             FederationSetup.OutputMenu();
-            
 
             while (true)
             {
@@ -44,7 +41,7 @@ namespace FederationSetup
                 {
                     Console.Write("Your choice: ");
                     string userInput = Console.ReadLine().Trim();
-                    
+
                     string command = null;
                     if (!string.IsNullOrEmpty(userInput))
                     {
@@ -56,7 +53,7 @@ namespace FederationSetup
                         args = null;
                         command = null;
                     }
-                    
+
                     Console.WriteLine();
 
                     if (command == SwitchExit) return;
@@ -79,7 +76,7 @@ namespace FederationSetup
 
                         if (text.Substring(0, 1) != "\"" || text.Substring(text.Length - 1, 1) != "\"")
                             throw new ArgumentException("The -text=\"<text>\" argument should have double-quotes.");
-                        
+
                         text = text.Substring(1, text.Length - 2);
 
                         if (string.IsNullOrEmpty(text))
