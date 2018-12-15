@@ -62,9 +62,13 @@ namespace Stratis.FederatedPeg.Tests
         /// <summary>
         /// Initializes the cross-chain transfer tests.
         /// </summary>
-        public CrossChainTestBase()
+        public CrossChainTestBase() : this(FederatedPegNetwork.NetworksSelector.Regtest())
         {
-            this.network = FederatedPegNetwork.NetworksSelector.Regtest();
+        }
+
+        public CrossChainTestBase(Network network)
+        {
+            this.network = network;
             NetworkRegistration.Register(this.network);
 
             var serializer = new DBreezeSerializer();
@@ -222,9 +226,6 @@ namespace Stratis.FederatedPeg.Tests
         /// <returns>The last chained header.</returns>
         protected ChainedHeader AppendBlock(params Transaction[] transactions)
         {
-            ChainedHeader last = null;
-            uint nonce = RandomUtils.GetUInt32();
-
             Block block = this.network.CreateBlock();
 
             // Create coinbase.
@@ -238,9 +239,16 @@ namespace Stratis.FederatedPeg.Tests
 
             block.UpdateMerkleRoot();
             block.Header.HashPrevBlock = this.chain.Tip.HashBlock;
-            block.Header.Nonce = nonce;
-            if (!this.chain.TrySetTip(block.Header, out last))
+            block.Header.Nonce = RandomUtils.GetUInt32();
+
+            return AppendBlock(block);
+        }
+
+        protected ChainedHeader AppendBlock(Block block)
+        {
+            if (!this.chain.TrySetTip(block.Header, out ChainedHeader last))
                 throw new InvalidOperationException("Previous not existing");
+
             this.blockDict[block.GetHash()] = block;
 
             this.federationWalletSyncManager.ProcessBlock(block);

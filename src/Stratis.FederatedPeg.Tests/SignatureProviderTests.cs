@@ -3,6 +3,7 @@ using System.Reactive.Linq;
 using NBitcoin;
 using NBitcoin.Policy;
 using Stratis.Bitcoin.Configuration;
+using Stratis.Bitcoin.Networks;
 using Stratis.FederatedPeg.Features.FederationGateway.Interfaces;
 using Stratis.FederatedPeg.Features.FederationGateway.Models;
 using Stratis.FederatedPeg.Features.FederationGateway.SourceChain;
@@ -13,7 +14,7 @@ namespace Stratis.FederatedPeg.Tests
 {
     public class SignatureProviderTests : CrossChainTestBase
     {
-        public SignatureProviderTests() : base()
+        public SignatureProviderTests() : base(Networks.Stratis.Testnet())
         {
         }
 
@@ -24,7 +25,7 @@ namespace Stratis.FederatedPeg.Tests
 
             this.Init(dataFolder);
             this.AddFunding();
-            this.AppendBlocks(5);
+            this.AppendBlocks(this.federationGatewaySettings.MinCoinMaturity);
 
             using (ICrossChainTransferStore crossChainTransferStore = this.CreateStore())
             {
@@ -63,8 +64,14 @@ namespace Stratis.FederatedPeg.Tests
                 newTest.federationKeys = this.federationKeys;
                 newTest.SetExtendedKey(1);
                 newTest.Init(dataFolder2);
-                newTest.AddFunding();
-                newTest.AppendBlocks(3);
+
+                // Clone chain
+                for (int i = 1; i <= this.chain.Height; i++)
+                {
+                    ChainedHeader header = this.chain.GetBlock(i);
+                    Block block = this.blockDict[header.HashBlock];
+                    newTest.AppendBlock(block);
+                }
 
                 using (ICrossChainTransferStore crossChainTransferStore2 = newTest.CreateStore())
                 {
