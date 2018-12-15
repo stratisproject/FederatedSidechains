@@ -37,5 +37,10 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.Interfaces
         /// </summary>
         [JsonConverter(typeof(UInt256JsonConverter))]
         uint256 BlockHash { get; }
+
+        /// <summary>
+        /// The timestamp of the block where the source deposit has been persisted.
+        /// </summary>
+        uint BlockTime { get; }
     }
 }

@@ -6,7 +6,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
 {
     public class Withdrawal : IWithdrawal
     {
-        public Withdrawal(uint256 depositId, uint256 id, Money amount, string targetAddress, int blockNumber, uint256 blockHash)
+        public Withdrawal(uint256 depositId, uint256 id, Money amount, string targetAddress, int blockNumber, uint256 blockHash, uint blockTime)
         {
             this.DepositId = depositId;
             this.Id = id;
@@ -14,6 +14,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
             this.TargetAddress = targetAddress;
             this.BlockNumber = blockNumber;
             this.BlockHash = blockHash;
+            this.BlockTime = blockTime;
         }
 
         /// <inheritdoc />
@@ -33,6 +34,9 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
 
         /// <inheritdoc />
         public uint256 BlockHash { get; }
+
+        /// <inheritdoc />
+        public uint BlockTime { get; }
 
         public override string ToString()
         {

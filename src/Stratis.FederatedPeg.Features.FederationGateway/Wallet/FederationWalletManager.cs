@@ -402,7 +402,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.Wallet
             lock (this.lockObject)
             {
                 // Extract the withdrawal from the transaction (if any).
-                IWithdrawal withdrawal = this.withdrawalExtractor.ExtractWithdrawalFromTransaction(transaction, block?.GetHash(), blockHeight ?? 0);
+                IWithdrawal withdrawal = this.withdrawalExtractor.ExtractWithdrawalFromTransaction(transaction, block?.GetHash(), blockHeight ?? 0, block.Header.Time);
                 if (withdrawal != null)
                 {
                     // Exit if already present and included in a block.
@@ -821,7 +821,10 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.Wallet
                 foreach (TransactionData transactionData in this.Wallet.MultiSigAddress.Transactions)
                 {
                     Transaction walletTran = transactionData.GetFullTransaction(this.network);
-                    IWithdrawal withdrawal = this.withdrawalExtractor.ExtractWithdrawalFromTransaction(walletTran, transactionData.BlockHash, transactionData.BlockHeight ?? 0);
+
+                    uint blockTime = this.chain.GetBlock(transactionData.BlockHash).Header.Time;
+
+                    IWithdrawal withdrawal = this.withdrawalExtractor.ExtractWithdrawalFromTransaction(walletTran, transactionData.BlockHash, transactionData.BlockHeight ?? 0, blockTime);
                     if (withdrawal == null)
                         continue;
 

@@ -208,7 +208,7 @@ namespace Stratis.FederatedPeg.Tests
 
             HashHeightPair hashHeightPair = TestingValues.GetHashHeightPair();
             var deposits = new MaturedBlockDepositsModel(new MaturedBlockModel()
-                { BlockHash = hashHeightPair.Hash, BlockHeight = hashHeightPair.Height },
+                { BlockHash = hashHeightPair.Hash, BlockHeight = hashHeightPair.Height, BlockTime = 0 },
                 new[] { new Deposit(0, Money.COIN * 10000, "TTMM7qGGxD5c77pJ8puBg7sTLAm2zZNBwK",
                     hashHeightPair.Height, hashHeightPair.Hash) });
 

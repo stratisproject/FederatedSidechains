@@ -8,7 +8,7 @@ using Stratis.FederatedPeg.Features.FederationGateway.Interfaces;
 namespace Stratis.FederatedPeg.Features.FederationGateway.Models
 {
     /// <summary>
-    /// An instance of this class represents a particular block hash and associated height on the source chain.
+    /// An instance of this class represents a particular block hash and associated height & timestamp on the source chain.
     /// </summary>
     public class MaturedBlockModel : RequestModel, IMaturedBlock
     {
@@ -18,5 +18,8 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.Models
 
         [Required(ErrorMessage = "A block height is required")]
         public int BlockHeight { get; set; }
+
+        [Required(ErrorMessage = "A block time is required")]
+        public uint BlockTime { get; set; }
     }
 }

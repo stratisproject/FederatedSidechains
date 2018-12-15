@@ -35,7 +35,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
             var withdrawals = new List<IWithdrawal>();
             foreach (Transaction transaction in block.Transactions)
             {
-                IWithdrawal withdrawal = ExtractWithdrawalFromTransaction(transaction, block.GetHash(), blockHeight);
+                IWithdrawal withdrawal = ExtractWithdrawalFromTransaction(transaction, block.GetHash(), blockHeight, block.Header.Time);
                 if (withdrawal != null) withdrawals.Add(withdrawal);
             }
 
@@ -44,7 +44,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
             return withdrawalsFromBlock;
         }
 
-        public IWithdrawal ExtractWithdrawalFromTransaction(Transaction transaction, uint256 blockHash, int blockHeight)
+        public IWithdrawal ExtractWithdrawalFromTransaction(Transaction transaction, uint256 blockHash, int blockHeight, uint blockTime)
         {
             if (transaction.Outputs.Count(this.IsTargetAddressCandidate) != 1) return null;
             if (!IsOnlyFromMultisig(transaction)) return null;
@@ -64,7 +64,9 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
                 targetAddressOutput.Value,
                 targetAddressOutput.ScriptPubKey.GetScriptAddress(this.network).ToString(),
                 blockHeight,
-                blockHash);
+                blockHash,
+                blockTime);
+
             return withdrawal;
         }
 

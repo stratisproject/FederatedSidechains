@@ -48,7 +48,8 @@ namespace Stratis.FederatedPeg.Tests
             deposits.Add(new[] { new MaturedBlockDepositsModel(new MaturedBlockModel()
             {
                 BlockHash = 0,
-                BlockHeight = 0
+                BlockHeight = 0,
+                BlockTime = 0
             }, TestingValues.GetMaturedBlockDeposits(depositCount, new HashHeightPair(0, 0)).Deposits)});
 
             IObservable<IMaturedBlockDeposits[]> maturedBlockStream = deposits.ToObservable();
@@ -76,7 +77,8 @@ namespace Stratis.FederatedPeg.Tests
             deposits.Add(new[] { new MaturedBlockDepositsModel(new MaturedBlockModel()
             {
                 BlockHash = 0,
-                BlockHeight = 0
+                BlockHeight = 0,
+                BlockTime = 0
             }, TestingValues.GetMaturedBlockDeposits(depositCount, new HashHeightPair(0, 0)).Deposits)});
 
             IObservable<IMaturedBlockDeposits[]> maturedBlockStream = deposits.ToObservable();
@@ -105,7 +107,8 @@ namespace Stratis.FederatedPeg.Tests
                 deposits.Add(new[] { new MaturedBlockDepositsModel(new MaturedBlockModel()
                 {
                     BlockHash = new uint256((ulong)i),
-                    BlockHeight = i
+                    BlockHeight = i,
+                    BlockTime = (uint)i
                 }, TestingValues.GetMaturedBlockDeposits(i, new HashHeightPair((uint)i, i)).Deposits)});
 
             IObservable<IMaturedBlockDeposits[]> maturedBlockStream = deposits.ToObservable();

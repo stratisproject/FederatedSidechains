@@ -333,7 +333,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
             }
         }
 
-        private Transaction BuildDeterministicTransaction(uint256 depositId, Recipient recipient)
+        private Transaction BuildDeterministicTransaction(uint256 depositId, Recipient recipient, uint timeStamp)
         {
             try
             {
@@ -350,7 +350,8 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
                     Shuffle = false,
                     IgnoreVerify = true,
                     WalletPassword = walletPassword,
-                    Sign = (walletPassword ?? "") != ""
+                    Sign = (walletPassword ?? "") != "",
+                    Time = timeStamp
                 };
 
                 // Build the transaction.
@@ -486,7 +487,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
                                     ScriptPubKey = scriptPubKey
                                 };
 
-                                transaction = BuildDeterministicTransaction(deposit.Id, recipient);
+                                transaction = BuildDeterministicTransaction(deposit.Id, recipient, deposit.BlockTime);
 
                                 if (transaction != null)
                                 {

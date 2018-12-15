@@ -44,7 +44,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.SourceChain
 
             foreach (Transaction transaction in block.Transactions)
             {
-                IDeposit deposit = ExtractDepositFromTransaction(transaction, blockHeight, blockHash);
+                IDeposit deposit = ExtractDepositFromTransaction(transaction, blockHeight, blockHash, block.Header.Time);
                 if (deposit != null)
                 {
                     deposits.Add(deposit);
@@ -55,7 +55,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.SourceChain
         }
 
         /// <inheritdoc />
-        public IDeposit ExtractDepositFromTransaction(Transaction transaction, int blockHeight, uint256 blockHash)
+        public IDeposit ExtractDepositFromTransaction(Transaction transaction, int blockHeight, uint256 blockHash, uint blockTime)
         {
             List<TxOut> depositsToMultisig = transaction.Outputs.Where(output =>
                 output.ScriptPubKey == this.depositScript
@@ -70,7 +70,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.SourceChain
             this.logger.LogInformation("Processing received transaction with address: {0}. Transaction hash: {1}.",
                 targetAddress, transaction.GetHash());
 
-            return new Deposit(transaction.GetHash(), depositsToMultisig.Sum(o => o.Value), targetAddress, blockHeight, blockHash);
+            return new Deposit(transaction.GetHash(), depositsToMultisig.Sum(o => o.Value), targetAddress, blockHeight, blockHash, blockTime);
         }
 
         public IMaturedBlockDeposits ExtractBlockDeposits(ChainedHeader newlyMaturedBlock)
@@ -80,7 +80,8 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.SourceChain
             var maturedBlock = new MaturedBlockModel()
             {
                 BlockHash = newlyMaturedBlock.HashBlock,
-                BlockHeight = newlyMaturedBlock.Height
+                BlockHeight = newlyMaturedBlock.Height,
+                BlockTime = newlyMaturedBlock.Header.Time
             };
 
             IReadOnlyList<IDeposit> deposits =

@@ -102,6 +102,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.Wallet
 
             context.TransactionBuilder = new TransactionBuilder(this.network);
 
+            this.SetTimeStamp(context);
             this.AddRecipients(context);
             this.AddOpReturnOutput(context);
             this.AddCoins(context);
@@ -316,6 +317,13 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.Wallet
             Script opReturnScript = TxNullDataTemplate.Instance.GenerateScriptPubKey(context.OpReturnData);
             context.TransactionBuilder.Send(opReturnScript, Money.Zero);
         }
+
+        private void SetTimeStamp(TransactionBuildContext context)
+        {
+            if (context.Time == null) return;
+
+            context.TransactionBuilder.SetTimeStamp(context.Time);
+        }
     }
 
     public class TransactionBuildContext
@@ -454,6 +462,11 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.Wallet
         /// If true, do not perform verification on the built transaction (e.g. it is partially signed)
         /// </summary>
         public bool IgnoreVerify { get; set; }
+
+        /// <summary>
+        /// Override the timestamp of the transaction, normally it defaults to the current time.
+        /// </summary>
+        public uint Time { get; set; }
     }
 
     /// <summary>
