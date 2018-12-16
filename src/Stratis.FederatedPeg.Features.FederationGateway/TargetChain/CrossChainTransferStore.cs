@@ -337,7 +337,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
         {
             try
             {
-                this.logger.LogInformation("BuildDeterministicTransaction depositId(opReturnData)={0} Recipient.ScriptPubKey={1} recipient.Amount={2}", depositId, recipient.ScriptPubKey, recipient.Amount);
+                this.logger.LogInformation("BuildDeterministicTransaction depositId(opReturnData)={0} recipient.ScriptPubKey={1} recipient.Amount={2}", depositId, recipient.ScriptPubKey, recipient.Amount);
 
                 // Build the multisig transaction template.
                 uint256 opReturnData = depositId;
