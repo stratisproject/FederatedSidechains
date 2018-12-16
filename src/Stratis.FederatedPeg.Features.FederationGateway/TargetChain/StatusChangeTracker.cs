@@ -39,7 +39,8 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
         /// <returns>A list of unique block hashes for the transfers being tracked.</returns>
         public uint256[] UniqueBlockHashes()
         {
-            return this.Keys.Where(k => k.BlockHash != null).Select(k => k.BlockHash).Distinct().ToArray();
+            // This tests for transfers containing block hashes and checks that this is not a deletion.
+            return this.Keys.Where(k => k.BlockHash != null && (k.DepositHeight != null || k.DbStatus == null)).Select(k => k.BlockHash).Distinct().ToArray();
         }
     }
 }
