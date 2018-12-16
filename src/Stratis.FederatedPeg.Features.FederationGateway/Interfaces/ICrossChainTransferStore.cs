@@ -6,11 +6,8 @@ using NBitcoin;
 namespace Stratis.FederatedPeg.Features.FederationGateway.Interfaces
 {
     /// <summary>Interface for interacting with the cross-chain transfer database.</summary>
-    public interface ICrossChainTransferStore : IDisposable
+    public interface ICrossChainTransferStore : IDisposable, ICrossChainDB, ICrossChainLookups
     {
-        /// <summary>Initializes the cross-chain-transfer store.</summary>
-        void Initialize();
-
         /// <summary>Starts the cross-chain-transfer store.</summary>
         void Start();
 
