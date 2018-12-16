@@ -51,6 +51,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.Interfaces
         int? BlockHeight { get; }
 
         CrossChainTransferStatus Status { get; }
+        CrossChainTransferStatus? DbStatus { get; }
 
         /// <summary>
         /// Depending on the status some fields can't be null.
@@ -78,5 +79,11 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.Interfaces
         /// </summary>
         /// <param name="partialTransaction">Partial transaction.</param>
         void SetPartialTransaction(Transaction partialTransaction);
+
+        /// <summary>
+        /// Used by the store to note down the status as recorded in the database.
+        /// This allows the store to update its internal deposit-by-status lookup.
+        /// </summary>
+        void RecordDbStatus();
     }
 }

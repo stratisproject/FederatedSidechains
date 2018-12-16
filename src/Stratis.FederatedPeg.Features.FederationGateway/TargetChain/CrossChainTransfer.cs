@@ -42,6 +42,10 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
         public CrossChainTransferStatus Status => this.status;
         private CrossChainTransferStatus status;
 
+        /// <inheritdoc />
+        public CrossChainTransferStatus? DbStatus => this.dbStatus;
+        private CrossChainTransferStatus? dbStatus;
+
         /// <summary>
         /// Parameter-less constructor for (de)serialization.
         /// </summary>
@@ -187,6 +191,12 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
         }
 
         /// <inheritdoc />
+        public void RecordDbStatus()
+        {
+            this.dbStatus = this.status;
+        }
+
+        /// <inheritdoc />
         public void CombineSignatures(TransactionBuilder builder, Transaction[] partialTransactions)
         {
             Guard.Assert(this.status == CrossChainTransferStatus.Partial);
@@ -206,6 +216,14 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
         public void SetPartialTransaction(Transaction partialTransaction)
         {
             this.partialTransaction = partialTransaction;
+        }
+
+        public override string ToString()
+        {
+            return string.Format("DepositId: '{0}', DepositHeight: {1}, Status: '{2}', TransactionHash: '{3}'" +
+                this.depositTransactionId, this.depositHeight, this.status, this.partialTransaction?.GetHash()) +
+                ((this.status != CrossChainTransferStatus.SeenInBlock) ? "" :
+                    string.Format(", BlockHeight: {0}, BlockHash: '{1}'", this.blockHeight, this.blockHash));
         }
     }
 }
