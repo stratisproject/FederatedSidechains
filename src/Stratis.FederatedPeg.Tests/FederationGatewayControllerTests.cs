@@ -8,8 +8,10 @@ using Microsoft.Extensions.Logging;
 using NBitcoin;
 using NBitcoin.Protocol;
 using NSubstitute;
+using Stratis.Bitcoin.Consensus;
 using Stratis.Bitcoin.Configuration;
 using Stratis.Bitcoin.Features.BlockStore;
+using Stratis.Bitcoin.Primitives;
 using Stratis.Bitcoin.Features.PoA;
 using Stratis.Bitcoin.Utilities;
 using Stratis.Bitcoin.Utilities.JsonErrors;
@@ -18,7 +20,6 @@ using Stratis.FederatedPeg.Features.FederationGateway.Controllers;
 using Stratis.FederatedPeg.Features.FederationGateway.Interfaces;
 using Stratis.FederatedPeg.Features.FederationGateway.Models;
 using Stratis.FederatedPeg.Features.FederationGateway.SourceChain;
-using Stratis.FederatedPeg.Features.FederationGateway.TargetChain;
 using Stratis.FederatedPeg.Tests.Utils;
 using Stratis.Sidechains.Networks;
 using Xunit;
@@ -43,6 +44,8 @@ namespace Stratis.FederatedPeg.Tests
 
         private readonly ILeaderReceiver leaderReceiver;
 
+        private readonly IConsensusManager consensusManager;
+
         private readonly IFederationGatewaySettings federationGatewaySettings;
 
         private readonly FederationManager federationManager;
@@ -60,6 +63,8 @@ namespace Stratis.FederatedPeg.Tests
             this.leaderProvider = Substitute.For<ILeaderProvider>();
             this.depositExtractor = Substitute.For<IDepositExtractor>();
             this.leaderReceiver = Substitute.For<ILeaderReceiver>();
+            this.consensusManager = Substitute.For<IConsensusManager>();
+
             this.federationGatewaySettings = Substitute.For<IFederationGatewaySettings>();
             this.federationWalletManager = Substitute.For<IFederationWalletManager>();
             this.federationManager = new FederationManager(NodeSettings.Default(this.network), this.network, this.loggerFactory);
@@ -102,7 +107,8 @@ namespace Stratis.FederatedPeg.Tests
                 this.loggerFactory,
                 this.chain,
                 this.depositExtractor,
-                blockRepository);
+                blockRepository,
+                this.consensusManager);
         }
 
         [Fact]
@@ -184,8 +190,8 @@ namespace Stratis.FederatedPeg.Tests
             this.depositExtractor.MinimumDepositConfirmations.Returns((uint)minConfirmations);
 
             int depositExtractorCallCount = 0;
-            this.depositExtractor.ExtractBlockDeposits(Arg.Any<ChainedHeader>()).Returns(new MaturedBlockDepositsModel(null, null));
-            this.depositExtractor.When(x => x.ExtractBlockDeposits(Arg.Any<ChainedHeader>())).Do(info =>
+            this.depositExtractor.ExtractBlockDeposits(Arg.Any<ChainedHeaderBlock>()).Returns(new MaturedBlockDepositsModel(null, null));
+            this.depositExtractor.When(x => x.ExtractBlockDeposits(Arg.Any<ChainedHeaderBlock>())).Do(info =>
             {
                 depositExtractorCallCount++;
             });
