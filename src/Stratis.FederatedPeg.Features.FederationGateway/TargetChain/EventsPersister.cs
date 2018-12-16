@@ -35,7 +35,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
         {
             lock (this.lockObj)
             {
-                foreach (IMaturedBlockDeposits maturedBlockDepositse in maturedBlockDeposits)
+                foreach (IMaturedBlockDeposits maturedBlockDeposit in maturedBlockDeposits)
                 {
                     foreach (IDeposit deposit in maturedBlockDeposit.Deposits)
                     {
