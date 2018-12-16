@@ -255,7 +255,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
                     if (walletTran.GetHash() == partialTransfer.PartialTransaction.GetHash())
                         continue;
 
-                    if (CrossChainTransfer.TemplatesMatch(walletTran, partialTransfer.PartialTransaction))
+                    if (CrossChainTransfer.TemplatesMatch(this.network, walletTran, partialTransfer.PartialTransaction))
                     {
                         partialTransfer.SetPartialTransaction(walletTran);
 
