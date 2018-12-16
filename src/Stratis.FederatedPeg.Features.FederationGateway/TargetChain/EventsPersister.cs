@@ -37,7 +37,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
             {
                 foreach (IMaturedBlockDeposits maturedBlockDepositse in maturedBlockDeposits)
                 {
-                    foreach (IDeposit deposit in maturedBlockDepositse.Deposits)
+                    foreach (IDeposit deposit in maturedBlockDeposit.Deposits)
                     {
                         this.logger.LogDebug("New deposit received BlockNumber={0} TargetAddress={1} deposit-id={2} Amount={3} .", deposit.BlockNumber, deposit.TargetAddress, deposit.Id, deposit.Amount);
                     }
