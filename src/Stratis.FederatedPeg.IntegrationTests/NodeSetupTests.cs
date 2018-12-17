@@ -36,15 +36,6 @@ namespace Stratis.FederatedPeg.IntegrationTests
         }
 
         [Fact]
-        public void StartWholeNetwork()
-        {
-            using (SidechainTestContext context = new SidechainTestContext())
-            {
-                context.StartAndConnectNodes();
-            }
-        }
-
-        [Fact]
         public void EnableNodeWallets()
         {
             using (SidechainTestContext context = new SidechainTestContext())
