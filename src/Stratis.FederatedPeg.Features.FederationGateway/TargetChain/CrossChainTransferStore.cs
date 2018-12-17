@@ -401,7 +401,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
         public Task<bool> RecordLatestMatureDepositsAsync(IMaturedBlockDeposits[] maturedBlockDeposits)
         {
             Guard.NotNull(maturedBlockDeposits, nameof(maturedBlockDeposits));
-            Guard.Assert(!maturedBlockDeposits.Any(m => m.Deposits.Any(d => d.BlockNumber != m.Block.BlockHeight || d.BlockHash != m.Block.BlockHash)));
+            Guard.Assert(!maturedBlockDeposits.Any(m => m.Deposits.Any(d => d.BlockNumber != m.BlockInfo.BlockHeight || d.BlockHash != m.BlockInfo.BlockHash)));
 
             return Task.Run(() =>
             {
@@ -411,16 +411,16 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
                     int originalDepositHeight = this.NextMatureDepositHeight;
 
                     maturedBlockDeposits = maturedBlockDeposits
-                        .OrderBy(a => a.Block.BlockHeight)
-                        .SkipWhile(m => m.Block.BlockHeight < this.NextMatureDepositHeight).ToArray();
+                        .OrderBy(a => a.BlockInfo.BlockHeight)
+                        .SkipWhile(m => m.BlockInfo.BlockHeight < this.NextMatureDepositHeight).ToArray();
 
-                    if (maturedBlockDeposits.Length == 0 || maturedBlockDeposits.First().Block.BlockHeight != this.NextMatureDepositHeight)
+                    if (maturedBlockDeposits.Length == 0 || maturedBlockDeposits.First().BlockInfo.BlockHeight != this.NextMatureDepositHeight)
                     {
                         this.logger.LogTrace("(-)[NO_VIABLE_BLOCKS]:true");
                         return true;
                     }
 
-                    if (maturedBlockDeposits.Last().Block.BlockHeight != this.NextMatureDepositHeight + maturedBlockDeposits.Length - 1)
+                    if (maturedBlockDeposits.Last().BlockInfo.BlockHeight != this.NextMatureDepositHeight + maturedBlockDeposits.Length - 1)
                     {
                         this.logger.LogTrace("(-)[DUPLICATE_BLOCKS]:true");
                         return true;
@@ -432,7 +432,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
 
                     foreach (IMaturedBlockDeposits maturedDeposit in maturedBlockDeposits)
                     {
-                        if (maturedDeposit.Block.BlockHeight != this.NextMatureDepositHeight)
+                        if (maturedDeposit.BlockInfo.BlockHeight != this.NextMatureDepositHeight)
                             continue;
 
                         IReadOnlyList<IDeposit> deposits = maturedDeposit.Deposits;
@@ -481,7 +481,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
                                     ScriptPubKey = scriptPubKey
                                 };
 
-                                uint blockTime = maturedDeposit.Block.BlockTime;
+                                uint blockTime = maturedDeposit.BlockInfo.BlockTime;
 
                                 transaction = this.BuildDeterministicTransaction(deposit.Id, blockTime, recipient);
 
