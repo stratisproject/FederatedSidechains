@@ -23,7 +23,6 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
         /// <inheritdoc />
         public IObservable<IMaturedBlockDeposits[]> OnMaturedBlockDepositsPushed { get; }
 
-
         public MaturedBlockReceiver(ILoggerFactory loggerFactory)
         {
             this.logger = loggerFactory.CreateLogger(this.GetType().FullName);

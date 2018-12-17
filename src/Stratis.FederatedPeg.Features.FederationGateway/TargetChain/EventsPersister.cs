@@ -21,7 +21,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
 
         private readonly object lockObj;
 
-        private Dictionary<int, DateTime> blockRequest;
+        private readonly Dictionary<int, DateTime> blockRequest;
 
         public EventsPersister(ILoggerFactory loggerFactory, ICrossChainTransferStore store, IMaturedBlockReceiver maturedBlockReceiver, IMaturedBlocksRequester maturedBlocksRequester)
         {

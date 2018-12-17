@@ -427,7 +427,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
                     }
 
                     this.Synchronize();
-                    
+
                     bool? canPersist = null;
 
                     foreach (IMaturedBlockDeposits maturedDeposit in maturedBlockDeposits)
@@ -581,7 +581,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
                 lock (this.lockObj)
                 {
                     this.Synchronize();
-                    
+
                     this.logger.LogInformation("ValidateCrossChainTransfers : {0}", depositId);
                     ICrossChainTransfer transfer = this.ValidateCrossChainTransfers(this.Get(new[] { depositId })).FirstOrDefault();
 
