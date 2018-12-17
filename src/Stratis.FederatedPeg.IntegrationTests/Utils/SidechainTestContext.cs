@@ -178,13 +178,13 @@ namespace Stratis.FederatedPeg.IntegrationTests.Utils
             {
                 CoreNode node = nodes[i];
 
-                $"http://localhost:{node.Endpoint.Port}/api".AppendPathSegment("FederationWallet/import-key").PostJsonAsync(new ImportMemberKeyRequest
+                $"http://localhost:{node.ApiPort}/api".AppendPathSegment("FederationWallet/import-key").PostJsonAsync(new ImportMemberKeyRequest
                 {
                     Mnemonic = this.mnemonics[i].ToString(),
                     Password = "password"
                 }).Result.StatusCode.Should().Be(HttpStatusCode.OK);
 
-                $"http://localhost:{node.Endpoint.Port}/api".AppendPathSegment("FederationWallet/enable-federation").PostJsonAsync(new EnableFederationRequest
+                $"http://localhost:{node.ApiPort}/api".AppendPathSegment("FederationWallet/enable-federation").PostJsonAsync(new EnableFederationRequest
                 {
                     Password = "password"
                 }).Result.StatusCode.Should().Be(HttpStatusCode.OK);
