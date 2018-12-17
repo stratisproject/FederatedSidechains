@@ -203,8 +203,17 @@ namespace Stratis.FederatedPeg.Features.FederationGateway
                                 + " Confirmed balance: " + balances.ConfirmedAmount.ToString().PadRight(LoggingConfiguration.ColumnLength)
                                 + " Unconfirmed balance: " + balances.UnConfirmedAmount.ToString().PadRight(LoggingConfiguration.ColumnLength)
                                 + " Federation Status: " + (this.federationWalletManager.IsFederationActive() ? "Active" : "Inactive"));
-            benchLog.AppendLine();
+            benchLog.AppendLine("-- Recent Withdrawals --");
+            IWithdrawal[] withdrawals = this.federationWalletManager.EnumWithdrawals().Take(5).Select(w => w.Item3).ToArray();
+            ICrossChainTransfer[] transfers = this.crossChainTransferStore.GetAsync(withdrawals.Select(w => w.DepositId).ToArray()).GetAwaiter().GetResult().ToArray();
+            for (int i = 0; i < withdrawals.Length; i++)
+            {
+                ICrossChainTransfer transfer = transfers[i];
+                IWithdrawal withdrawal = withdrawals[i];
+                benchLog.AppendLine(withdrawal.GetInfo() + " Status=" + transfer?.Status);
 
+            }
+            benchLog.AppendLine();
 
             benchLog.AppendLine("====== NodeStore ======");
             this.AddBenchmarkLine(benchLog, new (string, int)[] {
