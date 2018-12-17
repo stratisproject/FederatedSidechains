@@ -182,12 +182,6 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
             return this.depositsIdsByStatus[CrossChainTransferStatus.Suspended].Count != 0;
         }
 
-        /// <inheritdoc />
-        public bool CanPersistMatureDeposits()
-        {
-            return this.federationWalletManager.IsFederationActive();
-        }
-
         /// <summary>
         /// The store will chase the wallet tip. This will ensure that we can rely on
         /// information recorded in the wallet such as the list of unspent UTXO's.
@@ -215,8 +209,6 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
         /// <returns>Returns the list of transfers, possible with updated statuses.</returns>
         private ICrossChainTransfer[] ValidateCrossChainTransfers(ICrossChainTransfer[] crossChainTransfers = null)
         {
-            FederationWallet wallet = this.federationWalletManager.GetWallet();
-
             if (crossChainTransfers == null)
             {
                 crossChainTransfers = Get(
@@ -435,8 +427,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
                     }
 
                     this.Synchronize();
-
-                    FederationWallet wallet = this.federationWalletManager.GetWallet();
+                    
                     bool? canPersist = null;
 
                     foreach (IMaturedBlockDeposits maturedDeposit in maturedBlockDeposits)
@@ -452,7 +443,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
                         }
 
                         // CanPersistMatureDeposits is a bit slow. Call it only once.
-                        canPersist = canPersist ?? this.CanPersistMatureDeposits();
+                        canPersist = canPersist ?? this.federationWalletManager.IsFederationActive();
 
                         if (!(bool)canPersist)
                         {
@@ -590,9 +581,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
                 lock (this.lockObj)
                 {
                     this.Synchronize();
-
-                    FederationWallet wallet = this.federationWalletManager.GetWallet();
-
+                    
                     this.logger.LogInformation("ValidateCrossChainTransfers : {0}", depositId);
                     ICrossChainTransfer transfer = this.ValidateCrossChainTransfers(this.Get(new[] { depositId })).FirstOrDefault();
 
