@@ -36,6 +36,7 @@ using Stratis.FederatedPeg.Features.FederationGateway.SourceChain;
 using Stratis.FederatedPeg.Features.FederationGateway.TargetChain;
 using Stratis.FederatedPeg.Features.FederationGateway.Wallet;
 using Stratis.FederatedPeg.Features.FederationGateway.RestClients;
+using Stratis.Bitcoin.Features.MemoryPool;
 
 [assembly: InternalsVisibleTo("Stratis.FederatedPeg.Features.FederationGateway.Tests")]
 [assembly: InternalsVisibleTo("Stratis.FederatedPeg.IntegrationTests")]
@@ -89,6 +90,8 @@ namespace Stratis.FederatedPeg.Features.FederationGateway
 
         private readonly IFederationGatewayClient federationGatewayClient;
 
+        private readonly MempoolManager mempoolManager;
+
         public FederationGatewayFeature(
             ILoggerFactory loggerFactory,
             IMaturedBlocksRequester maturedBlocksRequester,
@@ -108,7 +111,8 @@ namespace Stratis.FederatedPeg.Features.FederationGateway
             INodeStats nodeStats,
             ICrossChainTransferStore crossChainTransferStore,
             IPartialTransactionRequester partialTransactionRequester,
-            IFederationGatewayClient federationGatewayClient)
+            IFederationGatewayClient federationGatewayClient,
+            MempoolManager mempoolManager)
         {
             this.loggerFactory = loggerFactory;
             this.maturedBlockRequester = maturedBlocksRequester;
@@ -128,6 +132,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway
             this.crossChainTransferStore = crossChainTransferStore;
             this.partialTransactionRequester = partialTransactionRequester;
             this.federationGatewayClient = federationGatewayClient;
+            this.mempoolManager = mempoolManager;
 
             // add our payload
             var payloadProvider = (PayloadProvider)this.fullNode.Services.ServiceProvider.GetService(typeof(PayloadProvider));
@@ -210,7 +215,8 @@ namespace Stratis.FederatedPeg.Features.FederationGateway
             {
                 ICrossChainTransfer transfer = transfers[i];
                 IWithdrawal withdrawal = withdrawals[i];
-                benchLog.AppendLine(withdrawal.GetInfo() + " Status=" + transfer?.Status);
+                TxMempoolInfo txInfo = this.mempoolManager.InfoAsync(withdrawal.Id).GetAwaiter().GetResult();
+                benchLog.AppendLine(withdrawal.GetInfo() + " Status=" + transfer?.Status + ((txInfo != null) ? "+InMempool":""));
 
             }
             benchLog.AppendLine();
