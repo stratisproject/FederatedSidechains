@@ -44,8 +44,6 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
         /// <inheritdoc />
         public ChainedHeader TipHashAndHeight { get; private set; }
 
-        public BlockLocator BlockLocator { get; private set; }
-
         /// <summary>The key of the repository tip in the common table.</summary>
         private static readonly byte[] RepositoryTipKey = new byte[] { 0 };
 
@@ -67,7 +65,6 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
         private readonly IFederationGatewaySettings federationGatewaySettings;
 
         /// <summary>Provider of time functions.</summary>
-        private readonly IDateTimeProvider dateTimeProvider;
         private readonly object lockObj;
 
         public CrossChainTransferStore(Network network, DataFolder dataFolder, ConcurrentChain chain, IFederationGatewaySettings settings, IDateTimeProvider dateTimeProvider,
@@ -88,7 +85,6 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
 
             this.network = network;
             this.chain = chain;
-            this.dateTimeProvider = dateTimeProvider;
             this.blockRepository = blockRepository;
             this.federationWalletManager = federationWalletManager;
             this.federationWalletTransactionHandler = federationWalletTransactionHandler;
@@ -116,8 +112,6 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
         {
             lock (this.lockObj)
             {
-                this.logger.LogTrace("()");
-
                 using (DBreeze.Transactions.Transaction dbreezeTransaction = this.DBreeze.GetTransaction())
                 {
                     dbreezeTransaction.ValuesLazyLoadingIsOn = false;
@@ -146,8 +140,6 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
                         }
                     }
                 }
-
-                this.logger.LogTrace("(-)");
             }
         }
 
@@ -369,7 +361,6 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
 
                 this.logger.LogInformation("transaction = {0}", transaction.ToString(this.network, RawFormat.BlockExplorer));
 
-                this.logger.LogTrace("(-)");
                 return transaction;
             }
             catch (Exception error)
@@ -386,8 +377,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
         /// <param name="reason">Short reason/context code of failure.</param>
         private void RollbackAndThrowTransactionError(DBreeze.Transactions.Transaction dbreezeTransaction, Exception exception, string reason = "FAILED_TRANSACTION")
         {
-            this.logger.LogError("Error during database update: {0}", exception.Message);
-            this.logger.LogTrace("(-):[{0}]", reason);
+            this.logger.LogError("Error during database update: {0}, reason: {1}", exception.Message, reason);
 
             dbreezeTransaction.Rollback();
             throw exception;
@@ -420,8 +410,6 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
             {
                 lock (this.lockObj)
                 {
-                    this.logger.LogTrace("()");
-
                     // Sanitize and sort the list.
                     int originalDepositHeight = this.NextMatureDepositHeight;
 
@@ -465,7 +453,6 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
                         if (!(bool)canPersist)
                         {
                             this.logger.LogError("The store can't persist mature deposits at the moment.");
-                            this.logger.LogTrace("(-)");
                             continue;
                         }
 
@@ -582,8 +569,6 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
                         }
                     }
 
-                    this.logger.LogTrace("(-)");
-
                     // If progress was made we will check for more blocks.
                     return this.NextMatureDepositHeight != originalDepositHeight;
                 }
@@ -600,7 +585,6 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
             {
                 lock (this.lockObj)
                 {
-                    this.logger.LogTrace("()");
                     this.Synchronize();
 
                     FederationWallet wallet = this.federationWalletManager.GetWallet();
@@ -668,7 +652,6 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
                             this.RollbackAndThrowTransactionError(dbreezeTransaction, err, "MERGE_ERROR");
                         }
 
-                        this.logger.LogTrace("(-)");
                         return transfer?.PartialTransaction;
                     }
                 }
@@ -683,44 +666,39 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
         /// <param name="blocks">The blocks used to update the store. Must be sorted by ascending height leading up to the new tip.</param>
         private void Put(List<Block> blocks)
         {
-            this.logger.LogTrace("()");
-
             if (blocks.Count == 0)
-                this.logger.LogTrace("(-):0");
+                this.logger.LogTrace("(-)[NO_BLOCKS]:0");
 
             Dictionary<uint256, ICrossChainTransfer> transferLookup;
             Dictionary<uint256, IWithdrawal[]> allWithdrawals;
 
-            // TODO: Why open braces?
+            int blockHeight = this.TipHashAndHeight.Height + 1;
+            var allDepositIds = new HashSet<uint256>();
+
+            allWithdrawals = new Dictionary<uint256, IWithdrawal[]>();
+            foreach (Block block in blocks)
             {
-                int blockHeight = this.TipHashAndHeight.Height + 1;
-                var allDepositIds = new HashSet<uint256>();
-
-                allWithdrawals = new Dictionary<uint256, IWithdrawal[]>();
-                foreach (Block block in blocks)
-                {
-                    IReadOnlyList<IWithdrawal> blockWithdrawals = this.withdrawalExtractor.ExtractWithdrawalsFromBlock(block, blockHeight++);
-                    allDepositIds.UnionWith(blockWithdrawals.Select(d => d.DepositId).ToArray());
-                    allWithdrawals[block.GetHash()] = blockWithdrawals.ToArray();
-                }
-
-                // Nothing to do?
-                if (allDepositIds.Count == 0)
-                {
-                    // Exiting here and saving the tip after the sync.
-                    this.TipHashAndHeight = this.chain.GetBlock(blocks.Last().GetHash());
-
-                    this.logger.LogTrace("(-)");
-                    return;
-                }
-
-                // Create transfer lookup by deposit Id.
-                uint256[] uniqueDepositIds = allDepositIds.ToArray();
-                ICrossChainTransfer[] uniqueTransfers = this.Get(uniqueDepositIds);
-                transferLookup = new Dictionary<uint256, ICrossChainTransfer>();
-                for (int i = 0; i < uniqueDepositIds.Length; i++)
-                    transferLookup[uniqueDepositIds[i]] = uniqueTransfers[i];
+                IReadOnlyList<IWithdrawal> blockWithdrawals = this.withdrawalExtractor.ExtractWithdrawalsFromBlock(block, blockHeight++);
+                allDepositIds.UnionWith(blockWithdrawals.Select(d => d.DepositId).ToArray());
+                allWithdrawals[block.GetHash()] = blockWithdrawals.ToArray();
             }
+
+            // Nothing to do?
+            if (allDepositIds.Count == 0)
+            {
+                // Exiting here and saving the tip after the sync.
+                this.TipHashAndHeight = this.chain.GetBlock(blocks.Last().GetHash());
+
+                return;
+            }
+
+            // Create transfer lookup by deposit Id.
+            uint256[] uniqueDepositIds = allDepositIds.ToArray();
+            ICrossChainTransfer[] uniqueTransfers = this.Get(uniqueDepositIds);
+            transferLookup = new Dictionary<uint256, ICrossChainTransfer>();
+            for (int i = 0; i < uniqueDepositIds.Length; i++)
+                transferLookup[uniqueDepositIds[i]] = uniqueTransfers[i];
+
 
             // Only create a transaction if there is important work to do.
             using (DBreeze.Transactions.Transaction dbreezeTransaction = this.DBreeze.GetTransaction())
@@ -786,8 +764,6 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
                     this.RollbackAndThrowTransactionError(dbreezeTransaction, err, "PUT_ERROR");
                 }
             }
-
-            this.logger.LogTrace("(-):{0}", blocks.Count);
         }
 
         /// <summary>
@@ -797,8 +773,6 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
         /// <returns>Returns <c>true</c> if a rewind was performed and <c>false</c> otherwise.</returns>
         private bool RewindIfRequired()
         {
-            this.logger.LogTrace("()");
-
             HashHeightPair tipToChase = this.TipToChase();
 
             if (tipToChase.Hash == this.TipHashAndHeight.HashBlock)
@@ -852,12 +826,10 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
                 }
 
                 this.ValidateCrossChainTransfers();
-                this.logger.LogTrace("(-):true");
                 return true;
             }
 
             // Indicate that we are behind the current chain.
-            this.logger.LogTrace("(-):false");
             return false;
         }
 
@@ -867,13 +839,10 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
         {
             lock (this.lockObj)
             {
-                this.logger.LogTrace("()");
-
                 HashHeightPair tipToChase = this.TipToChase();
                 if (tipToChase.Hash == this.TipHashAndHeight.HashBlock)
                 {
                     // Indicate that we are synchronized.
-                    this.logger.LogTrace("(-):true");
                     return true;
                 }
 
@@ -898,12 +867,10 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
                             dbreezeTransaction.Commit();
                         }
 
-                        this.logger.LogTrace("(-):true");
                         return true;
                     }
                 }
 
-                this.logger.LogTrace("(-):false");
                 return false;
             }
         }
@@ -912,8 +879,6 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
         /// <returns>Returns <c>true</c> if we match the chain tip and <c>false</c> if we are behind the tip.</returns>
         private bool SynchronizeBatch()
         {
-            this.logger.LogTrace("()");
-
             // Get a batch of blocks.
             var blockHashes = new List<uint256>();
             int batchSize = 0;
@@ -947,7 +912,6 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
 
             bool done = availableBlocks < synchronizationBatchSize;
 
-            this.logger.LogTrace("(-):{0}", done);
             return done;
         }
 
@@ -1008,13 +972,9 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
         {
             return Task.Run(() =>
             {
-                this.logger.LogTrace("()");
-
                 this.Synchronize();
 
                 ICrossChainTransfer[] res = this.ValidateCrossChainTransfers(this.Get(depositIds));
-
-                this.logger.LogTrace("(-)");
                 return res;
             });
         }
@@ -1069,8 +1029,6 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
         {
             lock (this.lockObj)
             {
-                this.logger.LogTrace("()");
-
                 this.Synchronize();
 
                 var depositIds = new HashSet<uint256>();
@@ -1091,10 +1049,8 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
                     return partialTransfers;
                 }
 
-                return partialTransfers
-                    .OrderBy(t => this.EarliestOutput(t.PartialTransaction),
-                        Comparer<OutPoint>.Create((x, y) => this.federationWalletManager.CompareOutpoints(x, y)))
-                    .ToArray();
+                return partialTransfers.OrderBy(t => this.EarliestOutput(t.PartialTransaction), Comparer<OutPoint>.Create((x, y) =>
+                    this.federationWalletManager.CompareOutpoints(x, y))).ToArray();
             }
         }
 
@@ -1115,11 +1071,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
         {
             Guard.NotNull(crossChainTransfer, nameof(crossChainTransfer));
 
-            this.logger.LogTrace("()");
-
             dbreezeTransaction.Insert<byte[], ICrossChainTransfer>(transferTableName, crossChainTransfer.DepositTransactionId.ToBytes(), crossChainTransfer);
-
-            this.logger.LogTrace("(-)");
         }
 
         /// <summary>Persist multiple cross-chain transfer information into the database.</summary>
@@ -1129,8 +1081,6 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
         {
             Guard.NotNull(crossChainTransfers, nameof(crossChainTransfers));
 
-            this.logger.LogTrace("()");
-
             // Optimal ordering for DB consumption.
             var byteListComparer = new ByteListComparer();
             List<ICrossChainTransfer> orderedTransfers = crossChainTransfers.ToList();
@@ -1138,11 +1088,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
 
             // Write each transfer in order.
             foreach (ICrossChainTransfer transfer in orderedTransfers)
-            {
                 dbreezeTransaction.Insert(transferTableName, transfer.DepositTransactionId.ToBytes(), transfer);
-            }
-
-            this.logger.LogTrace("(-)");
         }
 
         /// <summary>Deletes the cross-chain transfer information from the database</summary>
@@ -1152,11 +1098,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
         {
             Guard.NotNull(crossChainTransfer, nameof(crossChainTransfer));
 
-            this.logger.LogTrace("()");
-
             dbreezeTransaction.RemoveKey<byte[]>(transferTableName, crossChainTransfer.DepositTransactionId.ToBytes());
-
-            this.logger.LogTrace("(-)");
         }
 
         /// <summary>
