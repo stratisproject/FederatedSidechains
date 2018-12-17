@@ -169,7 +169,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
 
                 // Any transactions seen in blocks must also be present in the wallet.
                 FederationWallet wallet = this.federationWalletManager.GetWallet();
-                ICrossChainTransfer[] transfers = this.GetTransfersByStatus(new[] { CrossChainTransferStatus.SeenInBlock }, true, false, false).ToArray();
+                ICrossChainTransfer[] transfers = this.GetTransfersByStatus(new[] { CrossChainTransferStatus.SeenInBlock }, true, false).ToArray();
                 foreach (ICrossChainTransfer transfer in transfers)
                 {
                     (Transaction tran, TransactionData tranData, _) = this.federationWalletManager.FindWithdrawalTransactions(transfer.DepositTransactionId).FirstOrDefault();
@@ -1065,7 +1065,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
             return transaction.Inputs.Select(i => i.PrevOut).OrderByDescending(t => t, comparer).FirstOrDefault();
         }
 
-        private ICrossChainTransfer[] GetTransfersByStatus(CrossChainTransferStatus[] statuses, bool sort = false, bool sortDescending = false, bool validate = true)
+        private ICrossChainTransfer[] GetTransfersByStatus(CrossChainTransferStatus[] statuses, bool sort = false, bool validate = true)
         {
             lock (this.lockObj)
             {
@@ -1089,14 +1089,6 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
                 if (!sort)
                 {
                     return partialTransfers;
-                }
-
-                if (sortDescending)
-                {
-                    return partialTransfers
-                        .OrderByDescending(t => this.EarliestOutput(t.PartialTransaction),
-                            Comparer<OutPoint>.Create((x, y) => this.federationWalletManager.CompareOutpoints(x, y)))
-                        .ToArray();
                 }
 
                 return partialTransfers
