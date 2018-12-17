@@ -199,6 +199,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
 
             if (wallet?.LastBlockSyncedHeight == null)
             {
+                this.logger.LogTrace("(-)[GENESIS]");
                 return new HashHeightPair(this.network.GenesisHash, 0);
             }
 
@@ -271,7 +272,10 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
             }
 
             if (tracker.Count == 0)
+            {
+                this.logger.LogTrace("(-)[NO_CHANGES_IN_TRACKER]");
                 return crossChainTransfers;
+            }
 
             using (DBreeze.Transactions.Transaction dbreezeTransaction = this.DBreeze.GetTransaction())
             {
@@ -368,6 +372,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
                 this.logger.LogError("Could not create transaction for deposit {0}: {1}", depositId, error.Message);
             }
 
+            this.logger.LogTrace("(-)[FAIL]");
             return null;
         }
 
@@ -417,16 +422,15 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
                         .OrderBy(a => a.Block.BlockHeight)
                         .SkipWhile(m => m.Block.BlockHeight < this.NextMatureDepositHeight).ToArray();
 
-                    if (maturedBlockDeposits.Length == 0 ||
-                        maturedBlockDeposits.First().Block.BlockHeight != this.NextMatureDepositHeight)
+                    if (maturedBlockDeposits.Length == 0 || maturedBlockDeposits.First().Block.BlockHeight != this.NextMatureDepositHeight)
                     {
-                        this.logger.LogTrace("(-):[NO_VIABLE_BLOCKS]");
+                        this.logger.LogTrace("(-)[NO_VIABLE_BLOCKS]:true");
                         return true;
                     }
 
                     if (maturedBlockDeposits.Last().Block.BlockHeight != this.NextMatureDepositHeight + maturedBlockDeposits.Length - 1)
                     {
-                        this.logger.LogTrace("(-):[DUPLICATE_BLOCKS]");
+                        this.logger.LogTrace("(-)[DUPLICATE_BLOCKS]:true");
                         return true;
                     }
 
@@ -435,12 +439,12 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
                     FederationWallet wallet = this.federationWalletManager.GetWallet();
                     bool? canPersist = null;
 
-                    for (int j = 0; j < maturedBlockDeposits.Length; j++)
+                    foreach (IMaturedBlockDeposits maturedDeposit in maturedBlockDeposits)
                     {
-                        if (maturedBlockDeposits[j].Block.BlockHeight != this.NextMatureDepositHeight)
+                        if (maturedDeposit.Block.BlockHeight != this.NextMatureDepositHeight)
                             continue;
 
-                        IReadOnlyList<IDeposit> deposits = maturedBlockDeposits[j].Deposits;
+                        IReadOnlyList<IDeposit> deposits = maturedDeposit.Deposits;
                         if (deposits.Count == 0)
                         {
                             this.NextMatureDepositHeight++;
@@ -475,7 +479,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
 
                             IDeposit deposit = deposits[i];
                             Transaction transaction = null;
-                            var status = CrossChainTransferStatus.Suspended;
+                            CrossChainTransferStatus status = CrossChainTransferStatus.Suspended;
                             Script scriptPubKey = BitcoinAddress.Create(deposit.TargetAddress, this.network).ScriptPubKey;
 
                             if (!haveSuspendedTransfers)
@@ -486,7 +490,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
                                     ScriptPubKey = scriptPubKey
                                 };
 
-                                uint blockTime = maturedBlockDeposits[j].Block.BlockTime;
+                                uint blockTime = maturedDeposit.Block.BlockTime;
 
                                 transaction = this.BuildDeterministicTransaction(deposit.Id, blockTime, recipient);
 
@@ -596,13 +600,13 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
                     {
                         this.logger.LogInformation("FAILED ValidateCrossChainTransfers : {0}", depositId);
 
-                        this.logger.LogTrace("(-)[MERGE_NOTFOUND]");
+                        this.logger.LogTrace("(-)[MERGE_NOT_FOUND]:null");
                         return null;
                     }
 
                     if (transfer.Status != CrossChainTransferStatus.Partial)
                     {
-                        this.logger.LogTrace("(-)[MERGE_BADSTATUS]");
+                        this.logger.LogTrace("(-)[MERGE_BAD_STATUS]");
                         return transfer.PartialTransaction;
                     }
 
@@ -652,7 +656,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
                             this.RollbackAndThrowTransactionError(dbreezeTransaction, err, "MERGE_ERROR");
                         }
 
-                        return transfer?.PartialTransaction;
+                        return transfer.PartialTransaction;
                     }
                 }
             });
@@ -689,6 +693,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
                 // Exiting here and saving the tip after the sync.
                 this.TipHashAndHeight = this.chain.GetBlock(blocks.Last().GetHash());
 
+                this.logger.LogTrace("(-)[NO_DEPOSIT_IDS]");
                 return;
             }
 
@@ -778,7 +783,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
             if (tipToChase.Hash == this.TipHashAndHeight.HashBlock)
             {
                 // Indicate that we are synchronized.
-                this.logger.LogTrace("(-):false");
+                this.logger.LogTrace("(-)[SYNCHRONIZED]:false");
                 return false;
             }
 
@@ -792,7 +797,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
                 tipToChase = this.TipToChase();
             }
 
-            // If the chain does not contain our tip..
+            // If the chain does not contain our tip.
             if (this.TipHashAndHeight != null && (this.TipHashAndHeight.Height > tipToChase.Height ||
                 this.chain.GetBlock(this.TipHashAndHeight.HashBlock)?.Height != this.TipHashAndHeight.Height))
             {
@@ -843,6 +848,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
                 if (tipToChase.Hash == this.TipHashAndHeight.HashBlock)
                 {
                     // Indicate that we are synchronized.
+                    this.logger.LogTrace("(-)[SYNCHRONIZED]:true");
                     return true;
                 }
 
@@ -985,7 +991,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
             {
                 dbreezeTransaction.ValuesLazyLoadingIsOn = false;
 
-                return Get(dbreezeTransaction, depositId);
+                return this.Get(dbreezeTransaction, depositId);
             }
         }
 
