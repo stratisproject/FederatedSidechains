@@ -45,10 +45,10 @@ namespace Stratis.FederatedPeg.IntegrationTests.Utils
         public FederatedPegRegTest SideChainNetwork { get; }
 
         // TODO: HashSets / Readonly
-        public IList<CoreNode> MainChainNodes { get; }
-        public IList<CoreNode> SideChainNodes { get; }
-        public IList<CoreNode> MainChainFedNodes { get; }
-        public IList<CoreNode> SideChainFedNodes { get; }
+        public IReadOnlyList<CoreNode> MainChainNodes { get; }
+        public IReadOnlyList<CoreNode> SideChainNodes { get; }
+        public IReadOnlyList<CoreNode> MainChainFedNodes { get; }
+        public IReadOnlyList<CoreNode> SideChainFedNodes { get; }
 
         public CoreNode MainUser{ get; }
         public CoreNode FedMain1 { get; }
@@ -159,9 +159,18 @@ namespace Stratis.FederatedPeg.IntegrationTests.Utils
             TestHelper.Connect(this.MainUser, this.FedMain1);
             TestHelper.Connect(this.MainUser, this.FedMain2);
             TestHelper.Connect(this.MainUser, this.FedMain3);
+
+            TestHelper.Connect(this.FedMain1, this.MainUser);
             TestHelper.Connect(this.FedMain1, this.FedMain2);
             TestHelper.Connect(this.FedMain1, this.FedMain3);
+
+            TestHelper.Connect(this.FedMain2, this.MainUser);
+            TestHelper.Connect(this.FedMain2, this.FedMain1);
             TestHelper.Connect(this.FedMain2, this.FedMain3);
+
+            TestHelper.Connect(this.FedMain3, this.MainUser);
+            TestHelper.Connect(this.FedMain3, this.FedMain1);
+            TestHelper.Connect(this.FedMain3, this.FedMain2);
         }
 
         public void ConnectSideChainNodes()
@@ -169,12 +178,31 @@ namespace Stratis.FederatedPeg.IntegrationTests.Utils
             TestHelper.Connect(this.SideUser, this.FedSide1);
             TestHelper.Connect(this.SideUser, this.FedSide2);
             TestHelper.Connect(this.SideUser, this.FedSide3);
+
+            TestHelper.Connect(this.FedSide1, this.SideUser);
             TestHelper.Connect(this.FedSide1, this.FedSide2);
             TestHelper.Connect(this.FedSide1, this.FedSide3);
+
+            TestHelper.Connect(this.FedSide2, this.SideUser);
+            TestHelper.Connect(this.FedSide2, this.FedSide1);
             TestHelper.Connect(this.FedSide2, this.FedSide3);
+
+            TestHelper.Connect(this.FedSide3, this.SideUser);
+            TestHelper.Connect(this.FedSide3, this.FedSide1);
+            TestHelper.Connect(this.FedSide3, this.FedSide2);
         }
 
-        public void EnableFederationWallets(IList<CoreNode> nodes)
+        public void EnableMainFedWallets()
+        {
+            EnableFederationWallets(this.MainChainFedNodes);
+        }
+
+        public void EnableSideFedWallets()
+        {
+            EnableFederationWallets(this.SideChainFedNodes);
+        }
+
+        private void EnableFederationWallets(IReadOnlyList<CoreNode> nodes)
         {
             for (int i = 0; i < nodes.Count; i++)
             {
