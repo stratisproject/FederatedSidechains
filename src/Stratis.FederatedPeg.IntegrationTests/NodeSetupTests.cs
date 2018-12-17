@@ -55,9 +55,9 @@ namespace Stratis.FederatedPeg.IntegrationTests
                 context.StartMainNodes();
                 context.ConnectMainChainNodes();
 
-                TestHelper.MineBlocks(context.MainUser, (int)context.MainChainNetwork.Consensus.CoinbaseMaturity + 1);
+                TestHelper.MineBlocks(context.MainUser, (int)context.MainChainNetwork.Consensus.CoinbaseMaturity + (int)context.MainChainNetwork.Consensus.PremineHeight);
                 TestHelper.WaitForNodeToSync(context.MainUser, context.FedMain1, context.FedMain2, context.FedMain3);
-                Assert.Equal(context.MainChainNetwork.Consensus.ProofOfWorkReward, context.GetBalance(context.MainUser));
+                Assert.True(context.GetBalance(context.MainUser) > context.MainChainNetwork.Consensus.PremineReward);
             }
         }
         
@@ -93,9 +93,9 @@ namespace Stratis.FederatedPeg.IntegrationTests
                 context.EnableFederationWallets(context.MainChainFedNodes);
 
                 // Fund a main chain node
-                TestHelper.MineBlocks(context.MainUser, (int)context.MainChainNetwork.Consensus.CoinbaseMaturity + 10);
+                TestHelper.MineBlocks(context.MainUser, (int)context.MainChainNetwork.Consensus.CoinbaseMaturity + (int)context.MainChainNetwork.Consensus.PremineHeight);
                 TestHelper.WaitForNodeToSync(context.MainUser, context.FedMain1, context.FedMain2, context.FedMain3);
-                Assert.Equal(10 * context.MainChainNetwork.Consensus.ProofOfWorkReward, context.GetBalance(context.MainUser));
+                Assert.True(context.GetBalance(context.MainUser) > context.MainChainNetwork.Consensus.PremineReward);
 
                 // Let sidechain progress to point where fed has the premine
                 TestHelper.WaitLoop(() => context.SideUser.FullNode.Chain.Height == context.SideUser.FullNode.Network.Consensus.PremineHeight);
