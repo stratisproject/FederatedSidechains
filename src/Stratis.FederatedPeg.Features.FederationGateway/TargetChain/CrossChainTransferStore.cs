@@ -169,7 +169,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
 
                 // Any transactions seen in blocks must also be present in the wallet.
                 FederationWallet wallet = this.federationWalletManager.GetWallet();
-                ICrossChainTransfer[] transfers = Get(this.depositsIdsByStatus[CrossChainTransferStatus.SeenInBlock].ToArray());
+                ICrossChainTransfer[] transfers = this.GetTransfersByStatus(new[] { CrossChainTransferStatus.SeenInBlock }, true, false, false).ToArray();
                 foreach (ICrossChainTransfer transfer in transfers)
                 {
                     (Transaction tran, TransactionData tranData, _) = this.federationWalletManager.FindWithdrawalTransactions(transfer.DepositTransactionId).FirstOrDefault();
@@ -1065,39 +1065,54 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
             return transaction.Inputs.Select(i => i.PrevOut).OrderByDescending(t => t, comparer).FirstOrDefault();
         }
 
+        private ICrossChainTransfer[] GetTransfersByStatus(CrossChainTransferStatus[] statuses, bool sort = false, bool sortDescending = false, bool validate = true)
+        {
+            lock (this.lockObj)
+            {
+                this.logger.LogTrace("()");
+
+                this.Synchronize();
+
+                var depositIds = new HashSet<uint256>();
+                foreach (CrossChainTransferStatus status in statuses)
+                    depositIds.UnionWith(this.depositsIdsByStatus[status]);
+
+                uint256[] partialTransferHashes = depositIds.ToArray();
+                ICrossChainTransfer[] partialTransfers = this.Get(partialTransferHashes).ToArray();
+
+                if (validate)
+                {
+                    this.ValidateCrossChainTransfers(partialTransfers);
+                    partialTransfers = partialTransfers.Where(t => statuses.Contains(t.Status)).ToArray();
+                }
+
+                if (!sort)
+                {
+                    return partialTransfers;
+                }
+
+                if (sortDescending)
+                {
+                    return partialTransfers
+                        .OrderByDescending(t => this.EarliestOutput(t.PartialTransaction),
+                            Comparer<OutPoint>.Create((x, y) => this.federationWalletManager.CompareOutpoints(x, y)))
+                        .ToArray();
+                }
+
+                return partialTransfers
+                    .OrderBy(t => this.EarliestOutput(t.PartialTransaction),
+                        Comparer<OutPoint>.Create((x, y) => this.federationWalletManager.CompareOutpoints(x, y)))
+                    .ToArray();
+            }
+        }
+
         /// <inheritdoc />
-        public Task<Dictionary<uint256, Transaction>> GetTransactionsByStatusAsync(CrossChainTransferStatus status, bool sort = false)
+        public Task<Dictionary<uint256, Transaction>> GetTransactionsByStatusAsync(CrossChainTransferStatus status, bool sort = false, bool sortDescending = false)
         {
             return Task.Run(() =>
             {
-                lock (this.lockObj)
-                {
-                    this.logger.LogTrace("()");
-
-                    this.Synchronize();
-
-                    uint256[] partialTransferHashes = this.depositsIdsByStatus[status].ToArray();
-                    ICrossChainTransfer[] partialTransfers = this.Get(partialTransferHashes).ToArray();
-
-                    if (status == CrossChainTransferStatus.Partial || status == CrossChainTransferStatus.FullySigned)
-                    {
-                        this.ValidateCrossChainTransfers(partialTransfers);
-                        partialTransfers = partialTransfers.Where(t => t.Status == status).ToArray();
-                    }
-
-                    this.logger.LogTrace("(-)");
-                    if (sort)
-                    {
-                        return partialTransfers
-                            .Where(t => t.PartialTransaction != null)
-                            .OrderBy(t => this.EarliestOutput(t.PartialTransaction), Comparer<OutPoint>.Create((x, y) => this.federationWalletManager.CompareOutpoints(x, y)))
-                            .ToDictionary(t => t.DepositTransactionId, t => t.PartialTransaction);
-                    }
-
-                    return partialTransfers
-                        .Where(t => t.PartialTransaction != null)
-                        .ToDictionary(t => t.DepositTransactionId, t => t.PartialTransaction);
-                }
+                ICrossChainTransfer[] res = this.GetTransfersByStatus(new[] { status }, sort, sortDescending);
+                return res.Where(t => t.PartialTransaction != null).ToDictionary(t => t.DepositTransactionId, t => t.PartialTransaction);
             });
         }
 
