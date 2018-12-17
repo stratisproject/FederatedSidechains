@@ -82,7 +82,7 @@ namespace Stratis.FederatedPeg.IntegrationTests
             }
         }
 
-        [Fact(Skip="Weird error with BlockStore")]
+        [Fact]
         public void End_To_End()
         {
             using (SidechainTestContext context = new SidechainTestContext())

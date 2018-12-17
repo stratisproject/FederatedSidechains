@@ -160,6 +160,7 @@ namespace Stratis.FederatedPeg.IntegrationTests.Utils
             TestHelper.Connect(this.MainUser, this.FedMain2);
             TestHelper.Connect(this.MainUser, this.FedMain3);
             TestHelper.Connect(this.FedMain1, this.FedMain2);
+            TestHelper.Connect(this.FedMain1, this.FedMain3);
             TestHelper.Connect(this.FedMain2, this.FedMain3);
         }
 
@@ -169,6 +170,7 @@ namespace Stratis.FederatedPeg.IntegrationTests.Utils
             TestHelper.Connect(this.SideUser, this.FedSide2);
             TestHelper.Connect(this.SideUser, this.FedSide3);
             TestHelper.Connect(this.FedSide1, this.FedSide2);
+            TestHelper.Connect(this.FedSide1, this.FedSide3);
             TestHelper.Connect(this.FedSide2, this.FedSide3);
         }
 
