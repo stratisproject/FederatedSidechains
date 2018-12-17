@@ -47,7 +47,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
                 this.Amount.ToString(),
                 this.TargetAddress,
                 this.BlockNumber,
-                this.BlockHash.ToString().Substring(0, 6));
+                this.BlockHash?.ToString().Substring(0, 6));
         }
     }
 }

@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
@@ -208,18 +207,24 @@ namespace Stratis.FederatedPeg.Features.FederationGateway
                                 + " Confirmed balance: " + balances.ConfirmedAmount.ToString().PadRight(LoggingConfiguration.ColumnLength)
                                 + " Unconfirmed balance: " + balances.UnConfirmedAmount.ToString().PadRight(LoggingConfiguration.ColumnLength)
                                 + " Federation Status: " + (this.federationWalletManager.IsFederationActive() ? "Active" : "Inactive"));
-            benchLog.AppendLine("-- Recent Withdrawals --");
-            IWithdrawal[] withdrawals = this.federationWalletManager.EnumWithdrawals().Take(5).Select(w => w.Item3).ToArray();
-            ICrossChainTransfer[] transfers = this.crossChainTransferStore.GetAsync(withdrawals.Select(w => w.DepositId).ToArray()).GetAwaiter().GetResult().ToArray();
-            for (int i = 0; i < withdrawals.Length; i++)
-            {
-                ICrossChainTransfer transfer = transfers[i];
-                IWithdrawal withdrawal = withdrawals[i];
-                TxMempoolInfo txInfo = this.mempoolManager.InfoAsync(withdrawal.Id).GetAwaiter().GetResult();
-                benchLog.AppendLine(withdrawal.GetInfo() + " Status=" + transfer?.Status + ((txInfo != null) ? "+InMempool":""));
-
-            }
             benchLog.AppendLine();
+
+            // Display recent withdrawals (if any).
+            IWithdrawal[] withdrawals = this.federationWalletManager.GetWithdrawals().Take(5).ToArray();
+            if (withdrawals.Length > 0)
+            {
+                benchLog.AppendLine("-- Recent Withdrawals --");
+                ICrossChainTransfer[] transfers = this.crossChainTransferStore.GetAsync(withdrawals.Select(w => w.DepositId).ToArray()).GetAwaiter().GetResult().ToArray();
+                for (int i = 0; i < withdrawals.Length; i++)
+                {
+                    ICrossChainTransfer transfer = transfers[i];
+                    IWithdrawal withdrawal = withdrawals[i];
+                    TxMempoolInfo txInfo = this.mempoolManager.InfoAsync(withdrawal.Id).GetAwaiter().GetResult();
+                    benchLog.AppendLine(withdrawal.GetInfo() + " Status=" + transfer?.Status + ((txInfo != null) ? "+InMempool" : ""));
+
+                }
+                benchLog.AppendLine();
+            }
 
             benchLog.AppendLine("====== NodeStore ======");
             this.AddBenchmarkLine(benchLog, new (string, int)[] {

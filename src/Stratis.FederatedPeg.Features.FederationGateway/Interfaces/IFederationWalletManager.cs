@@ -146,7 +146,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.Interfaces
         /// <summary>
         /// Enumerate withdrawals starting with the most recent.
         /// </summary>
-        /// <returns>An enumeration of (Transaction, TransactionData, IWithdrawal).</returns>
-        IEnumerable<(Transaction, TransactionData, IWithdrawal)> EnumWithdrawals();
+        /// <returns>An enumeration of IWithdrawal objects.</returns>
+        IEnumerable<IWithdrawal> GetWithdrawals();
     }
 }
