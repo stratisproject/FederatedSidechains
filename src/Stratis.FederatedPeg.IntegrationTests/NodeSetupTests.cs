@@ -35,15 +35,24 @@ namespace Stratis.FederatedPeg.IntegrationTests
             }
         }
 
-        [Fact(Skip = "test")]
+        [Fact]
+        public void StartWholeNetwork()
+        {
+            using (SidechainTestContext context = new SidechainTestContext())
+            {
+                context.StartAndConnectNodes();
+            }
+        }
+
+        [Fact]
         public void EnableNodeWallets()
         {
             using (SidechainTestContext context = new SidechainTestContext())
             {
                 context.StartAndConnectNodes();
 
-                context.EnableFederationWallets(context.MainChainFedNodes);
                 context.EnableFederationWallets(context.SideChainFedNodes);
+                context.EnableFederationWallets(context.MainChainFedNodes);
             }
         }
 

@@ -154,19 +154,13 @@ namespace Stratis.FederatedPeg.IntegrationTests.Utils
             }
         }
 
-        // TODO: I don't believe these need to connect both ways
-
         public void ConnectMainChainNodes()
         {
             TestHelper.Connect(this.MainUser, this.FedMain1);
             TestHelper.Connect(this.MainUser, this.FedMain2);
             TestHelper.Connect(this.MainUser, this.FedMain3);
             TestHelper.Connect(this.FedMain1, this.FedMain2);
-            TestHelper.Connect(this.FedMain1, this.FedMain3);
-            TestHelper.Connect(this.FedMain2, this.FedMain1);
             TestHelper.Connect(this.FedMain2, this.FedMain3);
-            TestHelper.Connect(this.FedMain3, this.FedMain1);
-            TestHelper.Connect(this.FedMain3, this.FedMain2);
         }
 
         public void ConnectSideChainNodes()
@@ -175,11 +169,7 @@ namespace Stratis.FederatedPeg.IntegrationTests.Utils
             TestHelper.Connect(this.SideUser, this.FedSide2);
             TestHelper.Connect(this.SideUser, this.FedSide3);
             TestHelper.Connect(this.FedSide1, this.FedSide2);
-            TestHelper.Connect(this.FedSide1, this.FedSide3);
-            TestHelper.Connect(this.FedSide2, this.FedSide1);
             TestHelper.Connect(this.FedSide2, this.FedSide3);
-            TestHelper.Connect(this.FedSide3, this.FedSide1);
-            TestHelper.Connect(this.FedSide3, this.FedSide2);
         }
 
         public void EnableFederationWallets(IList<CoreNode> nodes)
