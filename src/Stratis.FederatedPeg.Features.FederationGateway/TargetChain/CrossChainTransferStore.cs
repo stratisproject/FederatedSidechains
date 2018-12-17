@@ -1107,11 +1107,11 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
         }
 
         /// <inheritdoc />
-        public Task<Dictionary<uint256, Transaction>> GetTransactionsByStatusAsync(CrossChainTransferStatus status, bool sort = false, bool sortDescending = false)
+        public Task<Dictionary<uint256, Transaction>> GetTransactionsByStatusAsync(CrossChainTransferStatus status, bool sort = false)
         {
             return Task.Run(() =>
             {
-                ICrossChainTransfer[] res = this.GetTransfersByStatus(new[] { status }, sort, sortDescending);
+                ICrossChainTransfer[] res = this.GetTransfersByStatus(new[] { status }, sort);
                 return res.Where(t => t.PartialTransaction != null).ToDictionary(t => t.DepositTransactionId, t => t.PartialTransaction);
             });
         }
