@@ -35,16 +35,15 @@ namespace Stratis.FederatedPeg.IntegrationTests
             }
         }
 
-        [Fact(Skip ="Sidechain nodes starting but can't execute endpoints when enabling wallets - make sure sidechains in TestBase are running as normal.")]
+        [Fact(Skip = "test")]
         public void EnableNodeWallets()
         {
             using (SidechainTestContext context = new SidechainTestContext())
             {
                 context.StartAndConnectNodes();
 
-                List<CoreNode> nodesToStart = new List<CoreNode>{ context.FedMain1, context.FedMain2, context.FedMain3, context.FedSide1, context.FedSide2, context.FedSide3};
-
-                context.EnableWallets(nodesToStart);
+                context.EnableFederationWallets(context.MainChainFedNodes);
+                context.EnableFederationWallets(context.SideChainFedNodes);
             }
         }
 
