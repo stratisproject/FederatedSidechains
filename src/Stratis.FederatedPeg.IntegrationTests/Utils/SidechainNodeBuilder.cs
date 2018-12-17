@@ -49,7 +49,7 @@ namespace Stratis.FederatedPeg.IntegrationTests.Utils
 
         public CoreNode CreateMainChainFederationNode(Network network)
         {
-            string agentName = $"sidechain{Interlocked.Increment(ref agentCount)}";
+            string agentName = $"mainchain{Interlocked.Increment(ref agentCount)}";
             string dataFolder = this.GetNextDataFolderName(agentName);
             CoreNode node = this.CreateNode(new MainChainFederationNodeRunner(dataFolder, agentName, network), "stratis.conf");
 
