@@ -9,7 +9,7 @@ using Stratis.FederatedPeg.Features.FederationGateway.RestClients;
 
 namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
 {
-    // TODO remove EventsPersister MaturedBlockReceiver RestMaturedBlockRequester
+    // TODO remove MaturedBlockReceiver
 
     // TODO implement only pull mechanism
 

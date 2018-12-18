@@ -49,8 +49,6 @@ namespace Stratis.FederatedPeg.Features.FederationGateway
     {
         public const string FederationGatewayFeatureNamespace = "federationgateway";
 
-        private readonly IMaturedBlocksRequester maturedBlockRequester;
-
         private readonly IMaturedBlocksProvider maturedBlocksProvider;
 
         private readonly Signals signals;
@@ -97,7 +95,6 @@ namespace Stratis.FederatedPeg.Features.FederationGateway
 
         public FederationGatewayFeature(
             ILoggerFactory loggerFactory,
-            IMaturedBlocksRequester maturedBlocksRequester,
             IMaturedBlocksProvider maturedBlocksProvider,
             Signals signals,
             IDepositExtractor depositExtractor,
@@ -119,7 +116,6 @@ namespace Stratis.FederatedPeg.Features.FederationGateway
             IMaturedBlocksSyncManager maturedBlocksSyncManager)
         {
             this.loggerFactory = loggerFactory;
-            this.maturedBlockRequester = maturedBlocksRequester;
             this.maturedBlocksProvider = maturedBlocksProvider;
             this.signals = signals;
             this.depositExtractor = depositExtractor;
@@ -304,14 +300,12 @@ namespace Stratis.FederatedPeg.Features.FederationGateway
                     {
                         services.AddSingleton<IHttpClientFactory, HttpClientFactory>();
                         services.AddSingleton<IMaturedBlockReceiver, MaturedBlockReceiver>();
-                        services.AddSingleton<IMaturedBlocksRequester, RestMaturedBlockRequester>();
                         services.AddSingleton<IMaturedBlocksProvider, MaturedBlocksProvider>();
                         services.AddSingleton<IFederationGatewaySettings, FederationGatewaySettings>();
                         services.AddSingleton<IOpReturnDataReader, OpReturnDataReader>();
                         services.AddSingleton<IDepositExtractor, DepositExtractor>();
                         services.AddSingleton<IWithdrawalExtractor, WithdrawalExtractor>();
                         services.AddSingleton<IWithdrawalReceiver, WithdrawalReceiver>();
-                        services.AddSingleton<EventsPersister>();
                         services.AddSingleton<FederationGatewayController>();
                         services.AddSingleton<IFederationWalletSyncManager, FederationWalletSyncManager>();
                         services.AddSingleton<IFederationWalletTransactionHandler, FederationWalletTransactionHandler>();
