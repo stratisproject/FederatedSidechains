@@ -1066,7 +1066,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
         {
             Guard.NotNull(crossChainTransfer, nameof(crossChainTransfer));
 
-            dbreezeTransaction.Insert<byte[], ICrossChainTransfer>(transferTableName, crossChainTransfer.DepositTransactionId.ToBytes(), crossChainTransfer);
+            dbreezeTransaction.Insert(transferTableName, crossChainTransfer.DepositTransactionId.ToBytes(), crossChainTransfer.ToBytes(this.network.Consensus.ConsensusFactory));
         }
 
         /// <summary>Persist multiple cross-chain transfer information into the database.</summary>
