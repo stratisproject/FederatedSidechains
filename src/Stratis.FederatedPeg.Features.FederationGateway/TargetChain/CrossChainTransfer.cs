@@ -195,7 +195,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
         }
 
         /// <inheritdoc />
-        public int GetSignatureCount()
+        public int GetSignatureCount(Network network)
         {
             Guard.NotNull(this.PartialTransaction, nameof(this.PartialTransaction));
             Guard.Assert(this.PartialTransaction.Inputs.Any());
@@ -204,9 +204,9 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
             if (scriptSig == null)
                 return 0;
 
-            Op[] ops = scriptSig.ToOps().ToArray();
+            TransactionSignature[] result = PayToMultiSigTemplate.Instance.ExtractScriptSigParameters(network, scriptSig);
 
-            return ops.Length - (1 + ops.Count(o => o.Code == OpcodeType.OP_0));
+            return result.Length;
         }
 
         /// <inheritdoc />

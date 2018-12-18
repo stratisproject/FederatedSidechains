@@ -83,6 +83,6 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.Interfaces
         /// Gets the number of sigatures in the first input of the transaction.
         /// </summary>
         /// <returns>Number of signatures.</returns>
-        int GetSignatureCount();
+        int GetSignatureCount(Network network);
     }
 }
