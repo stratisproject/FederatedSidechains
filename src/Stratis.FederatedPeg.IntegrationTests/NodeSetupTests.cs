@@ -65,7 +65,7 @@ namespace Stratis.FederatedPeg.IntegrationTests
         }
 
         [Fact]
-        public async Task End_To_End()
+        public async Task MainChain_To_SideChain_Transfer()
         {
             using (SidechainTestContext context = new SidechainTestContext())
             {
