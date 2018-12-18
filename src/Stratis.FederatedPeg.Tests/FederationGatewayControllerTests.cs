@@ -243,7 +243,8 @@ namespace Stratis.FederatedPeg.Tests
                 callCount++;
             });
 
-            controller.PushMaturedBlock(deposits);
+            // TODO
+            //controller.PushMaturedBlock(deposits);
             callCount.Should().Be(1);
         }
 

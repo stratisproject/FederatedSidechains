@@ -10,6 +10,7 @@ using Stratis.FederatedPeg.Features.FederationGateway.RestClients;
 namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
 {
     // TODO remove MaturedBlockReceiver
+    // TODO review maturedBlocksProvider and what it does and where used. maybe delete this if it was only used for push mechanism
 
     // TODO implement only pull mechanism
 

@@ -18,14 +18,11 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.Controllers
 {
     public static class FederationGatewayRouteEndPoint
     {
-        public const string PushMaturedBlocks = "push_matured_blocks";
+        // TODO do we have push mechanism for the block tip? Remove it. We only need pull mechanism. And I hope we don't have push and pull implemented at the same time
         public const string PushCurrentBlockTip = "push_current_block_tip";
+
         public const string GetMaturedBlockDeposits = "get_matured_block_deposits";
         public const string GetInfo = "info";
-
-        // TODO commented out since those constants are unused. Remove them later or start using.
-        //public const string CreateSessionOnCounterChain = "create-session-oncounterchain";
-        //public const string ProcessSessionOnCounterChain = "process-session-oncounterchain";
     }
 
     /// <summary>
@@ -73,13 +70,6 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.Controllers
             this.federationGatewaySettings = federationGatewaySettings;
             this.federationWalletManager = federationWalletManager;
             this.federationManager = federationManager;
-        }
-
-        [Route(FederationGatewayRouteEndPoint.PushMaturedBlocks)]
-        [HttpPost]
-        public void PushMaturedBlock([FromBody] MaturedBlockDepositsModel maturedBlockDeposits)
-        {
-            this.maturedBlockReceiver.PushMaturedBlockDeposits(new[] { maturedBlockDeposits });
         }
 
         /// <summary>Pushes the current block tip to be used for updating the federated leader in a round robin fashion.</summary>
