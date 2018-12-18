@@ -52,7 +52,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.SourceChain
 
             var maturedBlocks = new List<MaturedBlockDepositsModel>();
 
-            for (int i = blockHeight; (i <= matureTipHeight) && (i <= blockHeight + maxBlocks); i++)
+            for (int i = blockHeight; (i <= matureTipHeight) && (i < blockHeight + maxBlocks); i++)
             {
                 ChainedHeader currentHeader = consensusTip.GetAncestor(i);
 

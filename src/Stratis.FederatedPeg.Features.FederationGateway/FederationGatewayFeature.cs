@@ -50,8 +50,6 @@ namespace Stratis.FederatedPeg.Features.FederationGateway
     {
         public const string FederationGatewayFeatureNamespace = "federationgateway";
 
-        private readonly IMaturedBlocksProvider maturedBlocksProvider;
-
         private readonly Signals signals;
 
         private readonly IDepositExtractor depositExtractor;
@@ -59,8 +57,6 @@ namespace Stratis.FederatedPeg.Features.FederationGateway
         private readonly IWithdrawalExtractor withdrawalExtractor;
 
         private readonly IWithdrawalReceiver withdrawalReceiver;
-
-        private readonly ILeaderProvider leaderProvider;
 
         private IDisposable blockSubscriberDisposable;
 
@@ -96,12 +92,10 @@ namespace Stratis.FederatedPeg.Features.FederationGateway
 
         public FederationGatewayFeature(
             ILoggerFactory loggerFactory,
-            IMaturedBlocksProvider maturedBlocksProvider,
             Signals signals,
             IDepositExtractor depositExtractor,
             IWithdrawalExtractor withdrawalExtractor,
             IWithdrawalReceiver withdrawalReceiver,
-            ILeaderProvider leaderProvider,
             IConnectionManager connectionManager,
             IFederationGatewaySettings federationGatewaySettings,
             IFullNode fullNode,
@@ -117,12 +111,10 @@ namespace Stratis.FederatedPeg.Features.FederationGateway
             IMaturedBlocksSyncManager maturedBlocksSyncManager)
         {
             this.loggerFactory = loggerFactory;
-            this.maturedBlocksProvider = maturedBlocksProvider;
             this.signals = signals;
             this.depositExtractor = depositExtractor;
             this.withdrawalExtractor = withdrawalExtractor;
             this.withdrawalReceiver = withdrawalReceiver;
-            this.leaderProvider = leaderProvider;
             this.connectionManager = connectionManager;
             this.federationGatewaySettings = federationGatewaySettings;
             this.fullNode = fullNode;
@@ -188,7 +180,9 @@ namespace Stratis.FederatedPeg.Features.FederationGateway
 
         private void AddInlineStats(StringBuilder benchLogs)
         {
-            if (this.federationWalletManager == null) return;
+            if (this.federationWalletManager == null)
+                return;
+
             int height = this.federationWalletManager.LastBlockHeight();
             ChainedHeader block = this.chain.GetBlock(height);
             uint256 hashBlock = block == null ? 0 : block.HashBlock;
