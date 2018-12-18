@@ -206,7 +206,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
 
             TransactionSignature[] result = PayToMultiSigTemplate.Instance.ExtractScriptSigParameters(network, scriptSig);
 
-            return result.Length;
+            return result?.Length ?? 0;
         }
 
         /// <inheritdoc />
