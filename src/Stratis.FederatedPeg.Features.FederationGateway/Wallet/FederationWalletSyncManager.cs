@@ -19,7 +19,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.Wallet
         protected readonly ConcurrentChain chain;
 
         protected readonly CoinType coinType;
-        
+
         private readonly ILogger logger;
 
         private readonly IBlockStore blockStore;
@@ -79,6 +79,11 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.Wallet
                 ICollection<uint256> locators = this.walletManager.GetWallet().BlockLocator;
                 var blockLocator = new BlockLocator { Blocks = locators.ToList() };
                 ChainedHeader fork = this.chain.FindFork(blockLocator);
+                if (fork == null)
+                {
+                    Block genesis = this.chain.Network.GetGenesis();
+                    fork = new ChainedHeader(genesis.Header, genesis.Header.GetHash(), 0);
+                }
                 this.walletManager.RemoveBlocks(fork);
                 this.walletManager.WalletTipHash = fork.HashBlock;
                 this.walletTip = fork;
@@ -212,7 +217,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.Wallet
         public virtual void ProcessTransaction(Transaction transaction)
         {
             Guard.NotNull(transaction, nameof(transaction));
-            
+
             this.walletManager.ProcessTransaction(transaction);
         }
 
