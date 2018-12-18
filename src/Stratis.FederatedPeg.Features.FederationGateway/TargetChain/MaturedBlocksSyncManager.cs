@@ -13,6 +13,8 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
 
     // TODO implement only pull mechanism
 
+    // TODO Remove sending matured blocks on OnNextCore. Remove even API endpoint to PUSH
+
     /// <summary>
     /// Handles block syncing between gateways on 2 chains. This node will request
     /// blocks from another chain to look for cross chain deposit transactions.
@@ -37,7 +39,10 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
         private Task blockRequestingTask;
 
         /// <summary>The maximum amount of blocks to request at a time from alt chain.</summary>
-        public const int MaxBlocksToRequest = 1000;
+        private const int MaxBlocksToRequest = 1000;
+
+        /// <summary>When we are fully synced we stop asking for more blocks for this amount of time.</summary>
+        private const int RefreshDelayMs = 10_000;
 
         public MaturedBlocksSyncManager(ICrossChainTransferStore store, IFederationGatewayClient federationGatewayClient, ILoggerFactory loggerFactory)
         {
@@ -65,37 +70,54 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
                 if (!this.store.HasSuspended())
                     blocksToRequest = MaxBlocksToRequest;
 
+                // TODO investigate if we can ask for blocks that are reorgable. If so it's a problem and an attack vector.
+                // API method that provides blocks should't give us blocks that are not mature!
                 var model = new MaturedBlockRequestModel(this.store.NextMatureDepositHeight, blocksToRequest);
 
                 this.logger.LogDebug("Request model created: '{0}'.", model);
 
                 // Ask for blocks.
-                IList<MaturedBlockDepositsModel> blockDeposits = await this.federationGatewayClient.GetMaturedBlockDepositsAsync(model).ConfigureAwait(false);
+                IList<MaturedBlockDepositsModel> matureBlockDeposits = await this.federationGatewayClient.GetMaturedBlockDepositsAsync(model).ConfigureAwait(false);
 
-                if ((blockDeposits != null) && (blockDeposits.Count > 0))
+                if (matureBlockDeposits != null)
                 {
-                    //bool result = await this.store.RecordLatestMatureDepositsAsync(blockDeposits).ConfigureAwait(false);
-                    //
-                    //// TODO what to do with result?
-                    //
-                    //
-                    //this.maturedBlockReceiver.PushMaturedBlockDeposits(blockDeposits.ToArray()); // TODO PUSH TO STORE ITSELF
-                    //
-                    //if (blockDeposits.Count < blocksToRequest)
-                    //{
-                    //    await this.crossChainTransferStore.SaveCurrentTipAsync().ConfigureAwait(false);
-                    //}
+                    // Log what we've received.
+                    foreach (MaturedBlockDepositsModel maturedBlockDeposit in matureBlockDeposits)
+                    {
+                        foreach (IDeposit deposit in maturedBlockDeposit.Deposits)
+                        {
+                            this.logger.LogDebug("New deposit received BlockNumber={0}, TargetAddress='{1}', depositId='{2}', Amount='{3}'.",
+                                deposit.BlockNumber, deposit.TargetAddress, deposit.Id, deposit.Amount);
+                        }
+                    }
+
+                    bool delayRequired = true;
+
+                    if (matureBlockDeposits.Count > 0)
+                    {
+                        bool success = await this.store.RecordLatestMatureDepositsAsync(matureBlockDeposits).ConfigureAwait(false);
+
+                        // If we received a portion of blocks we can ask for new portion without any delay.
+                        if (success)
+                            delayRequired = false;
+                    }
+                    else
+                    {
+                        this.logger.LogDebug("Considering ourselves fully synced since no blocks were received");
+
+                        // If we've received nothing we assume we are at the tip and should flush.
+                        // Same mechanic as with syncing headers protocol.
+                        await this.store.SaveCurrentTipAsync().ConfigureAwait(false);
+                    }
+
+                    if (delayRequired)
+                    {
+                        // Since we are synced or had a problem syncing there is no need to ask for more blocks right away.
+                        // Therefore awaiting for a delay during which new block might be accepted on the alternative chain
+                        // or alt chain node might be started.
+                        await Task.Delay(RefreshDelayMs).ConfigureAwait(false);
+                    }
                 }
-
-
-
-
-
-                // TODO ask for the portion of blocks
-
-
-
-                // this.store.RecordLatestMatureDepositsAsync(maturedBlockDeposits)
             }
         }
 

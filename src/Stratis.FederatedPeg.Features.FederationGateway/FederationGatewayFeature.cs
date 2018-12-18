@@ -180,6 +180,10 @@ namespace Stratis.FederatedPeg.Features.FederationGateway
         {
             this.blockSubscriberDisposable.Dispose();
             this.transactionSubscriberDisposable.Dispose();
+
+            // Sync manager has to be disposed BEFORE cross chain transfer store.
+            this.maturedBlocksSyncManager.Dispose();
+
             this.crossChainTransferStore.Dispose();
         }
 

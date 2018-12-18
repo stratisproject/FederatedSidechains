@@ -31,7 +31,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
             this.OnMaturedBlockDepositsPushed = this.maturedBlockDepositStream.AsObservable();
         }
 
-        /// <inheritdoc />
+        /// <inheritdoc /> // TODO this is push mechanism. Get rid of it.
         public void PushMaturedBlockDeposits(MaturedBlockDepositsModel[] maturedBlockDeposits)
         {
             if(maturedBlockDeposits == null) return;
