@@ -75,8 +75,8 @@ namespace Stratis.FederatedSidechains.AdminDashboard.Services
             var sidechainPeers = new List<Peer>();
             var sidechainFederationMembers = new List<Peer>();
 
-            ParsePeers(stratisStatus, stratisFederationInfo, ref stratisPeers, ref stratisFederationMembers);
-            ParsePeers(sidechainStatus, sidechainFederationInfo, ref sidechainPeers, ref sidechainFederationMembers);
+            this.ParsePeers(stratisStatus, stratisFederationInfo, ref stratisPeers, ref stratisFederationMembers);
+            this.ParsePeers(sidechainStatus, sidechainFederationInfo, ref sidechainPeers, ref sidechainFederationMembers);
 
             var dashboardModel = new DashboardModel();
             try
