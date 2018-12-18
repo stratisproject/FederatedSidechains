@@ -154,6 +154,8 @@ namespace Stratis.FederatedPeg.Features.FederationGateway
             this.transactionSubscriberDisposable = this.signals.SubscribeForTransactions(new TransactionObserver(this.walletSyncManager));
 
             this.crossChainTransferStore.Initialize();
+
+            // maturedBlocksSyncManager should be initialized only after crossChainTransferStore.
             this.maturedBlocksSyncManager.Initialize();
 
             this.federationWalletManager.Start();

@@ -9,12 +9,6 @@ using Stratis.FederatedPeg.Features.FederationGateway.RestClients;
 
 namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
 {
-    // TODO review maturedBlocksProvider and what it does and where used. maybe delete this if it was only used for push mechanism
-
-    // TODO implement only pull mechanism
-
-    // TODO Remove sending matured blocks on OnNextCore. Remove even API endpoint to PUSH
-
     /// <summary>
     /// Handles block syncing between gateways on 2 chains. This node will request
     /// blocks from another chain to look for cross chain deposit transactions.
@@ -54,7 +48,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
         }
 
         /// <inheritdoc />
-        public void Initialize() // TODO initialize only after store is initialized
+        public void Initialize()
         {
             this.blockRequestingTask = RequestMaturedBlocksContinouslyAsync();
         }
