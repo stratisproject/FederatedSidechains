@@ -236,9 +236,19 @@ namespace Stratis.FederatedPeg.Features.FederationGateway
                 {
                     ICrossChainTransfer transfer = transfers[i];
                     IWithdrawal withdrawal = withdrawals[i];
-                    TxMempoolInfo txInfo = this.mempoolManager.InfoAsync(withdrawal.Id).GetAwaiter().GetResult();
-                    benchLog.AppendLine(withdrawal.GetInfo() + " Status=" + transfer?.Status + ((txInfo != null) ? "+InMempool" : ""));
+                    string line = withdrawal.GetInfo() + " Status=" + transfer?.Status;
+                    switch (transfer?.Status)
+                    {
+                        case CrossChainTransferStatus.FullySigned:
+                            if (this.mempoolManager.InfoAsync(withdrawal.Id).GetAwaiter().GetResult() != null)
+                                line += "+InMempool";
+                            break;
+                        case CrossChainTransferStatus.Partial:
+                            line += "(" + transfer.GetSignatureCount() + "/" + this.federationGatewaySettings.MultiSigM + ")";
+                            break;
+                    }
 
+                    benchLog.AppendLine(line);
                 }
                 benchLog.AppendLine();
             }
