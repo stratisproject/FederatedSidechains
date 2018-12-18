@@ -9,6 +9,9 @@ using Stratis.FederatedPeg.Features.FederationGateway.RestClients;
 
 namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
 {
+    //TODO add tests coverage
+
+
     /// <summary>
     /// Handles block syncing between gateways on 2 chains. This node will request
     /// blocks from another chain to look for cross chain deposit transactions.
@@ -68,7 +71,8 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
                 // API method that provides blocks should't give us blocks that are not mature!
                 var model = new MaturedBlockRequestModel(this.store.NextMatureDepositHeight, blocksToRequest);
 
-                this.logger.LogDebug("Request model created: '{0}'.", model);
+                this.logger.LogDebug("Request model created: {0}:{1}, {2}:{3}.", nameof(model.BlockHeight), model.BlockHeight,
+                    nameof(model.MaxBlocksToSend), model.MaxBlocksToSend);
 
                 // Ask for blocks.
                 IList<MaturedBlockDepositsModel> matureBlockDeposits = await this.federationGatewayClient.GetMaturedBlockDepositsAsync(model).ConfigureAwait(false);
