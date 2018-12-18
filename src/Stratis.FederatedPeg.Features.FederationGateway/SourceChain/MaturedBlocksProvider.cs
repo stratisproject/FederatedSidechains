@@ -90,12 +90,12 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.SourceChain
             for (int index = 0; index < chainedHeaders.Count; index++)
             {
                 // TODO: ChainedHeaderBlock should be called from consensus manager.
-                MaturedBlockDepositsModel maturedBlockDeposits = this.depositExtractor.ExtractBlockDeposits(new ChainedHeaderBlock(chainedHeaders[index].Block, chainedHeaders[index]));
+                ChainedHeader currentHeader = chainedHeaders[index];
+
+                MaturedBlockDepositsModel maturedBlockDeposits = this.depositExtractor.ExtractBlockDeposits(new ChainedHeaderBlock(currentHeader.Block, currentHeader));
 
                 if (maturedBlockDeposits == null)
-                {
-                    throw new InvalidOperationException($"Unable to get deposits for block at height {chainedHeaders[index].Height}");
-                }
+                    throw new InvalidOperationException($"Unable to get deposits for block at height {currentHeader.Height}");
 
                 maturedBlocks.Add(maturedBlockDeposits);
             }

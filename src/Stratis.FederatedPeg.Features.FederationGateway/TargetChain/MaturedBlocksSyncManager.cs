@@ -61,62 +61,71 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
         {
             while (!this.cancellation.IsCancellationRequested)
             {
-                int blocksToRequest = 1;
+                bool delayRequired = await this.AskForBlocksAsync().ConfigureAwait(false);
 
-                // TODO why are we asking for max of 1 block and if it's not suspended then 1000? investigate this logic in maturedBlocksProvider
-                if (!this.store.HasSuspended())
-                    blocksToRequest = MaxBlocksToRequest;
-
-                // TODO investigate if we can ask for blocks that are reorgable. If so it's a problem and an attack vector.
-                // API method that provides blocks should't give us blocks that are not mature!
-                var model = new MaturedBlockRequestModel(this.store.NextMatureDepositHeight, blocksToRequest);
-
-                this.logger.LogDebug("Request model created: {0}:{1}, {2}:{3}.", nameof(model.BlockHeight), model.BlockHeight,
-                    nameof(model.MaxBlocksToSend), model.MaxBlocksToSend);
-
-                // Ask for blocks.
-                IList<MaturedBlockDepositsModel> matureBlockDeposits = await this.federationGatewayClient.GetMaturedBlockDepositsAsync(model).ConfigureAwait(false);
-
-                if (matureBlockDeposits != null)
+                if (delayRequired)
                 {
-                    // Log what we've received.
-                    foreach (MaturedBlockDepositsModel maturedBlockDeposit in matureBlockDeposits)
-                    {
-                        foreach (IDeposit deposit in maturedBlockDeposit.Deposits)
-                        {
-                            this.logger.LogDebug("New deposit received BlockNumber={0}, TargetAddress='{1}', depositId='{2}', Amount='{3}'.",
-                                deposit.BlockNumber, deposit.TargetAddress, deposit.Id, deposit.Amount);
-                        }
-                    }
-
-                    bool delayRequired = true;
-
-                    if (matureBlockDeposits.Count > 0)
-                    {
-                        bool success = await this.store.RecordLatestMatureDepositsAsync(matureBlockDeposits).ConfigureAwait(false);
-
-                        // If we received a portion of blocks we can ask for new portion without any delay.
-                        if (success)
-                            delayRequired = false;
-                    }
-                    else
-                    {
-                        this.logger.LogDebug("Considering ourselves fully synced since no blocks were received");
-
-                        // If we've received nothing we assume we are at the tip and should flush.
-                        // Same mechanic as with syncing headers protocol.
-                        await this.store.SaveCurrentTipAsync().ConfigureAwait(false);
-                    }
-
-                    if (delayRequired)
-                    {
-                        // Since we are synced or had a problem syncing there is no need to ask for more blocks right away.
-                        // Therefore awaiting for a delay during which new block might be accepted on the alternative chain
-                        // or alt chain node might be started.
-                        await Task.Delay(RefreshDelayMs).ConfigureAwait(false);
-                    }
+                    // Since we are synced or had a problem syncing there is no need to ask for more blocks right away.
+                    // Therefore awaiting for a delay during which new block might be accepted on the alternative chain
+                    // or alt chain node might be started.
+                    await Task.Delay(RefreshDelayMs).ConfigureAwait(false);
                 }
             }
+        }
+
+        /// <summary>Asks for blocks from another gateway node and then processes them.</summary>
+        /// <returns><c>true</c> if delay between next time we should ask for blocks is required; <c>false</c> otherwise.</returns>
+        protected async Task<bool> AskForBlocksAsync()
+        {
+            int blocksToRequest = 1;
+
+            // TODO why are we asking for max of 1 block and if it's not suspended then 1000? investigate this logic in maturedBlocksProvider
+            if (!this.store.HasSuspended())
+                blocksToRequest = MaxBlocksToRequest;
+
+            // TODO investigate if we can ask for blocks that are reorgable. If so it's a problem and an attack vector.
+            // API method that provides blocks should't give us blocks that are not mature!
+            var model = new MaturedBlockRequestModel(this.store.NextMatureDepositHeight, blocksToRequest);
+
+            this.logger.LogDebug("Request model created: {0}:{1}, {2}:{3}.", nameof(model.BlockHeight), model.BlockHeight,
+                nameof(model.MaxBlocksToSend), model.MaxBlocksToSend);
+
+            // Ask for blocks.
+            IList<MaturedBlockDepositsModel> matureBlockDeposits = await this.federationGatewayClient.GetMaturedBlockDepositsAsync(model).ConfigureAwait(false);
+
+            bool delayRequired = true;
+
+            if (matureBlockDeposits != null)
+            {
+                // Log what we've received.
+                foreach (MaturedBlockDepositsModel maturedBlockDeposit in matureBlockDeposits)
+                {
+                    foreach (IDeposit deposit in maturedBlockDeposit.Deposits)
+                    {
+                        this.logger.LogDebug("New deposit received BlockNumber={0}, TargetAddress='{1}', depositId='{2}', Amount='{3}'.",
+                            deposit.BlockNumber, deposit.TargetAddress, deposit.Id, deposit.Amount);
+                    }
+                }
+
+                if (matureBlockDeposits.Count > 0)
+                {
+                    bool success = await this.store.RecordLatestMatureDepositsAsync(matureBlockDeposits).ConfigureAwait(false);
+
+                    // If we received a portion of blocks we can ask for new portion without any delay.
+                    if (success)
+                        delayRequired = false;
+                }
+                else
+                {
+                    this.logger.LogDebug("Considering ourselves fully synced since no blocks were received");
+
+                    // If we've received nothing we assume we are at the tip and should flush.
+                    // Same mechanic as with syncing headers protocol.
+                    await this.store.SaveCurrentTipAsync().ConfigureAwait(false);
+                }
+            }
+
+            return delayRequired;
         }
 
         /// <inheritdoc />

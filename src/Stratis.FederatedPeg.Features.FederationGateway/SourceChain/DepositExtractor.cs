@@ -76,7 +76,8 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.SourceChain
 
         public MaturedBlockDepositsModel ExtractBlockDeposits(ChainedHeaderBlock newlyMaturedBlock)
         {
-            if (newlyMaturedBlock == null) return null;
+            if (newlyMaturedBlock == null)
+                return null;
 
             var maturedBlock = new MaturedBlockInfoModel()
             {
