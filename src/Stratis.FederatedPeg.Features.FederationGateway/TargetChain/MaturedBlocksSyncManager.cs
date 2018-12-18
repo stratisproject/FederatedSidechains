@@ -60,7 +60,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
             {
                 int blocksToRequest = 1;
 
-                // TODO why are we asking for max of 1 block and if it's not suspended then 1000? investigate this logic
+                // TODO why are we asking for max of 1 block and if it's not suspended then 1000? investigate this logic in maturedBlocksProvider
                 if (!this.store.HasSuspended())
                     blocksToRequest = MaxBlocksToRequest;
 
