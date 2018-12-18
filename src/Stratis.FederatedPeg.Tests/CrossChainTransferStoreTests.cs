@@ -409,7 +409,7 @@ namespace Stratis.FederatedPeg.Tests
 
             this.Init(dataFolder);
             this.AddFunding();
-            this.AppendBlocks(5);
+            this.AppendBlocks(this.federationGatewaySettings.MinCoinMaturity);
 
             MultiSigAddress multiSigAddress = this.wallet.MultiSigAddress;
 
