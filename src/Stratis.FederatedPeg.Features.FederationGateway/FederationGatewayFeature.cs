@@ -244,7 +244,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway
                                 line += "+InMempool";
                             break;
                         case CrossChainTransferStatus.Partial:
-                            line += "(" + transfer.GetSignatureCount() + "/" + this.federationGatewaySettings.MultiSigM + ")";
+                            line += " (" + transfer.GetSignatureCount() + "/" + this.federationGatewaySettings.MultiSigM + ")";
                             break;
                     }
 

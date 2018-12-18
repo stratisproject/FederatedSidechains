@@ -206,7 +206,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
 
             Op[] ops = scriptSig.ToOps().ToArray();
 
-            return ops.Length - (ops.Count(o => o.Code == OpcodeType.OP_0) + 1);
+            return ops.Length - (1 + ops.Count(o => o.Code == OpcodeType.OP_0));
         }
 
         /// <inheritdoc />

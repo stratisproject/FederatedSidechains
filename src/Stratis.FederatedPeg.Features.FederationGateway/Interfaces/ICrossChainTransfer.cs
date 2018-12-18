@@ -80,7 +80,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.Interfaces
         void SetPartialTransaction(Transaction partialTransaction);
 
         /// <summary>
-        /// Counts the number of sigatures in the first input of the transaction.
+        /// Gets the number of sigatures in the first input of the transaction.
         /// </summary>
         /// <returns>Number of signatures.</returns>
         int GetSignatureCount();
