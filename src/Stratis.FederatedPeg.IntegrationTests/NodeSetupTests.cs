@@ -94,8 +94,17 @@ namespace Stratis.FederatedPeg.IntegrationTests
                 TestHelper.WaitLoop(() => context.FedMain1.CreateRPCClient().GetRawMempool().Length == 1);
                 TestHelper.MineBlocks(context.FedMain1, 15);
 
-                // Sidechain user has balance
+                // Sidechain user has balance - transfer complete
                 Assert.Equal(new Money(25, MoneyUnit.BTC), context.GetBalance(context.SideUser));
+
+                // Send funds back to the main chain
+                string mainchainAddress = context.GetAddress(context.MainUser);
+                await context.WithdrawToMainChain(context.SideUser, 24, mainchainAddress);
+                int currentSideHeight = context.SideUser.FullNode.Chain.Tip.Height;
+                TestHelper.WaitLoop(() => context.SideUser.FullNode.Chain.Height >= currentSideHeight + 7); // Just enough to get past min deposit and allow some breathing room
+
+                // Should unlock funds back on the main chain - federation tx arrives to mempool
+                TestHelper.WaitLoop(() => context.FedMain1.CreateRPCClient().GetRawMempool().Length == 1);
             }
         }
     }

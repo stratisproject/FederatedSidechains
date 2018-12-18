@@ -266,6 +266,39 @@ namespace Stratis.FederatedPeg.IntegrationTests.Utils
                     hex = walletBuildTxModel.Hex
                 });
         }
+
+        public async Task WithdrawToMainChain(CoreNode node, decimal amount, string mainchainWithdrawAddress)
+        {
+            HttpResponseMessage withdrawTransaction = await $"http://localhost:{node.ApiPort}/api"
+                .AppendPathSegment("wallet/build-transaction")
+                .PostJsonAsync(new
+                {
+                    walletName = WalletName,
+                    accountName = WalletAccount,
+                    password = WalletPassword,
+                    opReturnData = mainchainWithdrawAddress,
+                    feeAmount = "0.01",
+                    recipients = new[]
+                    {
+                        new
+                        {
+                            destinationAddress = this.scriptAndAddresses.sidechainMultisigAddress.ToString(),
+                            amount = amount
+                        }
+                    }
+                });
+
+            string result = await withdrawTransaction.Content.ReadAsStringAsync();
+            WalletBuildTransactionModel walletBuildTxModel = JsonConvert.DeserializeObject<WalletBuildTransactionModel>(result);
+
+            HttpResponseMessage sendTransactionResponse = await $"http://localhost:{node.ApiPort}/api"
+                .AppendPathSegment("wallet/send-transaction")
+                .PostJsonAsync(new
+                {
+                    hex = walletBuildTxModel.Hex
+                });
+        }
+
         public string GetAddress(CoreNode node)
         {
             return node.FullNode.WalletManager().GetUnusedAddress(new WalletAccountReference(WalletName, WalletAccount)).Address;
