@@ -35,8 +35,6 @@ namespace Stratis.FederatedPeg.Tests
 
         private readonly ILogger logger;
 
-        private readonly IMaturedBlockReceiver maturedBlockReceiver;
-
         private readonly ILeaderProvider leaderProvider;
 
         private ConcurrentChain chain;
@@ -60,7 +58,6 @@ namespace Stratis.FederatedPeg.Tests
             this.loggerFactory = Substitute.For<ILoggerFactory>();
             this.logger = Substitute.For<ILogger>();
             this.loggerFactory.CreateLogger(null).ReturnsForAnyArgs(this.logger);
-            this.maturedBlockReceiver = Substitute.For<IMaturedBlockReceiver>();
             this.leaderProvider = Substitute.For<ILeaderProvider>();
             this.depositExtractor = Substitute.For<IDepositExtractor>();
             this.leaderReceiver = Substitute.For<ILeaderReceiver>();
@@ -76,7 +73,6 @@ namespace Stratis.FederatedPeg.Tests
             var controller = new FederationGatewayController(
                 this.loggerFactory,
                 this.network,
-                this.maturedBlockReceiver,
                 this.leaderProvider,
                 this.GetMaturedBlocksProvider(),
                 this.leaderReceiver,
@@ -238,10 +234,10 @@ namespace Stratis.FederatedPeg.Tests
                     hashHeightPair.Height, hashHeightPair.Hash) });
 
             int callCount = 0;
-            this.maturedBlockReceiver.When(x => x.PushMaturedBlockDeposits(Arg.Any<MaturedBlockDepositsModel[]>())).Do(info =>
-            {
-                callCount++;
-            });
+            //this.maturedBlockReceiver.When(x => x.PushMaturedBlockDeposits(Arg.Any<MaturedBlockDepositsModel[]>())).Do(info =>
+            //{
+            //    callCount++;
+            //});
 
             // TODO
             //controller.PushMaturedBlock(deposits);
@@ -264,7 +260,6 @@ namespace Stratis.FederatedPeg.Tests
             var controller = new FederationGatewayController(
                 this.loggerFactory,
                 this.network,
-                this.maturedBlockReceiver,
                 this.leaderProvider,
                 this.GetMaturedBlocksProvider(),
                 this.leaderReceiver,
@@ -304,7 +299,6 @@ namespace Stratis.FederatedPeg.Tests
             var controller = new FederationGatewayController(
                 this.loggerFactory,
                 this.network,
-                this.maturedBlockReceiver,
                 this.leaderProvider,
                 this.GetMaturedBlocksProvider(),
                 this.leaderReceiver,

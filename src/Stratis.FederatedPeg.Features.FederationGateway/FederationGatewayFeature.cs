@@ -299,7 +299,6 @@ namespace Stratis.FederatedPeg.Features.FederationGateway
                     services =>
                     {
                         services.AddSingleton<IHttpClientFactory, HttpClientFactory>();
-                        services.AddSingleton<IMaturedBlockReceiver, MaturedBlockReceiver>();
                         services.AddSingleton<IMaturedBlocksProvider, MaturedBlocksProvider>();
                         services.AddSingleton<IFederationGatewaySettings, FederationGatewaySettings>();
                         services.AddSingleton<IOpReturnDataReader, OpReturnDataReader>();

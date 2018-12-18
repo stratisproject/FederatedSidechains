@@ -36,8 +36,6 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.Controllers
 
         private readonly Network network;
 
-        private readonly IMaturedBlockReceiver maturedBlockReceiver;
-
         private readonly ILeaderProvider leaderProvider;
 
         private readonly IMaturedBlocksProvider maturedBlocksProvider;
@@ -53,7 +51,6 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.Controllers
         public FederationGatewayController(
             ILoggerFactory loggerFactory,
             Network network,
-            IMaturedBlockReceiver maturedBlockReceiver,
             ILeaderProvider leaderProvider,
             IMaturedBlocksProvider maturedBlocksProvider,
             ILeaderReceiver leaderReceiver,
@@ -63,7 +60,6 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.Controllers
         {
             this.logger = loggerFactory.CreateLogger(this.GetType().FullName);
             this.network = network;
-            this.maturedBlockReceiver = maturedBlockReceiver;
             this.leaderProvider = leaderProvider;
             this.maturedBlocksProvider = maturedBlocksProvider;
             this.leaderReceiver = leaderReceiver;
