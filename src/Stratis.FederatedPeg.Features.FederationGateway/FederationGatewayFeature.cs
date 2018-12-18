@@ -150,7 +150,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway
         {
             // Subscribe to receiving blocks and transactions.
             this.blockSubscriberDisposable = this.signals.SubscribeForBlocksConnected(new BlockObserver(this.walletSyncManager, this.depositExtractor, this.withdrawalExtractor,
-                this.withdrawalReceiver, this.federationGatewayClient, this.maturedBlocksProvider));
+                this.withdrawalReceiver, this.federationGatewayClient));
 
             this.transactionSubscriberDisposable = this.signals.SubscribeForTransactions(new TransactionObserver(this.walletSyncManager));
 
@@ -230,7 +230,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway
             var apiSettings = (ApiSettings)this.fullNode.Services.ServiceProvider.GetService(typeof(ApiSettings));
             if (!isFederationActive)
             {
-                var warning = 
+                var warning =
                                                     "=============================================".PadLeft(10,'=')
                            + Environment.NewLine
                            + Environment.NewLine +  "Federation node not enabled. You will not be able to sign transactions until you enable it."
@@ -283,7 +283,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway
                 (this.crossChainTransferStore.HasSuspended().ToString(), 0)
             },
             4);
-            
+
             AddBenchmarkLine(benchLog,
                 this.crossChainTransferStore.GetCrossChainTransferStatusCounter().SelectMany(item => new (string, int)[]{
                     (item.Key.ToString()+":", LoggingConfiguration.ColumnLength),

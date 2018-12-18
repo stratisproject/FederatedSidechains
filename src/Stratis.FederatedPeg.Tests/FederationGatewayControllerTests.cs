@@ -102,9 +102,7 @@ namespace Stratis.FederatedPeg.Tests
 
             return new MaturedBlocksProvider(
                 this.loggerFactory,
-                this.chain,
                 this.depositExtractor,
-                blockRepository,
                 this.consensusManager);
         }
 
