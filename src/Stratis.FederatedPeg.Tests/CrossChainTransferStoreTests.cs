@@ -77,7 +77,7 @@ namespace Stratis.FederatedPeg.Tests
             }
 
             // Create a new instance of this test that loads from the persistence that we created in the step before.
-            var newTest = new CrossChainTransferStoreTests();
+            var newTest = new CrossChainTransferStoreTests(this.network);
 
             // Force a reorg by creating a new chain that only has genesis in common.
             newTest.Init(dataFolder);

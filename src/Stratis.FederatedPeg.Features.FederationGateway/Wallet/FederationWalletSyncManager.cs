@@ -79,11 +79,6 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.Wallet
                 ICollection<uint256> locators = this.walletManager.GetWallet().BlockLocator;
                 var blockLocator = new BlockLocator { Blocks = locators.ToList() };
                 ChainedHeader fork = this.chain.FindFork(blockLocator);
-                if (fork == null)
-                {
-                    Block genesis = this.chain.Network.GetGenesis();
-                    fork = new ChainedHeader(genesis.Header, genesis.Header.GetHash(), 0);
-                }
                 this.walletManager.RemoveBlocks(fork);
                 this.walletManager.WalletTipHash = fork.HashBlock;
                 this.walletTip = fork;
