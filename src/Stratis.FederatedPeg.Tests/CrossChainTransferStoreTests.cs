@@ -391,7 +391,7 @@ namespace Stratis.FederatedPeg.Tests
 
                 // Should be returned as signed.
                 Transaction signedTransaction = crossChainTransferStore.GetTransactionsByStatusAsync(CrossChainTransferStatus.FullySigned).GetAwaiter().GetResult().Values.SingleOrDefault();
-                var hex = signedTransaction.ToHex(this.network);
+
                 Assert.NotNull(signedTransaction);
 
                 // Check ths signature.
