@@ -20,5 +20,10 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.Models
 
         [Required(ErrorMessage = "The block height is required")]
         public int BlockHeight { get; set; }
+
+        public override string ToString()
+        {
+            return $"{nameof(this.MaxBlocksToSend)}:{this.MaxBlocksToSend}, {nameof(this.BlockHeight)}:{this.BlockHeight}";
+        }
     }
 }

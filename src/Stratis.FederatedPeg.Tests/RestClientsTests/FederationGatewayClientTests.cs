@@ -46,9 +46,9 @@ namespace Stratis.FederatedPeg.Tests.RestClientsTests
         }
 
         [Fact]
-        public async Task PushMaturedBlockAsync_Should_Be_Able_To_Send_IMaturedBlockDepositsAsync()
+        public async Task PushMaturedBlockAsync_Should_Be_Able_To_Send_MaturedBlockDepositsModelAsync()
         {
-            IMaturedBlockDeposits maturedBlockDeposits = TestingValues.GetMaturedBlockDeposits();
+            MaturedBlockDepositsModel maturedBlockDeposits = TestingValues.GetMaturedBlockDeposits();
 
             await this.createClient().PushMaturedBlockAsync((MaturedBlockDepositsModel)maturedBlockDeposits).ConfigureAwait(false);
 
@@ -58,7 +58,7 @@ namespace Stratis.FederatedPeg.Tests.RestClientsTests
         [Fact]
         public async Task PushMaturedBlockAsync_Should_Log_Error_When_Failing_To_Send_MaturedBlockDepositAsync()
         {
-            IMaturedBlockDeposits maturedBlockDeposits = TestingValues.GetMaturedBlockDeposits();
+            MaturedBlockDepositsModel maturedBlockDeposits = TestingValues.GetMaturedBlockDeposits();
 
             await this.createClient(true).PushMaturedBlockAsync((MaturedBlockDepositsModel)maturedBlockDeposits).ConfigureAwait(false);
 

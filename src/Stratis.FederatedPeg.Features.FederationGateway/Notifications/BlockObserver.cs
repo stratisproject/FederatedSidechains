@@ -80,7 +80,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.Notifications
 
             this.withdrawalReceiver.ReceiveWithdrawals(withdrawals);
 
-            IMaturedBlockDeposits maturedBlockDeposits = this.maturedBlocksProvider.ExtractMaturedBlockDeposits(chainedHeaderBlock.ChainedHeader);
+            MaturedBlockDepositsModel maturedBlockDeposits = this.maturedBlocksProvider.ExtractMaturedBlockDeposits(chainedHeaderBlock.ChainedHeader);
 
             if (maturedBlockDeposits == null)
                 return;

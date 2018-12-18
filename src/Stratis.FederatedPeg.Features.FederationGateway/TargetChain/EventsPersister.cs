@@ -2,11 +2,12 @@
 using System.Collections.Generic;
 using Microsoft.Extensions.Logging;
 using Stratis.FederatedPeg.Features.FederationGateway.Interfaces;
+using Stratis.FederatedPeg.Features.FederationGateway.Models;
 
 namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
 {
     /// <summary>
-    /// Pushes <see cref="IMaturedBlockDeposits"/>s to <see cref="ICrossChainTransferStore"/>
+    /// Pushes <see cref="MaturedBlockDepositsModel"/>s to <see cref="ICrossChainTransferStore"/>
     /// when they are received from <see cref="IMaturedBlockReceiver"/> and asks for more from <see cref="IMaturedBlocksRequester"/>.
     /// </summary>
     public class EventsPersister : IDisposable
@@ -35,11 +36,11 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
             this.logger.LogDebug("Subscribed to {0}", nameof(maturedBlockReceiver), nameof(maturedBlockReceiver.OnMaturedBlockDepositsPushed));
         }
 
-        private void PersistNewMaturedBlockDeposits(IMaturedBlockDeposits[] maturedBlockDeposits)
+        private void PersistNewMaturedBlockDeposits(MaturedBlockDepositsModel[] maturedBlockDeposits)
         {
             lock (this.lockObj)
             {
-                foreach (IMaturedBlockDeposits maturedBlockDeposit in maturedBlockDeposits)
+                foreach (MaturedBlockDepositsModel maturedBlockDeposit in maturedBlockDeposits)
                 {
                     foreach (IDeposit deposit in maturedBlockDeposit.Deposits)
                     {

@@ -115,7 +115,7 @@ namespace Stratis.FederatedPeg.Tests
                 var deposit1 = new Deposit(0, new Money(160m, MoneyUnit.BTC), address1.ToString(), crossChainTransferStore.NextMatureDepositHeight, 1);
                 var deposit2 = new Deposit(1, new Money(60m, MoneyUnit.BTC), address2.ToString(), crossChainTransferStore.NextMatureDepositHeight, 1);
 
-                IMaturedBlockDeposits[] blockDeposits = new[] { new MaturedBlockDepositsModel(
+                MaturedBlockDepositsModel[] blockDeposits = new[] { new MaturedBlockDepositsModel(
                     new MaturedBlockInfoModel() {
                         BlockHash = 1,
                         BlockHeight = crossChainTransferStore.NextMatureDepositHeight },
@@ -212,7 +212,7 @@ namespace Stratis.FederatedPeg.Tests
                 var deposit1 = new Deposit(0, new Money(160m, MoneyUnit.BTC), address1.ToString(), crossChainTransferStore.NextMatureDepositHeight, 1);
                 var deposit2 = new Deposit(1, new Money(100m, MoneyUnit.BTC), address2.ToString(), crossChainTransferStore.NextMatureDepositHeight, 1);
 
-                IMaturedBlockDeposits[] blockDeposits = new[] { new MaturedBlockDepositsModel(
+                MaturedBlockDepositsModel[] blockDeposits = new[] { new MaturedBlockDepositsModel(
                     new MaturedBlockInfoModel() {
                         BlockHash = 1,
                         BlockHeight = crossChainTransferStore.NextMatureDepositHeight },
@@ -320,7 +320,7 @@ namespace Stratis.FederatedPeg.Tests
 
                 var deposit = new Deposit(0, new Money(160m, MoneyUnit.BTC), address.ToString(), crossChainTransferStore.NextMatureDepositHeight, 1);
 
-                IMaturedBlockDeposits[] blockDeposits = new[] { new MaturedBlockDepositsModel(
+                MaturedBlockDepositsModel[] blockDeposits = new[] { new MaturedBlockDepositsModel(
                     new MaturedBlockInfoModel() {
                         BlockHash = 1,
                         BlockHeight = crossChainTransferStore.NextMatureDepositHeight },
@@ -464,7 +464,7 @@ namespace Stratis.FederatedPeg.Tests
                 var deposit1 = new Deposit(0, new Money(160m, MoneyUnit.BTC), address1.ToString(), crossChainTransferStore.NextMatureDepositHeight, 1);
                 var deposit2 = new Deposit(1, new Money(60m, MoneyUnit.BTC), address2.ToString(), crossChainTransferStore.NextMatureDepositHeight, 1);
 
-                IMaturedBlockDeposits[] blockDeposits = new[] { new MaturedBlockDepositsModel(
+                MaturedBlockDepositsModel[] blockDeposits = new[] { new MaturedBlockDepositsModel(
                     new MaturedBlockInfoModel() {
                         BlockHash = 1,
                         BlockHeight = crossChainTransferStore.NextMatureDepositHeight },

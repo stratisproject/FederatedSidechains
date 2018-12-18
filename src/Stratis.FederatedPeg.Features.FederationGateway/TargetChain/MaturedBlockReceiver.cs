@@ -4,34 +4,35 @@ using System.Reactive.Subjects;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using Stratis.FederatedPeg.Features.FederationGateway.Interfaces;
+using Stratis.FederatedPeg.Features.FederationGateway.Models;
 
 namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
 {
     public interface IMaturedBlockReceiver
     {
-        void PushMaturedBlockDeposits(IMaturedBlockDeposits[] maturedBlockDeposits);
+        void PushMaturedBlockDeposits(MaturedBlockDepositsModel[] maturedBlockDeposits);
 
-        IObservable<IMaturedBlockDeposits[]> OnMaturedBlockDepositsPushed { get; }
+        IObservable<MaturedBlockDepositsModel[]> OnMaturedBlockDepositsPushed { get; }
     }
 
     public class MaturedBlockReceiver : IMaturedBlockReceiver, IDisposable
     {
-        private readonly ReplaySubject<IMaturedBlockDeposits[]> maturedBlockDepositStream;
+        private readonly ReplaySubject<MaturedBlockDepositsModel[]> maturedBlockDepositStream;
 
         private readonly ILogger logger;
 
         /// <inheritdoc />
-        public IObservable<IMaturedBlockDeposits[]> OnMaturedBlockDepositsPushed { get; }
+        public IObservable<MaturedBlockDepositsModel[]> OnMaturedBlockDepositsPushed { get; }
 
         public MaturedBlockReceiver(ILoggerFactory loggerFactory)
         {
             this.logger = loggerFactory.CreateLogger(this.GetType().FullName);
-            this.maturedBlockDepositStream = new ReplaySubject<IMaturedBlockDeposits[]>(1);
+            this.maturedBlockDepositStream = new ReplaySubject<MaturedBlockDepositsModel[]>(1);
             this.OnMaturedBlockDepositsPushed = this.maturedBlockDepositStream.AsObservable();
         }
 
         /// <inheritdoc />
-        public void PushMaturedBlockDeposits(IMaturedBlockDeposits[] maturedBlockDeposits)
+        public void PushMaturedBlockDeposits(MaturedBlockDepositsModel[] maturedBlockDeposits)
         {
             if(maturedBlockDeposits == null) return;
             this.logger.LogDebug("Pushing {0} matured deposit(s)", maturedBlockDeposits.Length);

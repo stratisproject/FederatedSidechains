@@ -51,7 +51,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
             {
                 if (blockDeposits.Count > 0)
                 {
-                    this.maturedBlockReceiver.PushMaturedBlockDeposits(blockDeposits.ToArray());
+                    this.maturedBlockReceiver.PushMaturedBlockDeposits(blockDeposits.ToArray()); // TODO PUSH TO STORE ITSELF
 
                     if (blockDeposits.Count < maxBlocksToRequest)
                     {

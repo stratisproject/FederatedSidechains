@@ -8,6 +8,7 @@ using Stratis.Bitcoin.Features.BlockStore;
 using Stratis.Bitcoin.Primitives;
 using Stratis.FederatedPeg.Features.FederationGateway;
 using Stratis.FederatedPeg.Features.FederationGateway.Interfaces;
+using Stratis.FederatedPeg.Features.FederationGateway.Models;
 using Stratis.FederatedPeg.Features.FederationGateway.SourceChain;
 using Xunit;
 
@@ -59,7 +60,7 @@ namespace Stratis.FederatedPeg.Tests
 
             var maturedBlocksProvider = new MaturedBlocksProvider(this.loggerFactory, this.chain, this.depositExtractor, this.blockRepository, this.consensusManager);
 
-            List<IMaturedBlockDeposits> deposits = maturedBlocksProvider.GetMaturedDepositsAsync(0, 10).GetAwaiter().GetResult();
+            List<MaturedBlockDepositsModel> deposits = maturedBlocksProvider.GetMaturedDepositsAsync(0, 10).GetAwaiter().GetResult();
 
             Assert.Equal(10, deposits.Count);
         }

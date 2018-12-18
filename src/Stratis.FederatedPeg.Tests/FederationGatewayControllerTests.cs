@@ -238,7 +238,7 @@ namespace Stratis.FederatedPeg.Tests
                     hashHeightPair.Height, hashHeightPair.Hash) });
 
             int callCount = 0;
-            this.maturedBlockReceiver.When(x => x.PushMaturedBlockDeposits(Arg.Any<IMaturedBlockDeposits[]>())).Do(info =>
+            this.maturedBlockReceiver.When(x => x.PushMaturedBlockDeposits(Arg.Any<MaturedBlockDepositsModel[]>())).Do(info =>
             {
                 callCount++;
             });

@@ -44,21 +44,21 @@ namespace Stratis.FederatedPeg.Tests
         public void PersistNewMaturedBlockDeposits_Should_Call_Store_And_Pass_Deposits_Upon_New_Block_Arrival()
         {
             int depositCount = 20;
-            var deposits = new List<IMaturedBlockDeposits[]>();
+            var deposits = new List<MaturedBlockDepositsModel[]>();
             deposits.Add(new[] { new MaturedBlockDepositsModel(new MaturedBlockInfoModel()
             {
                 BlockHash = 0,
                 BlockHeight = 0
             }, TestingValues.GetMaturedBlockDeposits(depositCount, new HashHeightPair(0, 0)).Deposits)});
 
-            IObservable<IMaturedBlockDeposits[]> maturedBlockStream = deposits.ToObservable();
+            IObservable<MaturedBlockDepositsModel[]> maturedBlockStream = deposits.ToObservable();
             this.maturedBlockReceiver.OnMaturedBlockDepositsPushed.Returns(maturedBlockStream);
 
             this.eventsPersister = new EventsPersister(this.loggerFactory, this.store, this.maturedBlockReceiver, this.maturedBlocksRequester);
 
             var indexedCallArguments = this.mockStore.Invocations
                 .Where(i => i.Method.Name == nameof(ICrossChainTransferStore.RecordLatestMatureDepositsAsync))
-                .Select((c, i) => new { Index = i, Deposits = ((IMaturedBlockDeposits[])c.Arguments[0])[0].Deposits }).ToList();
+                .Select((c, i) => new { Index = i, Deposits = ((MaturedBlockDepositsModel[])c.Arguments[0])[0].Deposits }).ToList();
 
             indexedCallArguments.ForEach(
                 ca =>
@@ -72,21 +72,21 @@ namespace Stratis.FederatedPeg.Tests
         public void PersistNewMaturedBlockDeposits_Should_Call_Store_And_Pass_Deposits_Upon_New_Block_Arrival_And_No_Deposits_In_Block()
         {
             int depositCount = 0;
-            var deposits = new List<IMaturedBlockDeposits[]>();
+            var deposits = new List<MaturedBlockDepositsModel[]>();
             deposits.Add(new[] { new MaturedBlockDepositsModel(new MaturedBlockInfoModel()
             {
                 BlockHash = 0,
                 BlockHeight = 0
             }, TestingValues.GetMaturedBlockDeposits(depositCount, new HashHeightPair(0, 0)).Deposits)});
 
-            IObservable<IMaturedBlockDeposits[]> maturedBlockStream = deposits.ToObservable();
+            IObservable<MaturedBlockDepositsModel[]> maturedBlockStream = deposits.ToObservable();
             this.maturedBlockReceiver.OnMaturedBlockDepositsPushed.Returns(maturedBlockStream);
 
             this.eventsPersister = new EventsPersister(this.loggerFactory, this.store, this.maturedBlockReceiver, this.maturedBlocksRequester);
 
             var indexedCallArguments = this.mockStore.Invocations
                 .Where(i => i.Method.Name == nameof(ICrossChainTransferStore.RecordLatestMatureDepositsAsync))
-                .Select((c, i) => new { Index = i, Deposits = ((IMaturedBlockDeposits[])c.Arguments[0])[0].Deposits }).ToList();
+                .Select((c, i) => new { Index = i, Deposits = ((MaturedBlockDepositsModel[])c.Arguments[0])[0].Deposits }).ToList();
 
             indexedCallArguments.ForEach(
                 ca =>
@@ -100,7 +100,7 @@ namespace Stratis.FederatedPeg.Tests
         public void PersistNewMaturedBlockDeposits_Should_Call_Store_And_Pass_Deposits_For_Each_Incomming_Matured_Block()
         {
             int blocksCount = 10;
-            var deposits = new List<IMaturedBlockDeposits[]>();
+            var deposits = new List<MaturedBlockDepositsModel[]>();
             for (int i = 0; i < blocksCount; i++)
                 deposits.Add(new[] { new MaturedBlockDepositsModel(new MaturedBlockInfoModel()
                 {
@@ -108,19 +108,19 @@ namespace Stratis.FederatedPeg.Tests
                     BlockHeight = i
                 }, TestingValues.GetMaturedBlockDeposits(i, new HashHeightPair((uint)i, i)).Deposits)});
 
-            IObservable<IMaturedBlockDeposits[]> maturedBlockStream = deposits.ToObservable();
+            IObservable<MaturedBlockDepositsModel[]> maturedBlockStream = deposits.ToObservable();
             this.maturedBlockReceiver.OnMaturedBlockDepositsPushed.Returns(maturedBlockStream);
 
             int blockNum = 0;
             this.mockStore.SetupGet(o => o.NextMatureDepositHeight).Returns(() => blockNum);
-            this.mockStore.Setup(mock => mock.RecordLatestMatureDepositsAsync(It.IsAny<IMaturedBlockDeposits[]>()))
+            this.mockStore.Setup(mock => mock.RecordLatestMatureDepositsAsync(It.IsAny<MaturedBlockDepositsModel[]>()))
                 .Returns(() => Task<bool>.Run(() => { blockNum++; return true; }));
 
             this.eventsPersister = new EventsPersister(this.loggerFactory, this.store, this.maturedBlockReceiver, this.maturedBlocksRequester);
 
             var indexedCallArguments = this.mockStore.Invocations
                 .Where(i => i.Method.Name == nameof(ICrossChainTransferStore.RecordLatestMatureDepositsAsync))
-                .Select((c, i) => new { Index = i, Deposits = ((IMaturedBlockDeposits[])c.Arguments[0])[0].Deposits }).ToList();
+                .Select((c, i) => new { Index = i, Deposits = ((MaturedBlockDepositsModel[])c.Arguments[0])[0].Deposits }).ToList();
 
             indexedCallArguments.ForEach(
                 ca =>

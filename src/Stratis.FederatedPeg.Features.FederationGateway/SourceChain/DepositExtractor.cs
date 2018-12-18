@@ -74,7 +74,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.SourceChain
             return new Deposit(transaction.GetHash(), depositsToMultisig.Sum(o => o.Value), targetAddress, blockHeight, blockHash);
         }
 
-        public IMaturedBlockDeposits ExtractBlockDeposits(ChainedHeaderBlock newlyMaturedBlock)
+        public MaturedBlockDepositsModel ExtractBlockDeposits(ChainedHeaderBlock newlyMaturedBlock)
         {
             if (newlyMaturedBlock == null) return null;
 

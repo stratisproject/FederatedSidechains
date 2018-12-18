@@ -52,7 +52,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.Controllers
         private readonly IFederationWalletManager federationWalletManager;
 
         private readonly FederationManager federationManager;
-        
+
         public FederationGatewayController(
             ILoggerFactory loggerFactory,
             Network network,
@@ -130,7 +130,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.Controllers
 
             try
             {
-                List<IMaturedBlockDeposits> deposits = await this.maturedBlocksProvider.GetMaturedDepositsAsync(
+                List<MaturedBlockDepositsModel> deposits = await this.maturedBlocksProvider.GetMaturedDepositsAsync(
                     blockRequest.BlockHeight, blockRequest.MaxBlocksToSend).ConfigureAwait(false);
 
                 return this.Json(deposits);
