@@ -9,9 +9,6 @@ using Stratis.FederatedPeg.Features.FederationGateway.RestClients;
 
 namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
 {
-    //TODO add tests coverage
-
-
     /// <summary>
     /// Handles block syncing between gateways on 2 chains. This node will request
     /// blocks from another chain to look for cross chain deposit transactions.
