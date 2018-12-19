@@ -35,7 +35,17 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.RestClients
 
             this.endpointUrl = $"http://localhost:{settings.CounterChainApiPort}/api/FederationGateway";
 
-            this.policy = Policy.Handle<Exception>().WaitAndRetryAsync(retryCount: RetryCount, sleepDurationProvider: attempt => TimeSpan.FromMilliseconds(AttemptDelayMs), onRetry: OnRetry);
+            this.policy = Policy.Handle<Exception>().WaitAndRetryAsync(retryCount: RetryCount, sleepDurationProvider:
+                attemptNumber =>
+                {
+                    // Intervals between new attempts are growing.
+                    int delayMs = AttemptDelayMs;
+
+                    if (attemptNumber > 1)
+                        delayMs *= attemptNumber;
+
+                    return TimeSpan.FromMilliseconds(delayMs);
+                }, onRetry: OnRetry);
         }
 
         protected async Task<HttpResponseMessage> SendPostRequestAsync<Model>(Model requestModel, string apiMethodName, CancellationToken cancellation) where Model : class

@@ -56,10 +56,6 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
         /// <summary>Continuously requests matured blocks from another chain.</summary>
         private async Task RequestMaturedBlocksContinouslyAsync()
         {
-            // Initialization delay.
-            // Give other node some time to start API service.
-            await Task.Delay(RefreshDelayMs).ConfigureAwait(false);
-
             while (!this.cancellation.IsCancellationRequested)
             {
                 bool delayRequired = await this.AskForBlocksAsync().ConfigureAwait(false);
