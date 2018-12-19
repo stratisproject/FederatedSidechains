@@ -18,6 +18,7 @@ using Stratis.Bitcoin.IntegrationTests.Common.EnvironmentMockUpHelpers;
 using Stratis.Bitcoin.Networks;
 using Stratis.FederatedPeg.Features.FederationGateway;
 using Stratis.FederatedPeg.Features.FederationGateway.Models;
+using Stratis.Sidechains.Networks;
 
 namespace Stratis.FederatedPeg.IntegrationTests.Utils
 {
