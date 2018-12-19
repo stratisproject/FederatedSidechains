@@ -40,7 +40,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
 
         /// <summary>Delay between initialization and first request to other node.</summary>
         /// <remarks>Needed to give other node some time to start before bombing it with requests.</remarks>
-        public const int InitializationDelayMs = 5_000;
+        private const int InitializationDelayMs = 5_000;
 
         public MaturedBlocksSyncManager(ICrossChainTransferStore store, IFederationGatewayClient federationGatewayClient, ILoggerFactory loggerFactory)
         {

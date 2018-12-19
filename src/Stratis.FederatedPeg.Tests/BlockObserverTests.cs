@@ -82,7 +82,9 @@ namespace Stratis.FederatedPeg.Tests
                 this.federationGatewayClient);
         }
 
-        [Fact]
+        [Retry(3)]
+        // This test requires retries because we are asserting result of a background thread that calls API.
+        // This will work in real life but in tests it produces a race condition and therefore requires retries.
         public async Task BlockObserverShouldNotTryToExtractDepositsBeforeMinimumDepositConfirmationsAsync()
         {
             int confirmations = (int)this.minimumDepositConfirmations - 1;
@@ -96,12 +98,14 @@ namespace Stratis.FederatedPeg.Tests
             this.withdrawalExtractor.ReceivedWithAnyArgs(1).ExtractWithdrawalsFromBlock(earlyBlock, 0);
             this.withdrawalReceiver.Received(1).ReceiveWithdrawals(Arg.Is(this.extractedWithdrawals));
 
-            await Task.Delay(MaturedBlocksSyncManager.InitializationDelayMs).ConfigureAwait(false);
+            await Task.Delay(500).ConfigureAwait(false);
 
             await this.federationGatewayClient.ReceivedWithAnyArgs(1).PushCurrentBlockTipAsync(null);
         }
 
-        [Fact]
+        [Retry(3)]
+        // This test requires retries because we are asserting result of a background thread that calls API.
+        // This will work in real life but in tests it produces a race condition and therefore requires retries.
         public void BlockObserverShouldTryToExtractDepositsAfterMinimumDepositConfirmations()
         {
             (ChainedHeaderBlock chainedHeaderBlock, Block block) blockBuilder = this.ChainHeaderBlockBuilder();
@@ -113,14 +117,16 @@ namespace Stratis.FederatedPeg.Tests
             this.federationGatewayClient.ReceivedWithAnyArgs(1).PushCurrentBlockTipAsync(null);
         }
 
-        [Fact]
+        [Retry(3)]
+        // This test requires retries because we are asserting result of a background thread that calls API.
+        // This will work in real life but in tests it produces a race condition and therefore requires retries.
         public async Task BlockObserverShouldSendBlockTipAsync()
         {
             ChainedHeaderBlock chainedHeaderBlock = this.ChainHeaderBlockBuilder().chainedHeaderBlock;
 
             this.blockObserver.OnNext(chainedHeaderBlock);
 
-            await Task.Delay(MaturedBlocksSyncManager.InitializationDelayMs).ConfigureAwait(false);
+            await Task.Delay(5000).ConfigureAwait(false);
 
             await this.federationGatewayClient.ReceivedWithAnyArgs(1).PushCurrentBlockTipAsync(null);
         }
