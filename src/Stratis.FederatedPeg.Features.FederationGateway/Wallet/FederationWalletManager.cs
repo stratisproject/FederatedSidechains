@@ -883,22 +883,74 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.Wallet
             }
         }
 
+        // This cache and subsequent private class are ONLY used by the 'IsFederationActive' method.
+        Dictionary<FederationActiveParameters, bool> cacheIsFederationActive = new Dictionary<FederationActiveParameters, bool>();
+
+        private class FederationActiveParameters : IComparable
+        {
+            public string encryptedSeed;
+            public WalletSecret secret;
+            public Network network;
+            public string publicKey;
+
+            public int CompareTo(object other)
+            {
+                FederationActiveParameters otherParameters = (FederationActiveParameters)other;
+                int compare = this.encryptedSeed.CompareTo(otherParameters.encryptedSeed);
+                if (compare != 0) return compare;
+                compare = this.secret.WalletPassword.CompareTo(otherParameters.secret.WalletPassword);
+                if (compare != 0) return compare;
+                compare = this.network.Name.CompareTo(otherParameters.network.Name);
+                if (compare != 0) return compare;
+                return this.publicKey.CompareTo(otherParameters.publicKey);
+            }
+
+            public override bool Equals(object obj)
+            {
+                return CompareTo(obj) == 0;
+            }
+
+            public override string ToString()
+            {
+                return string.Format("{0}:{1}:{2}:{3}", this.encryptedSeed, this.secret.WalletPassword, this.network.Name, this.publicKey);
+            }
+
+            public override int GetHashCode()
+            {
+                return this.ToString().GetHashCode();
+            }
+        }
+
         /// <inheritdoc />
         public bool IsFederationActive()
         {
-            // If federation is acive then the extended key in the wallet can be used to derive the public key.
             FederationWallet wallet = this.Wallet;
             if (wallet == null || this.Secret == null)
                 return false;
 
-            Key key = wallet.MultiSigAddress.GetPrivateKey(wallet.EncryptedSeed, this.Secret.WalletPassword, this.network);
+            var parameters = new FederationActiveParameters
+            {
+                encryptedSeed = wallet.EncryptedSeed,
+                network = this.network,
+                publicKey = this.federationGatewaySettings.PublicKey,
+                secret = this.Secret
+            };
 
-            if (key.PubKey.ToHex() == this.federationGatewaySettings.PublicKey)
-                return true;
+            // Check the cached result of the call as it tends to be a bit slow.
+            // If it failed it has to be retried.
+            if (!this.cacheIsFederationActive.TryGetValue(parameters, out bool isActive))
+            {
+                // If federation is acive then the extended key in the wallet can be used to derive the public key.
+                Key key = wallet.MultiSigAddress.GetPrivateKey(wallet.EncryptedSeed, this.Secret.WalletPassword, this.network);
 
-            this.logger.LogInformation("The wallet public key {0} does not match the federation member's public key {1}", key.PubKey.ToHex(), this.federationGatewaySettings.PublicKey);
+                isActive = key.PubKey.ToHex() == this.federationGatewaySettings.PublicKey;
 
-            return false;
+                if (!isActive)
+                    this.logger.LogInformation("The wallet public key {0} does not match the federation member's public key {1}", key.PubKey.ToHex(), this.federationGatewaySettings.PublicKey);
+            }
+
+            this.cacheIsFederationActive[parameters] = isActive;
+            return isActive;
         }
 
         /// <summary>
