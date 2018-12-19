@@ -65,7 +65,7 @@ namespace Stratis.FederatedPeg.IntegrationTests
         }
 
         [Fact]
-        public async Task MainChain_To_SideChain_Transfer()
+        public async Task MainChain_To_SideChain_Transfer_And_Back()
         {
             using (SidechainTestContext context = new SidechainTestContext())
             {
@@ -99,12 +99,15 @@ namespace Stratis.FederatedPeg.IntegrationTests
 
                 // Send funds back to the main chain
                 string mainchainAddress = context.GetAddress(context.MainUser);
+                Money currentMainUserBalance = context.GetBalance(context.MainUser);
                 await context.WithdrawToMainChain(context.SideUser, 24, mainchainAddress);
                 int currentSideHeight = context.SideUser.FullNode.Chain.Tip.Height;
                 TestHelper.WaitLoop(() => context.SideUser.FullNode.Chain.Height >= currentSideHeight + 7); // Just enough to get past min deposit and allow some breathing room
 
-                // Should unlock funds back on the main chain - federation tx arrives to mempool
+                // Should unlock funds back on the main chain
                 TestHelper.WaitLoop(() => context.FedMain1.CreateRPCClient().GetRawMempool().Length == 1);
+                TestHelper.MineBlocks(context.FedMain1, 1);
+                Assert.Equal(currentMainUserBalance + new Money(24, MoneyUnit.BTC), context.GetBalance(context.MainUser));
             }
         }
     }
