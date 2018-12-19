@@ -176,18 +176,17 @@ namespace FederationSetup
             tool.SavePrivateKey(key);
             PubKey miningPubKey = key.PubKey;
 
-            var outputPassphrase = passphrase == null ? string.Empty : $" | passphrase={passphrase}";
-
             Console.WriteLine($"-----------------------------------------------------------------------------");
             Console.WriteLine($"-- Please give the following 2 public keys to the federation administrator --");
             Console.WriteLine($"-----------------------------------------------------------------------------");
-            Console.WriteLine($"1. Your signing pubkey: {Encoders.Hex.EncodeData(signingPubKey.ToBytes(false))}{outputPassphrase}");
+            Console.WriteLine($"1. Your signing pubkey: {Encoders.Hex.EncodeData(signingPubKey.ToBytes(false))}");
             Console.WriteLine($"2. Your mining pubkey: {Encoders.Hex.EncodeData(miningPubKey.ToBytes(false))}");
             Console.WriteLine(Environment.NewLine);
             Console.WriteLine($"------------------------------------------------------------------------------------------");
             Console.WriteLine($"-- Please keep the following 12 words for yourself and note them down in a secure place --");
             Console.WriteLine($"------------------------------------------------------------------------------------------");
             Console.WriteLine($"Your signing mnemonic: {string.Join(" ", mnemonicForSigningKey.Words)}");
+            if(passphrase != null) { Console.WriteLine($"Your passphrase: {passphrase}");}
             Console.WriteLine(Environment.NewLine);
             Console.WriteLine($"------------------------------------------------------------------------------------------------------------");
             Console.WriteLine($"-- Please save the following file in a secure place, you'll need it when the federation has been created. --");
