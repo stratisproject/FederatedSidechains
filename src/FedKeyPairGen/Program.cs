@@ -124,10 +124,19 @@ namespace FederationSetup
 
         private static void HandleSwitchGenerateFedPublicPrivateKeysCommand(string[] args)
         {
-            if (args.Length != 1)
+            if (args.Length != 1 && args.Length != 2)
                 throw new ArgumentException("Please enter the exact number of argument required.");
 
-            GeneratePublicPrivateKeys();
+            string passphrase = null;
+            if (args.Length == 2)
+            {
+                int index = args[1].IndexOf("-passphrase=");
+                if (index < 0)
+                    throw new ArgumentException("The -passphrase=\"<passphrase>\" argument is missing.");
+                passphrase = args[1].Replace("-passphrase=", string.Empty);
+            }
+
+            GeneratePublicPrivateKeys(passphrase);
             FederationSetup.OutputSuccess();
         }
 
@@ -153,11 +162,11 @@ namespace FederationSetup
             Console.WriteLine(new MultisigAddressCreator().CreateMultisigAddresses(mainChain, sideChain, federatedPublicKeys.Select(f => new PubKey(f)).ToArray(), quorum));
         }
 
-        private static void GeneratePublicPrivateKeys()
+        private static void GeneratePublicPrivateKeys(string passphrase)
         {
             // Generate keys for signing.
             var mnemonicForSigningKey = new Mnemonic(Wordlist.English, WordCount.Twelve);
-            PubKey signingPubKey = mnemonicForSigningKey.DeriveExtKey().PrivateKey.PubKey;
+            PubKey signingPubKey = mnemonicForSigningKey.DeriveExtKey(passphrase).PrivateKey.PubKey;
 
             // Generate keys for migning.
             var tool = new KeyTool(new DataFolder(Path.GetDirectoryName(Assembly.GetEntryAssembly().Location)));
@@ -167,10 +176,12 @@ namespace FederationSetup
             tool.SavePrivateKey(key);
             PubKey miningPubKey = key.PubKey;
 
+            var outputPassphrase = passphrase == null ? string.Empty : $" | passphrase={passphrase}";
+
             Console.WriteLine($"-----------------------------------------------------------------------------");
             Console.WriteLine($"-- Please give the following 2 public keys to the federation administrator --");
             Console.WriteLine($"-----------------------------------------------------------------------------");
-            Console.WriteLine($"1. Your signing pubkey: {Encoders.Hex.EncodeData(signingPubKey.ToBytes(false))}");
+            Console.WriteLine($"1. Your signing pubkey: {Encoders.Hex.EncodeData(signingPubKey.ToBytes(false))}{outputPassphrase}");
             Console.WriteLine($"2. Your mining pubkey: {Encoders.Hex.EncodeData(miningPubKey.ToBytes(false))}");
             Console.WriteLine(Environment.NewLine);
             Console.WriteLine($"------------------------------------------------------------------------------------------");
