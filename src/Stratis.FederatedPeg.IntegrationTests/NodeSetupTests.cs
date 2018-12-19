@@ -27,7 +27,6 @@ namespace Stratis.FederatedPeg.IntegrationTests
             }
         }
 
-        [Fact(Skip = "Polly is preventing nodes syncing.")]
         public void FundMainChain()
         {
             using (SidechainTestContext context = new SidechainTestContext())
@@ -42,7 +41,6 @@ namespace Stratis.FederatedPeg.IntegrationTests
             }
         }
 
-        [Fact(Skip = "Polly is preventing nodes syncing.")]
         public void FundSideChain()
         {
             using (SidechainTestContext context = new SidechainTestContext())
@@ -103,7 +101,7 @@ namespace Stratis.FederatedPeg.IntegrationTests
                 await context.WithdrawToMainChain(context.SideUser, 24, mainchainAddress);
                 int currentSideHeight = context.SideUser.FullNode.Chain.Tip.Height;
                 // Mine just enough to get past min deposit and allow time for fed to work
-                TestHelper.WaitLoop(() => context.SideUser.FullNode.Chain.Height >= currentSideHeight + 7); 
+                TestHelper.WaitLoop(() => context.SideUser.FullNode.Chain.Height >= currentSideHeight + 7);
 
                 // Should unlock funds back on the main chain
                 TestHelper.WaitLoop(() => context.FedMain1.CreateRPCClient().GetRawMempool().Length == 1);
