@@ -1,28 +1,26 @@
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Net;
 using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
+using FluentAssertions;
+using Flurl;
+using Flurl.Http;
+using NBitcoin;
 using Newtonsoft.Json;
 using Stratis.Bitcoin.Features.Wallet;
 using Stratis.Bitcoin.Features.Wallet.Models;
+using Stratis.Bitcoin.IntegrationTests.Common;
+using Stratis.Bitcoin.IntegrationTests.Common.EnvironmentMockUpHelpers;
+using Stratis.Bitcoin.Networks;
+using Stratis.FederatedPeg.Features.FederationGateway;
+using Stratis.FederatedPeg.Features.FederationGateway.Models;
 
 namespace Stratis.FederatedPeg.IntegrationTests.Utils
 {
-    using System;
-    using System.Collections.Generic;
-    using System.IO;
-    using System.Linq;
-    using System.Net;
-    using FluentAssertions;
-    using Flurl;
-    using Flurl.Http;
-    using NBitcoin;
-    using Stratis.Bitcoin.IntegrationTests.Common;
-    using Stratis.Bitcoin.IntegrationTests.Common.EnvironmentMockUpHelpers;
-    using Stratis.Bitcoin.Networks;
-    using Stratis.FederatedPeg.Features.FederationGateway;
-    using Stratis.FederatedPeg.Features.FederationGateway.Models;
-    using Stratis.Sidechains.Networks;
-
     public class SidechainTestContext : IDisposable
     {
         private const string WalletName = "mywallet";
