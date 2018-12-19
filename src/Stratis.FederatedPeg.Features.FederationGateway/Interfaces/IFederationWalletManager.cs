@@ -139,6 +139,12 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.Interfaces
         bool IsFederationActive();
 
         /// <summary>
+        /// Enables federation.
+        /// </summary>
+        /// <param name="password">The federation wallet password.</param>
+        void EnableFederation(string password);
+
+        /// <summary>
         /// Removes all the transactions from the federation wallet.
         /// </summary>
         /// <returns>A list of objects made up of transaction IDs along with the time at which they were created.</returns>

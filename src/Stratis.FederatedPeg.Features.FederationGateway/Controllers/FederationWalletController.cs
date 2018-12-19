@@ -203,19 +203,8 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.Controllers
                     return ErrorHelpers.BuildErrorResponse(HttpStatusCode.BadRequest, "Formatting error", string.Join(Environment.NewLine, errors));
                 }
 
-                FederationWallet wallet = this.walletManager.GetWallet();
+                this.walletManager.EnableFederation(request.Password);
 
-                // Check the password
-                try
-                {
-                    Key.Parse(wallet.EncryptedSeed, request.Password, wallet.Network);
-                }
-                catch (Exception ex)
-                {
-                    throw new SecurityException(ex.Message);
-                }
-
-                this.walletManager.Secret = new WalletSecret() { WalletPassword = request.Password };
                 return this.Ok();
             }
             catch (Exception e)
