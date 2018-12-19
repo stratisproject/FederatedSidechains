@@ -6,6 +6,7 @@ using Stratis.Bitcoin.Utilities;
 using Stratis.FederatedPeg.Features.FederationGateway.Interfaces;
 using Stratis.FederatedPeg.Features.FederationGateway.Models;
 using Stratis.FederatedPeg.Features.FederationGateway.RestClients;
+using Stratis.FederatedPeg.Features.FederationGateway.SourceChain;
 using Stratis.FederatedPeg.Features.FederationGateway.TargetChain;
 
 namespace Stratis.FederatedPeg.Features.FederationGateway.Notifications
@@ -20,8 +21,6 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.Notifications
         private readonly IFederationWalletSyncManager walletSyncManager;
 
         private readonly IFederationGatewayClient federationGatewayClient;
-
-        private readonly IMaturedBlocksProvider maturedBlocksProvider;
 
         private readonly IDepositExtractor depositExtractor;
 
@@ -42,19 +41,16 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.Notifications
                              IDepositExtractor depositExtractor,
                              IWithdrawalExtractor withdrawalExtractor,
                              IWithdrawalReceiver withdrawalReceiver,
-                             IFederationGatewayClient federationGatewayClient,
-                             IMaturedBlocksProvider maturedBlocksProvider)
+                             IFederationGatewayClient federationGatewayClient)
         {
             Guard.NotNull(walletSyncManager, nameof(walletSyncManager));
             Guard.NotNull(federationGatewayClient, nameof(federationGatewayClient));
-            Guard.NotNull(maturedBlocksProvider, nameof(maturedBlocksProvider));
             Guard.NotNull(depositExtractor, nameof(depositExtractor));
             Guard.NotNull(withdrawalExtractor, nameof(withdrawalExtractor));
             Guard.NotNull(withdrawalReceiver, nameof(withdrawalReceiver));
 
             this.walletSyncManager = walletSyncManager;
             this.federationGatewayClient = federationGatewayClient;
-            this.maturedBlocksProvider = maturedBlocksProvider;
             this.depositExtractor = depositExtractor;
             this.withdrawalExtractor = withdrawalExtractor;
             this.withdrawalReceiver = withdrawalReceiver;
@@ -79,14 +75,6 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.Notifications
                 chainedHeaderBlock.ChainedHeader.Height);
 
             this.withdrawalReceiver.ReceiveWithdrawals(withdrawals);
-
-            IMaturedBlockDeposits maturedBlockDeposits = this.maturedBlocksProvider.ExtractMaturedBlockDeposits(chainedHeaderBlock.ChainedHeader);
-
-            if (maturedBlockDeposits == null)
-                return;
-
-            // TODO remove this ugly cast: (MaturedBlockDepositsModel)maturedBlockDeposits
-            this.federationGatewayClient.PushMaturedBlockAsync((MaturedBlockDepositsModel)maturedBlockDeposits).ConfigureAwait(false).GetAwaiter().GetResult();
         }
     }
 }

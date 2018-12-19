@@ -14,6 +14,7 @@ using Stratis.Bitcoin.Configuration;
 using Stratis.Bitcoin.Features.BlockStore;
 using Stratis.Bitcoin.Utilities;
 using Stratis.FederatedPeg.Features.FederationGateway.Interfaces;
+using Stratis.FederatedPeg.Features.FederationGateway.Models;
 using Stratis.FederatedPeg.Features.FederationGateway.Wallet;
 
 namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
@@ -230,12 +231,6 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
                 if (partialTransfer.Status != CrossChainTransferStatus.Partial && partialTransfer.Status != CrossChainTransferStatus.FullySigned)
                     continue;
 
-                if (partialTransfer.DepositHeight != null && partialTransfer.DepositHeight >= this.NextMatureDepositHeight)
-                {
-                    //tracker.SetTransferStatus(partialTransfer, CrossChainTransferStatus.Suspended);
-                    continue;
-                }
-
                 List<(Transaction, TransactionData, IWithdrawal)> walletData = this.federationWalletManager.FindWithdrawalTransactions(partialTransfer.DepositTransactionId);
                 if (walletData.Count == 1 && this.ValidateTransaction(walletData[0].Item1))
                 {
@@ -257,6 +252,10 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
                         continue;
                     }
                 }
+
+                // Remove any invalid withdrawal transactions.
+                foreach (IWithdrawal withdrawal in walletData.Select(d => d.Item3))
+                    this.federationWalletManager.RemoveTransientTransactions(withdrawal.DepositId);
 
                 // The chain may have been rewound so that this transaction or its UTXO's have been lost.
                 // Rewind our recorded chain A tip to ensure the transaction is re-built once UTXO's become available.
@@ -401,7 +400,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
         }
 
         /// <inheritdoc />
-        public Task<bool> RecordLatestMatureDepositsAsync(IMaturedBlockDeposits[] maturedBlockDeposits)
+        public Task<bool> RecordLatestMatureDepositsAsync(IList<MaturedBlockDepositsModel> maturedBlockDeposits)
         {
             Guard.NotNull(maturedBlockDeposits, nameof(maturedBlockDeposits));
             Guard.Assert(!maturedBlockDeposits.Any(m => m.Deposits.Any(d => d.BlockNumber != m.BlockInfo.BlockHeight || d.BlockHash != m.BlockInfo.BlockHash)));
@@ -417,13 +416,13 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
                         .OrderBy(a => a.BlockInfo.BlockHeight)
                         .SkipWhile(m => m.BlockInfo.BlockHeight < this.NextMatureDepositHeight).ToArray();
 
-                    if (maturedBlockDeposits.Length == 0 || maturedBlockDeposits.First().BlockInfo.BlockHeight != this.NextMatureDepositHeight)
+                    if (maturedBlockDeposits.Count == 0 || maturedBlockDeposits.First().BlockInfo.BlockHeight != this.NextMatureDepositHeight)
                     {
                         this.logger.LogTrace("(-)[NO_VIABLE_BLOCKS]:true");
                         return true;
                     }
 
-                    if (maturedBlockDeposits.Last().BlockInfo.BlockHeight != this.NextMatureDepositHeight + maturedBlockDeposits.Length - 1)
+                    if (maturedBlockDeposits.Last().BlockInfo.BlockHeight != this.NextMatureDepositHeight + maturedBlockDeposits.Count - 1)
                     {
                         this.logger.LogTrace("(-)[DUPLICATE_BLOCKS]:true");
                         return true;
@@ -433,7 +432,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
 
                     bool? canPersist = null;
 
-                    foreach (IMaturedBlockDeposits maturedDeposit in maturedBlockDeposits)
+                    foreach (MaturedBlockDepositsModel maturedDeposit in maturedBlockDeposits)
                     {
                         if (maturedDeposit.BlockInfo.BlockHeight != this.NextMatureDepositHeight)
                             continue;
