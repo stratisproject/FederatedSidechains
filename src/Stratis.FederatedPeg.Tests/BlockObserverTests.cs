@@ -1,10 +1,10 @@
 ﻿using System.Collections.Generic;
+using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using NBitcoin;
 using NSubstitute;
 using Stratis.Bitcoin;
 using Stratis.Bitcoin.Consensus;
-using Stratis.Bitcoin.Features.BlockStore;
 using Stratis.Bitcoin.Primitives;
 using Stratis.FederatedPeg.Features.FederationGateway;
 using Stratis.FederatedPeg.Features.FederationGateway.Interfaces;
@@ -35,8 +35,6 @@ namespace Stratis.FederatedPeg.Tests
 
         private readonly IFederationGatewayClient federationGatewayClient;
 
-        private readonly IMaturedBlocksProvider maturedBlocksProvider;
-
         private readonly IOpReturnDataReader opReturnDataReader;
 
         private readonly ILoggerFactory loggerFactory;
@@ -59,7 +57,6 @@ namespace Stratis.FederatedPeg.Tests
             this.federationWalletSyncManager = Substitute.For<IFederationWalletSyncManager>();
             this.fullNode = Substitute.For<IFullNode>();
             this.federationGatewayClient = Substitute.For<IFederationGatewayClient>();
-            this.maturedBlocksProvider = Substitute.For<IMaturedBlocksProvider>();
             this.chain = Substitute.ForPartsOf<ConcurrentChain>();
             this.fullNode.NodeService<ConcurrentChain>().Returns(this.chain);
             this.loggerFactory = Substitute.For<ILoggerFactory>();
@@ -67,8 +64,7 @@ namespace Stratis.FederatedPeg.Tests
             this.consensusManager = Substitute.For<IConsensusManager>();
             this.withdrawalExtractor = Substitute.For<IWithdrawalExtractor>();
             this.extractedWithdrawals = TestingValues.GetWithdrawals(2);
-            this.withdrawalExtractor.ExtractWithdrawalsFromBlock(null, 0)
-                .ReturnsForAnyArgs(this.extractedWithdrawals);
+            this.withdrawalExtractor.ExtractWithdrawalsFromBlock(null, 0).ReturnsForAnyArgs(this.extractedWithdrawals);
 
             this.withdrawalReceiver = Substitute.For<IWithdrawalReceiver>();
 
@@ -77,11 +73,6 @@ namespace Stratis.FederatedPeg.Tests
                 this.federationGatewaySettings,
                 this.opReturnDataReader,
                 this.fullNode);
-
-            this.maturedBlocksProvider = new MaturedBlocksProvider(
-                this.loggerFactory,
-                this.depositExtractor,
-                this.consensusManager);
 
             this.blockObserver = new BlockObserver(
                 this.federationWalletSyncManager,
@@ -92,7 +83,7 @@ namespace Stratis.FederatedPeg.Tests
         }
 
         [Fact]
-        public void BlockObserver_Should_Not_Try_To_Extract_Deposits_Before_MinimumDepositConfirmations()
+        public async Task BlockObserverShouldNotTryToExtractDepositsBeforeMinimumDepositConfirmationsAsync()
         {
             int confirmations = (int)this.minimumDepositConfirmations - 1;
 
@@ -104,35 +95,38 @@ namespace Stratis.FederatedPeg.Tests
             this.federationWalletSyncManager.Received(1).ProcessBlock(earlyBlock);
             this.withdrawalExtractor.ReceivedWithAnyArgs(1).ExtractWithdrawalsFromBlock(earlyBlock, 0);
             this.withdrawalReceiver.Received(1).ReceiveWithdrawals(Arg.Is(this.extractedWithdrawals));
-            this.federationGatewayClient.ReceivedWithAnyArgs(1).PushCurrentBlockTipAsync(null);
 
-            // TODO
-            //this.federationGatewayClient.ReceivedWithAnyArgs(0).PushMaturedBlockAsync(null);
+            await Task.Delay(MaturedBlocksSyncManager.InitializationDelayMs).ConfigureAwait(false);
+
+            await this.federationGatewayClient.ReceivedWithAnyArgs(1).PushCurrentBlockTipAsync(null);
         }
 
         [Fact]
-        public void BlockObserver_Should_Try_To_Extract_Deposits_After_MinimumDepositConfirmations()
+        public void BlockObserverShouldTryToExtractDepositsAfterMinimumDepositConfirmations()
         {
             (ChainedHeaderBlock chainedHeaderBlock, Block block) blockBuilder = this.ChainHeaderBlockBuilder();
 
             this.blockObserver.OnNext(blockBuilder.chainedHeaderBlock);
 
             this.federationWalletSyncManager.Received(1).ProcessBlock(blockBuilder.block);
-            // TODO
-            //this.federationGatewayClient.ReceivedWithAnyArgs(1).PushMaturedBlockAsync(null);
-        }
 
-        [Fact]
-        public void BlockObserver_Should_Send_Block_Tip()
-        {
-            ChainedHeaderBlock chainedHeaderBlock = this.ChainHeaderBlockBuilder().chainedHeaderBlock;
-
-            this.blockObserver.OnNext(chainedHeaderBlock);
             this.federationGatewayClient.ReceivedWithAnyArgs(1).PushCurrentBlockTipAsync(null);
         }
 
         [Fact]
-        public void BlockObserver_Should_Extract_Withdrawals()
+        public async Task BlockObserverShouldSendBlockTipAsync()
+        {
+            ChainedHeaderBlock chainedHeaderBlock = this.ChainHeaderBlockBuilder().chainedHeaderBlock;
+
+            this.blockObserver.OnNext(chainedHeaderBlock);
+
+            await Task.Delay(MaturedBlocksSyncManager.InitializationDelayMs).ConfigureAwait(false);
+
+            await this.federationGatewayClient.ReceivedWithAnyArgs(1).PushCurrentBlockTipAsync(null);
+        }
+
+        [Fact]
+        public void BlockObserverShouldExtractWithdrawals()
         {
             ChainedHeaderBlock chainedHeaderBlock = this.ChainHeaderBlockBuilder().chainedHeaderBlock;
 
@@ -142,7 +136,7 @@ namespace Stratis.FederatedPeg.Tests
         }
 
         [Fact]
-        public void BlockObserver_Should_Send_Extracted_Withdrawals_To_WithdrawalReceiver()
+        public void BlockObserverShouldSendExtractedWithdrawalsToWithdrawalReceiver()
         {
             ChainedHeaderBlock chainedHeaderBlock = this.ChainHeaderBlockBuilder().chainedHeaderBlock;
 
