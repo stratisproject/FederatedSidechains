@@ -102,7 +102,8 @@ namespace Stratis.FederatedPeg.IntegrationTests
                 Money currentMainUserBalance = context.GetBalance(context.MainUser);
                 await context.WithdrawToMainChain(context.SideUser, 24, mainchainAddress);
                 int currentSideHeight = context.SideUser.FullNode.Chain.Tip.Height;
-                TestHelper.WaitLoop(() => context.SideUser.FullNode.Chain.Height >= currentSideHeight + 7); // Just enough to get past min deposit and allow some breathing room
+                // Mine just enough to get past min deposit and allow time for fed to work
+                TestHelper.WaitLoop(() => context.SideUser.FullNode.Chain.Height >= currentSideHeight + 7); 
 
                 // Should unlock funds back on the main chain
                 TestHelper.WaitLoop(() => context.FedMain1.CreateRPCClient().GetRawMempool().Length == 1);
