@@ -83,10 +83,13 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.Notifications
 
             var blockTipModel = new BlockTipModel(chainedHeaderBlock.ChainedHeader.HashBlock,chainedHeaderBlock.ChainedHeader.Height, (int)this.depositExtractor.MinimumDepositConfirmations);
 
-            // Fire and forget.
             // There is no reason to wait for the message to be sent.
             // Awaiting REST API call will only slow this callback.
             // Callbacks never supposed to do any IO calls or web requests.
+            // Instead we start sending the message and if next block was connected faster than the message was sent we
+            // are canceling it and sending the next tip.
+            // Receiver of this message doesn't care if we are not providing tips for every block we connect,
+            // it just requires to know about out latest state.
             this.cancellationSource = new CancellationTokenSource();
             this.pushBlockTipTask = Task.Run(async () => await this.federationGatewayClient.PushCurrentBlockTipAsync(blockTipModel, this.cancellationSource.Token).ConfigureAwait(false));
 
