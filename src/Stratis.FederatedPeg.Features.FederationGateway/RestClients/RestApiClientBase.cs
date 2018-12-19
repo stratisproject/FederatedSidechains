@@ -73,8 +73,8 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.RestClients
                 }
                 catch (OperationCanceledException)
                 {
-                    this.logger.LogError("Operation canceled.");
-                    this.logger.LogTrace("(-)[CANCELED]:null");
+                    this.logger.LogDebug("Operation canceled.");
+                    this.logger.LogTrace("(-)[CANCELLED]:null");
                     return null;
                 }
                 catch (Exception ex)

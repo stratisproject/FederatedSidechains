@@ -40,7 +40,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
 
         /// <summary>Delay between initialization and first request to other node.</summary>
         /// <remarks>Needed to give other node some time to start before bombing it with requests.</remarks>
-        private const int InitializationDelayMs = 5_000;
+        private const int InitializationDelayMs = 10_000;
 
         public MaturedBlocksSyncManager(ICrossChainTransferStore store, IFederationGatewayClient federationGatewayClient, ILoggerFactory loggerFactory)
         {
@@ -68,7 +68,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
 
                 while (!this.cancellation.IsCancellationRequested)
                 {
-                    bool delayRequired = await this.AskForBlocksAsync(this.cancellation.Token).ConfigureAwait(false);
+                    bool delayRequired = await this.SyncBatchOfBlocksAsync(this.cancellation.Token).ConfigureAwait(false);
 
                     if (delayRequired)
                     {
@@ -87,8 +87,8 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
 
         /// <summary>Asks for blocks from another gateway node and then processes them.</summary>
         /// <returns><c>true</c> if delay between next time we should ask for blocks is required; <c>false</c> otherwise.</returns>
-        /// <exception cref="OperationCanceledException">Thrown when <paramref name="cancellationToken"/> is canceled.</exception>
-        protected async Task<bool> AskForBlocksAsync(CancellationToken cancellationToken = default(CancellationToken))
+        /// <exception cref="OperationCanceledException">Thrown when <paramref name="cancellationToken"/> is cancelled.</exception>
+        protected async Task<bool> SyncBatchOfBlocksAsync(CancellationToken cancellationToken = default(CancellationToken))
         {
             int blocksToRequest = 1;
 
