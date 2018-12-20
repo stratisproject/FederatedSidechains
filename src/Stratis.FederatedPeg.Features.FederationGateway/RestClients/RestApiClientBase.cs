@@ -80,7 +80,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.RestClients
                 catch (Exception ex)
                 {
                     this.logger.LogError("The counter-chain daemon is not ready to receive API calls at this time ({0})", publicationUri);
-                    this.logger.LogDebug(ex, "Failed to send {0}", requestModel);
+                    this.logger.LogError("Failed to send a message. Exception: '{0}'.", ex);
                     return new HttpResponseMessage() { ReasonPhrase = ex.Message, StatusCode = HttpStatusCode.InternalServerError };
                 }
             }
