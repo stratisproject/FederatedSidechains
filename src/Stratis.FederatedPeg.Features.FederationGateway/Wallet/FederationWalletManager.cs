@@ -1023,8 +1023,8 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.Wallet
                 if (key == null)
                     key = Key.Parse(encryptedSeed, password, this.Wallet.Network);
 
-                this.isFederationActive = key.PubKey.ToHex() == this.federationGatewaySettings.PublicKey;
-                if (!this.isFederationActive)
+                bool isValidKey = key.PubKey.ToHex() == this.federationGatewaySettings.PublicKey;
+                if (!isValidKey)
                 {
                     this.logger.LogInformation("The wallet public key {0} does not match the federation member's public key {1}", key.PubKey.ToHex(), this.federationGatewaySettings.PublicKey);
                     return;
@@ -1033,6 +1033,8 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.Wallet
                 this.Secret = new WalletSecret() { WalletPassword = password };
                 this.Wallet.EncryptedSeed = encryptedSeed;
                 this.SaveWallet();
+
+                this.isFederationActive = isValidKey;
             }
             catch (Exception ex)
             {
