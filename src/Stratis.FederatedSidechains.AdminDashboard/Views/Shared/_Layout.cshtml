@@ -21,14 +21,18 @@
         </div>
         <div class="modal-body">
           <ul class="list-unstyled align-items-center flex-column d-flex">
-            @foreach(var miningPubKey in (ViewBag.MiningPubKeys ?? (new string[] {""})))
+            @foreach(var miningPubKey in (ViewBag.MiningPubKeys ?? (new string[] {})))
             {
               <li class="py-2">
                 <code>@miningPubKey</code>
-                <a href="#" class="text-primary ml-2">Copy</a>
+                <a href="#" class="text-primary ml-2 copy-clipboard">Copy</a>
               </li>
             }
           </ul>
+          @if(ViewBag.MiningPubKeys == null)
+          {
+            <p class="text-center text-muted"><em>Missing Mining Public Keys</em></p>
+          }
         </div>
         <div class="modal-footer">
           <button type="button" class="btn btn-outline-secondary mx-auto" data-dismiss="modal">Close</button>
@@ -41,7 +45,7 @@
       <img src="~/images/logo_white.svg" width="30" height="30" class="d-inline-block align-top" alt="">
     </a>
     <div class="navbar-text text-white">Federation members dashboard for Apex</div>
-    <span class="badge badge-purple ml-auto">Status @(ViewBag.Status ?? "Warning")</span>
+    <span class="badge badge-purple ml-auto">Status: @(ViewBag.Status ?? "Warning")</span>
   </nav>
   <nav class="navbar navbar-light bg-white py-1 fixed-top d-flex align-items-center" style="margin-top:56px;">
     <div class="navbar-text d-inline">
@@ -61,7 +65,7 @@
       </ul>
     </div>
     <div class="navbar-text ml-auto">
-      <a data-toggle="modal" data-target="#miningPublicKeys" class="d-flex align-items-center"> Mining public keys <i class="material-icons md-18 ml-2">open_in_new</i></a>
+      <a data-toggle="modal" data-target="#miningPublicKeys" class="d-flex align-items-center"> Mining Public keys <i class="material-icons md-18 ml-2">open_in_new</i></a>
     </div>
   </nav>
   <section class="container-fluid marginTop" id="container">
