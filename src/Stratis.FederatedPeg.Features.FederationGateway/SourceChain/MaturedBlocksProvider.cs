@@ -71,7 +71,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.SourceChain
 
                 maturedBlocks.Add(maturedBlockDeposits);
 
-                if (cancellation.IsCancellationRequested && maturedBlocks.Count > 1)
+                if (cancellation.IsCancellationRequested && maturedBlocks.Count > 0)
                 {
                     this.logger.LogDebug("Stop matured blocks collection because it's taking too long. Send what we've collected.");
                     break;

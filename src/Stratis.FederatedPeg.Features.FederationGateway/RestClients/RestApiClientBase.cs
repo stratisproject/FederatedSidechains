@@ -52,6 +52,9 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.RestClients
 
         protected async Task<HttpResponseMessage> SendPostRequestAsync<Model>(Model requestModel, string apiMethodName, CancellationToken cancellation) where Model : class
         {
+            if (requestModel == null)
+                throw new ArgumentException($"{nameof(requestModel)} can't be null.");
+
             var publicationUri = new Uri($"{this.endpointUrl}/{apiMethodName}");
 
             HttpResponseMessage response = null;
@@ -59,9 +62,6 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.RestClients
             using (HttpClient client = this.httpClientFactory.CreateClient())
             {
                 client.Timeout = TimeSpan.FromMilliseconds(TimeoutMs);
-
-                if (requestModel == null)
-                    throw new ArgumentException($"{nameof(requestModel)} can't be null.");
 
                 var request = new JsonContent(requestModel);
 
