@@ -58,7 +58,7 @@ namespace Stratis.FederatedPeg.IntegrationTests.Tools.FederatedNetworkScripts
             List<string> federationIps = chain == "main" ? this.mainFederationIps : this.sideFederationIps;
 
             //filter out current node from the federationIps
-            nodeSetup.WithFederationIps(this.mainFederationIps.Where(ip => !ip.Contains(nodeSetup.Port.ToString())));
+            nodeSetup.WithFederationIps(federationIps.Where(ip => !ip.Contains(nodeSetup.Port.ToString())));
 
             return nodeSetup;
         }
