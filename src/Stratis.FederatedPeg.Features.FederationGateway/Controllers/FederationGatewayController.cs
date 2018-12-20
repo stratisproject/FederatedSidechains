@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
 using Microsoft.Extensions.Logging;
 using NBitcoin;
+using Stratis.Bitcoin.Consensus;
 using Stratis.Bitcoin.Features.PoA;
 using Stratis.Bitcoin.Utilities;
 using Stratis.Bitcoin.Utilities.JsonErrors;
@@ -24,6 +25,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.Controllers
 
         public const string GetMaturedBlockDeposits = "get_matured_block_deposits";
         public const string GetInfo = "info";
+        public const string GetBlockHeightClosestToTimestamp = "get_block_height_closest_to_timestamp";
     }
 
     /// <summary>
@@ -49,6 +51,8 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.Controllers
 
         private readonly FederationManager federationManager;
 
+        private readonly IConsensusManager consensusManager;
+
         public FederationGatewayController(
             ILoggerFactory loggerFactory,
             Network network,
@@ -57,6 +61,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.Controllers
             ILeaderReceiver leaderReceiver,
             IFederationGatewaySettings federationGatewaySettings,
             IFederationWalletManager federationWalletManager,
+            IConsensusManager consensusManager,
             FederationManager federationManager = null)
         {
             this.logger = loggerFactory.CreateLogger(this.GetType().FullName);
@@ -67,6 +72,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.Controllers
             this.federationGatewaySettings = federationGatewaySettings;
             this.federationWalletManager = federationWalletManager;
             this.federationManager = federationManager;
+            this.consensusManager = consensusManager;
         }
 
         /// <summary>Pushes the current block tip to be used for updating the federated leader in a round robin fashion.</summary>
@@ -162,6 +168,39 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.Controllers
             {
                 this.logger.LogTrace("Exception thrown calling /api/FederationGateway/{0}: {1}.", FederationGatewayRouteEndPoint.GetInfo, e.Message);
                 return ErrorHelpers.BuildErrorResponse(HttpStatusCode.BadRequest, e.Message, e.ToString());
+            }
+        }
+
+        /// <summary>Finds first block with timestamp lower than <paramref name="timestamp"/> and return's it's height.</summary>
+        /// <returns><see cref="ClosestHeightModel"/> model with height of the block.</returns>
+        [Route(FederationGatewayRouteEndPoint.GetBlockHeightClosestToTimestamp)]
+        [HttpGet]
+        public JsonResult GetBlockHeightClosestToTimestamp(uint timestamp)
+        {
+            try
+            {
+                ChainedHeader current = this.consensusManager.Tip;
+
+                while (current.Height != 0)
+                {
+                    if (current.Header.Time <= timestamp)
+                    {
+                        var model = new ClosestHeightModel() { Height = current.Height };
+
+                        return this.Json(model);
+                    }
+
+                    current = current.Previous;
+                }
+
+                return this.Json(new ClosestHeightModel() { Height = 0 }); ;
+            }
+            catch (Exception e)
+            {
+                this.logger.LogTrace("Exception thrown calling /api/FederationGateway/{0}: {1}.", FederationGatewayRouteEndPoint.GetBlockHeightClosestToTimestamp, e.Message);
+                ErrorResult errorResult = ErrorHelpers.BuildErrorResponse(HttpStatusCode.BadRequest, e.Message, e.ToString());
+
+                return this.Json(errorResult);
             }
         }
 
