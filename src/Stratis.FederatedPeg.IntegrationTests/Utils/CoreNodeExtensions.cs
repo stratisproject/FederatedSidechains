@@ -3,11 +3,16 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
+using Microsoft.Extensions.DependencyInjection;
 using NBitcoin;
+using Stratis.Bitcoin.Builder;
+using Stratis.Bitcoin.Builder.Feature;
+using Stratis.Bitcoin.Features.Miner;
 using Stratis.Bitcoin.Features.Wallet;
 using Stratis.Bitcoin.Features.Wallet.Models;
 using Stratis.Bitcoin.IntegrationTests.Common;
 using Stratis.Bitcoin.IntegrationTests.Common.EnvironmentMockUpHelpers;
+using Stratis.FederatedPeg.Features.FederationGateway;
 using Stratis.SmartContracts.CLR;
 using Stratis.SmartContracts.Core.State;
 
@@ -49,6 +54,27 @@ namespace Stratis.FederatedPeg.IntegrationTests.Utils
         {
             IStateRepositoryRoot stateRoot = node.FullNode.NodeService<IStateRepositoryRoot>();
             return stateRoot.GetCode(address.ToUint160(network));
+        }
+
+        public static IFullNodeBuilder UseTestFedPegBlockDefinition(this IFullNodeBuilder fullNodeBuilder)
+        {
+            fullNodeBuilder.ConfigureFeature(features =>
+            {
+                foreach (IFeatureRegistration feature in features.FeatureRegistrations)
+                {
+                    feature.FeatureServices(services =>
+                    {
+                        // Get default CHT implementation and replace it with the test implementation.
+                        ServiceDescriptor cht = services.FirstOrDefault(x => x.ServiceType == typeof(BlockDefinition));
+
+                        services.Remove(cht);
+                        services.AddSingleton<BlockDefinition, TestFederatedPegBlockDefinition>();
+                        //.AddSingleton<TestChainedHeaderTree>(provider => provider.GetService<IChainedHeaderTree>() as TestChainedHeaderTree);
+                    });
+                }
+            });
+
+            return fullNodeBuilder;
         }
     }
 }
