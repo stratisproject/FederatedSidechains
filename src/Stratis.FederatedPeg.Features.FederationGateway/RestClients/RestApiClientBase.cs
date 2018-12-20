@@ -24,7 +24,9 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.RestClients
         public const int RetryCount = 3;
 
         /// <summary>Delay between retries.</summary>
-        public const int AttemptDelayMs = 1000;
+        private const int AttemptDelayMs = 1000;
+
+        private const int TimeoutMs = 60_000;
 
         private readonly RetryPolicy policy;
 
@@ -35,7 +37,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.RestClients
 
             this.endpointUrl = $"http://localhost:{settings.CounterChainApiPort}/api/FederationGateway";
 
-            this.policy = Policy.Handle<Exception>().WaitAndRetryAsync(retryCount: RetryCount, sleepDurationProvider:
+            this.policy = Policy.Handle<HttpRequestException>().WaitAndRetryAsync(retryCount: RetryCount, sleepDurationProvider:
                 attemptNumber =>
                 {
                     // Intervals between new attempts are growing.
@@ -56,6 +58,11 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.RestClients
 
             using (HttpClient client = this.httpClientFactory.CreateClient())
             {
+                client.Timeout = TimeSpan.FromMilliseconds(TimeoutMs);
+
+                if (requestModel == null)
+                    throw new ArgumentException($"{nameof(requestModel)} can't be null.");
+
                 var request = new JsonContent(requestModel);
 
                 try
@@ -77,7 +84,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.RestClients
                     this.logger.LogTrace("(-)[CANCELLED]:null");
                     return null;
                 }
-                catch (Exception ex)
+                catch (HttpRequestException ex)
                 {
                     this.logger.LogError("The counter-chain daemon is not ready to receive API calls at this time ({0})", publicationUri);
                     this.logger.LogError("Failed to send a message. Exception: '{0}'.", ex);
