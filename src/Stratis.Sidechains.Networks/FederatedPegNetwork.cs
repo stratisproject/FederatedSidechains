@@ -22,10 +22,8 @@ namespace Stratis.Sidechains.Networks
             }
         }
 
-        public static Block CreateGenesis(SmartContractPoAConsensusFactory consensusFactory, uint genesisTime, uint nonce, uint bits, int version, Money reward)
+        public static Block CreateGenesis(SmartContractPoAConsensusFactory consensusFactory, uint genesisTime, uint nonce, uint bits, int version, Money reward, string coinbaseText)
         {
-            string timeStamp = "https://news.bitcoin.com/markets-update-cryptocurrencies-shed-billions-in-bloody-sell-off/";
-
             Transaction genesisTransaction = consensusFactory.CreateTransaction();
             genesisTransaction.Time = genesisTime;
             genesisTransaction.Version = 1;
@@ -35,7 +33,7 @@ namespace Stratis.Sidechains.Networks
                 {
                     Code = (OpcodeType)0x1,
                     PushData = new[] { (byte)42 }
-                }, Op.GetPushOp(Encoders.ASCII.DecodeData(timeStamp)))
+                }, Op.GetPushOp(Encoders.ASCII.DecodeData(coinbaseText)))
             });
 
             genesisTransaction.AddOutput(new TxOut()
