@@ -13,11 +13,28 @@ namespace Stratis.Sidechains.Networks
     /// </summary>
     public class FederatedPegMain : PoANetwork
     {
+        /// <summary> The name of the root folder containing the different federated peg blockchains.</summary>
+        private const string NetworkRootFolderName = "fedpeg";
+
+        /// <summary> The default name used for the federated peg configuration file. </summary>
+        private const string NetworkDefaultConfigFilename = "fedpeg.conf";
+
         internal FederatedPegMain()
         {
             this.Name = "FederatedPegMain";
             this.CoinTicker = "FPG";
             this.Magic = 0x522357A;
+            this.DefaultPort = 16179;
+            this.DefaultMaxOutboundConnections = 16;
+            this.DefaultMaxInboundConnections = 109;
+            this.RPCPort = 16175;
+            this.MaxTipAge = 2 * 60 * 60;
+            this.MinTxFee = 10000;
+            this.FallbackFee = 10000;
+            this.MinRelayTxFee = 10000;
+            this.RootFolderName = NetworkRootFolderName;
+            this.DefaultConfigFilename = NetworkDefaultConfigFilename;
+            this.MaxTimeOffsetSeconds = 25 * 60;
 
             var consensusFactory = new SmartContractPoAConsensusFactory();
 
