@@ -21,7 +21,7 @@
         </div>
         <div class="modal-body">
           <ul class="list-unstyled align-items-center flex-column d-flex">
-            @foreach(var miningPubKey in (ViewBag.MiningPubKeys ?? (new string[] {""})))
+            @foreach(var miningPubKey in (ViewBag.MiningPubKeys ?? (new string[] {})))
             {
               <li class="py-2">
                 <code>@miningPubKey</code>
@@ -29,6 +29,10 @@
               </li>
             }
           </ul>
+          @if(ViewBag.MiningPubKeys == null)
+          {
+            <p class="text-center text-muted"><em>Missing Mining Public Keys</em></p>
+          }
         </div>
         <div class="modal-footer">
           <button type="button" class="btn btn-outline-secondary mx-auto" data-dismiss="modal">Close</button>
@@ -61,7 +65,7 @@
       </ul>
     </div>
     <div class="navbar-text ml-auto">
-      <a data-toggle="modal" data-target="#miningPublicKeys" class="d-flex align-items-center"> Mining public keys <i class="material-icons md-18 ml-2">open_in_new</i></a>
+      <a data-toggle="modal" data-target="#miningPublicKeys" class="d-flex align-items-center"> Mining Public keys <i class="material-icons md-18 ml-2">open_in_new</i></a>
     </div>
   </nav>
   <section class="container-fluid marginTop" id="container">
