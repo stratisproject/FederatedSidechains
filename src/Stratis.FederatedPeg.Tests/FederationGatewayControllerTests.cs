@@ -314,9 +314,9 @@ namespace Stratis.FederatedPeg.Tests
 
             JsonResult result = controller.GetBlockHeightClosestToTimestamp(targetHeader.Header.Time);
 
-            int responseHeight = JsonConvert.DeserializeObject<int>(result.Value.ToString());
+            var responseHeight = result.Value as ClosestHeightModel;
 
-            Assert.Equal(targetHeader.Height, responseHeight);
+            Assert.Equal(targetHeader.Height, responseHeight.Height);
         }
     }
 }
