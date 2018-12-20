@@ -6,7 +6,7 @@ using NBitcoin;
 
 namespace Stratis.FederatedPeg.IntegrationTests.Utils
 {
-    public static class FederationTestHelper
+    public static class FederatedPegTestHelper
     {
         public static (Script payToMultiSig, BitcoinAddress sidechainMultisigAddress, BitcoinAddress mainchainMultisigAddress)
             GenerateScriptAndAddresses(Network mainchainNetwork, Network sidechainNetwork, int quorum, Dictionary<Mnemonic, PubKey> pubKeysByMnemonic)

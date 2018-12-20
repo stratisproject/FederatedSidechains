@@ -69,7 +69,7 @@ namespace Stratis.FederatedPeg.IntegrationTests.Utils
             this.mnemonics = this.SideChainNetwork.FederationMnemonics;
             this.pubKeysByMnemonic = this.mnemonics.ToDictionary(m => m, m => m.DeriveExtKey().PrivateKey.PubKey);
 
-            this.scriptAndAddresses = FederationTestHelper.GenerateScriptAndAddresses(this.MainChainNetwork, this.SideChainNetwork, 2, this.pubKeysByMnemonic);
+            this.scriptAndAddresses = FederatedPegTestHelper.GenerateScriptAndAddresses(this.MainChainNetwork, this.SideChainNetwork, 2, this.pubKeysByMnemonic);
 
             this.chains = new[] { "mainchain", "sidechain" }.ToList();
 

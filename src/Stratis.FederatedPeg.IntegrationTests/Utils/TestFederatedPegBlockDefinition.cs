@@ -16,11 +16,11 @@ using Stratis.SmartContracts.Core.Util;
 
 namespace Stratis.FederatedPeg.Features.FederationGateway
 {
+    /// <summary>
+    /// Exact same as FederatedPegBlockDefinition, just gives the premine to a wallet for convenience.
+    /// </summary>
     public class TestFederatedPegBlockDefinition : SmartContractPoABlockDefinition
     {
-        private readonly Script payToMultisigScript;
-
-        private readonly Script payToMemberScript;
 
         /// <inheritdoc />
         public TestFederatedPegBlockDefinition(
@@ -39,8 +39,6 @@ namespace Stratis.FederatedPeg.Features.FederationGateway
             : base(blockBufferGenerator, coinView, consensusManager, dateTimeProvider, executorFactory, loggerFactory, mempool, mempoolLock, network, senderRetriever, stateRoot, nodeSettings)
         {
             var federationGatewaySettings = new FederationGatewaySettings(nodeSettings);
-            this.payToMultisigScript = federationGatewaySettings.MultiSigAddress.ScriptPubKey;
-            this.payToMemberScript = PayToPubkeyTemplate.Instance.GenerateScriptPubKey(new PubKey(federationGatewaySettings.PublicKey));
         }
 
         public override BlockTemplate Build(ChainedHeader chainTip, Script scriptPubKey)
