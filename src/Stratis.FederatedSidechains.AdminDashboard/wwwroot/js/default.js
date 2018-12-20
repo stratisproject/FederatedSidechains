@@ -20,6 +20,17 @@ $(document).ready(function()
     });
 
     NProgress.done();
+
+    $(".copy-clipboard").click(function()
+    {
+        var tempField = document.createElement("textarea");
+        tempField.value = $(this).parent().find("code").text();
+        $(this).parent().find("code").append(tempField);
+        tempField.select();
+        document.execCommand("copy");
+        tempField.remove();
+        Snackbar.show({text: "Mining Public Key Copied to Clipboard !", pos: "bottom-center", showAction: true});
+    });
 });
 
 function DisplayNotification(text)
