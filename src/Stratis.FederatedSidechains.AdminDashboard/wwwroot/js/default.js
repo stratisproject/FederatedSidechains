@@ -1,14 +1,34 @@
 $(document).ready(function()
 {
+    var CacheIsDifferent = false;
+
     // Run SignalR to accept events from the backend
     NProgress.start();
     var signalrHub = new signalR.HubConnectionBuilder().withUrl("/ws-updater").build();
     signalrHub.on("CacheIsDifferent", function () {
         NProgress.start();
-        $("#container").load("/update-dashboard");
-         NProgress.done();
+        CacheIsDifferent = true;
+        if($('.modal').hasClass('show') == false)
+        {
+            $("#container").load("/update-dashboard");
+        }
+        NProgress.done();
     });
     signalrHub.start();
+
+    // Detects modal closing for refresh the dashboard
+    $('.modal').on('hidden.bs.modal', function () {
+        if(CacheIsDifferent)
+        {
+            $("#container").load("/update-dashboard");
+        }
+    });
+
+    // Prevent modal disclosure
+    $(".close").click(function()
+    {
+        $('.modal').modal('hide')
+    });
 
     // Check if the federation is enabled, if it's not the case a modal is displayed to enable it
     $.get("/check-federation", function(response)
