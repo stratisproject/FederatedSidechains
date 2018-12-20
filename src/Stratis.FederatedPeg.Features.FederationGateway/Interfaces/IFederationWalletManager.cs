@@ -103,14 +103,6 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.Interfaces
         WalletSecret Secret { get; set; }
 
         /// <summary>
-        /// Imports the federation member's mnemonic key.
-        /// </summary>
-        /// <param name="password">The user's password.</param>
-        /// <param name="mnemonic">The user's mnemonic.</param>
-        /// <param name="passphrase">A passphrase used to derive the private key from the mnemonic.</param>
-        void ImportMemberKey(string password, string mnemonic, string passphrase);
-
-        /// <summary>
         /// Finds all withdrawal transactions with optional filtering by deposit id or transaction id.
         /// </summary>
         /// <param name="depositId">Filters by this deposit id if not <c>null</c>.</param>
@@ -142,7 +134,10 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.Interfaces
         /// Enables federation.
         /// </summary>
         /// <param name="password">The federation wallet password.</param>
-        void EnableFederation(string password);
+        /// <param name="mnemonic">The user's mnemonic.</param>
+        /// <param name="passphrase">A passphrase used to derive the private key from the mnemonic.</param>
+        /// <param name="onlyImportKey">If set to <c>true</c> imports the key without activating the federation.</param>
+        void EnableFederation(string password, string mnemonic = null, string passphrase = null, bool onlyImportKey = false);
 
         /// <summary>
         /// Removes all the transactions from the federation wallet.
