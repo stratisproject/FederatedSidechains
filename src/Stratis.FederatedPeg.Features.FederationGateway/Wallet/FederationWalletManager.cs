@@ -980,7 +980,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.Wallet
         }
 
         /// <inheritdoc />
-        public void EnableFederation(string password, string mnemonic = null, string passphrase = null, bool onlyImportKey = false)
+        public void EnableFederation(string password, string mnemonic = null, string passphrase = null)
         {
             Guard.NotEmpty(password, nameof(password));
 
@@ -991,7 +991,10 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.Wallet
                 return;
             }
 
-            // Get the extended key.
+            // Get the key and encrypted seed.
+            Key key = null;
+            string encryptedSeed = this.Wallet.EncryptedSeed;
+
             if (!string.IsNullOrEmpty(mnemonic))
             {
                 ExtKey extendedKey;
@@ -1011,24 +1014,25 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.Wallet
                 }
 
                 // Create a wallet file.
-                string encryptedSeed = extendedKey.PrivateKey.GetEncryptedBitcoinSecret(password, this.network).ToWif();
-
-                this.Wallet.EncryptedSeed = encryptedSeed;
-                this.SaveWallet();
+                key = extendedKey.PrivateKey;
+                encryptedSeed = key.GetEncryptedBitcoinSecret(password, this.network).ToWif();
             }
-
-            if (onlyImportKey)
-                return;
 
             try
             {
-                Key key = Key.Parse(this.Wallet.EncryptedSeed, password, this.Wallet.Network);
+                if (key == null)
+                    key = Key.Parse(encryptedSeed, password, this.Wallet.Network);
+
+                this.isFederationActive = key.PubKey.ToHex() == this.federationGatewaySettings.PublicKey;
+                if (!this.isFederationActive)
+                {
+                    this.logger.LogInformation("The wallet public key {0} does not match the federation member's public key {1}", key.PubKey.ToHex(), this.federationGatewaySettings.PublicKey);
+                    return;
+                }
 
                 this.Secret = new WalletSecret() { WalletPassword = password };
-                this.isFederationActive = key.PubKey.ToHex() == this.federationGatewaySettings.PublicKey;
-
-                if (!this.isFederationActive)
-                    this.logger.LogInformation("The wallet public key {0} does not match the federation member's public key {1}", key.PubKey.ToHex(), this.federationGatewaySettings.PublicKey);
+                this.Wallet.EncryptedSeed = encryptedSeed;
+                this.SaveWallet();
             }
             catch (Exception ex)
             {

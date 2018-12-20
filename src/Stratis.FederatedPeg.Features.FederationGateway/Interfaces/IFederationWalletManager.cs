@@ -136,8 +136,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.Interfaces
         /// <param name="password">The federation wallet password.</param>
         /// <param name="mnemonic">The user's mnemonic.</param>
         /// <param name="passphrase">A passphrase used to derive the private key from the mnemonic.</param>
-        /// <param name="onlyImportKey">If set to <c>true</c> imports the key without activating the federation.</param>
-        void EnableFederation(string password, string mnemonic = null, string passphrase = null, bool onlyImportKey = false);
+        void EnableFederation(string password, string mnemonic = null, string passphrase = null);
 
         /// <summary>
         /// Removes all the transactions from the federation wallet.
