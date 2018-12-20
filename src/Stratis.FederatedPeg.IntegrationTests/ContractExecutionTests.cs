@@ -36,30 +36,24 @@ namespace Stratis.FederatedPeg.IntegrationTests
         private const string WalletPassphrase = "passphrase";
         private const string WalletAccount = "account 0";
 
-        private FederatedPegRegTest network;
         private (Script payToMultiSig, BitcoinAddress sidechainMultisigAddress, BitcoinAddress mainchainMultisigAddress) scriptAndAddresses;
 
         [Fact]
         public async Task BasicTransferTest()
         {
-            // TODO: Override the FedPeg and always send to us.
-
             using (SidechainNodeBuilder nodeBuilder = SidechainNodeBuilder.CreateSidechainNodeBuilder(this))
             {
-                this.network = (FederatedPegRegTest)FederatedPegNetwork.NetworksSelector.Regtest();
+                // Much setup - TODO: move into fixture for more tests.
+                FederatedPegRegTest network = (FederatedPegRegTest)FederatedPegNetwork.NetworksSelector.Regtest();
                 IList<Mnemonic> mnemonics = network.FederationMnemonics;
                 var pubKeysByMnemonic = mnemonics.ToDictionary(m => m, m => m.DeriveExtKey().PrivateKey.PubKey);
-                this.scriptAndAddresses = FederationTestHelper.GenerateScriptAndAddresses(new StratisMain(), network, 2, pubKeysByMnemonic);
+                this.scriptAndAddresses = FederatedPegTestHelper.GenerateScriptAndAddresses(new StratisMain(), network, 2, pubKeysByMnemonic);
 
                 CoreNode user1 = nodeBuilder.CreateSidechainNode(network).WithWallet();
                 CoreNode fed1 = nodeBuilder.CreateSidechainFederationNode(network, network.FederationKeys[0], testingFederation: false).WithWallet();
-                //CoreNode fed2 = nodeBuilder.CreateSidechainFederationNode(network, network.FederationKeys[1]).WithWallet();
                 fed1.AppendToConfig("sidechain=1");
                 fed1.AppendToConfig($"{FederationGatewaySettings.RedeemScriptParam}={this.scriptAndAddresses.payToMultiSig.ToString()}");
                 fed1.AppendToConfig($"{FederationGatewaySettings.PublicKeyParam}={pubKeysByMnemonic[mnemonics[0]].ToString()}");
-                //fed2.AppendToConfig("sidechain=1");
-                //fed2.AppendToConfig($"{FederationGatewaySettings.RedeemScriptParam}={this.scriptAndAddresses.payToMultiSig.ToString()}");
-                //fed2.AppendToConfig($"{FederationGatewaySettings.PublicKeyParam}={pubKeysByMnemonic[mnemonics[1]].ToString()}");
 
                 user1.Start();
                 fed1.Start();
@@ -69,13 +63,9 @@ namespace Stratis.FederatedPeg.IntegrationTests
                 // Let fed1 get the premine
                 TestHelper.WaitLoop(() => user1.FullNode.Chain.Height > network.Consensus.PremineHeight + network.Consensus.CoinbaseMaturity);
 
-                //fed2.Start();
-                //TestHelper.Connect(fed1, fed2);
-                //TestHelper.Connect(user1, fed2);
-
                 // Send funds from fed1 to user1
                 string user1Address = user1.GetUnusedAddress();
-                Script scriptPubKey = PayToPubkeyHashTemplate.Instance.GenerateScriptPubKey(new BitcoinPubKeyAddress(user1Address, this.network));
+                Script scriptPubKey = PayToPubkeyHashTemplate.Instance.GenerateScriptPubKey(new BitcoinPubKeyAddress(user1Address, network));
                 Result<WalletSendTransactionModel> result = SendTransaction(fed1, scriptPubKey, new Money(100_000, MoneyUnit.BTC));
                 Assert.True(result.IsSuccess);
                 int currentHeight = user1.FullNode.Chain.Height;
@@ -86,17 +76,18 @@ namespace Stratis.FederatedPeg.IntegrationTests
                 byte[] contractCode = ContractCompiler.CompileFile("SmartContracts/BasicTransfer.cs").Compilation;
                 string newContractAddress = await SendCreateContractTransaction(user1, contractCode, 1, user1Address);
                 TestHelper.WaitLoop(() => fed1.CreateRPCClient().GetRawMempool().Length == 1);
-                //TestHelper.WaitLoop(() => fed2.CreateRPCClient().GetRawMempool().Length == 1);
                 currentHeight = user1.FullNode.Chain.Height;
                 TestHelper.WaitLoop(() => user1.FullNode.Chain.Height > currentHeight + 2);
 
                 // Did code save?
-                Assert.NotNull(user1.QueryContractCode(newContractAddress, this.network));
-                Assert.NotNull(fed1.QueryContractCode(newContractAddress, this.network));
-               // Assert.NotNull(fed2.QueryContractCode(newContractAddress, this.network));
+                Assert.NotNull(user1.QueryContractCode(newContractAddress, network));
+                Assert.NotNull(fed1.QueryContractCode(newContractAddress, network));
             }
         }
 
+        /// <summary>
+        /// Helper method to send contract CREATE transaction.
+        /// </summary>
         public async Task<string> SendCreateContractTransaction(CoreNode node,
             byte[] contractCode,
             double amount,
@@ -126,6 +117,9 @@ namespace Stratis.FederatedPeg.IntegrationTests
             return JObject.Parse(result)["newContractAddress"].ToString();
         }
 
+        /// <summary>
+        /// Helper method ripped from FN to send standard transaction.
+        /// </summary>
         public Result<WalletSendTransactionModel> SendTransaction(CoreNode coreNode, Script scriptPubKey, Money amount)
         {
             var txBuildContext = new TransactionBuildContext(coreNode.FullNode.Network)
