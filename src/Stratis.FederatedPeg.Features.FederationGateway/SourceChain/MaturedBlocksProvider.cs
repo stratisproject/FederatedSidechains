@@ -65,6 +65,9 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.SourceChain
 
             var maturedBlocks = new List<MaturedBlockDepositsModel>();
 
+            // Don't spend to much time that the requester may give up.
+            DateTime deadLine = DateTime.Now.AddSeconds(30);
+
             for (int i = blockHeight; (i <= matureTipHeight) && (i < blockHeight + maxBlocks); i++)
             {
                 MaturedBlockDepositsModel maturedBlockDeposits = null;
@@ -93,6 +96,9 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.SourceChain
                 }
 
                 maturedBlocks.Add(maturedBlockDeposits);
+
+                if (DateTime.Now >= deadLine)
+                    break;
             }
 
             return maturedBlocks;
