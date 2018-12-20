@@ -93,10 +93,10 @@ namespace Stratis.Sidechains.Networks
                 minerConfirmationWindow: 2016, // nPowTargetTimespan / nPowTargetSpacing
                 maxReorgLength: 0, // No max reorg limit on PoA networks.
                 defaultAssumeValid: null,
-                maxMoney: Money.Coins(20_000_000),
+                maxMoney: Money.Coins(100_000_000),
                 coinbaseMaturity: 1,
                 premineHeight: 2,
-                premineReward: Money.Coins(20_000_000),
+                premineReward: Money.Coins(100_000_000),
                 proofOfWorkReward: Money.Coins(0),
                 powTargetTimespan: TimeSpan.FromDays(14), // two weeks
                 powTargetSpacing: TimeSpan.FromMinutes(1),
