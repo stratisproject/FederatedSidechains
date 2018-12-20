@@ -112,13 +112,13 @@ namespace Stratis.FederatedSidechains.AdminDashboard.Services
                         BlockHash = sidechainBestBlock.Content,
                         BlockHeight = sidechainStatus.Content.blockStoreHeight,
                         MempoolSize = sidechainRawmempool.Content.Count,
-                        History = new object[] {},
+                        History = sidechainWalletHistory.Content.history[0].transactionsHistory,
                         ConfirmedBalance = (double)sidechainWalletBalances.Content.balances[0].amountConfirmed / 100000000,
                         UnconfirmedBalance = (double)sidechainWalletBalances.Content.balances[0].amountUnconfirmed / 100000000
                     }
                 };
             }
-            catch(Exception e)
+            catch
             {
                 //ignored
             }
@@ -144,6 +144,7 @@ namespace Stratis.FederatedSidechains.AdminDashboard.Services
                 .Add(new Peer()
                 {
                     Endpoint = peer.remoteSocketEndpoint,
+                    Type = "outbound",
                     Height = peer.tipHeight,
                     Version = peer.version
                 });
@@ -157,6 +158,7 @@ namespace Stratis.FederatedSidechains.AdminDashboard.Services
                 .Add(new Peer()
                 {
                     Endpoint = peer.remoteSocketEndpoint,
+                    Type = "inbound",
                     Height = peer.tipHeight,
                     Version = peer.version
                 });
