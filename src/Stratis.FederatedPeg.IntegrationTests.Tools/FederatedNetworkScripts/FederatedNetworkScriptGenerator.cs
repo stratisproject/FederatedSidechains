@@ -10,7 +10,7 @@ using Stratis.Sidechains.Networks;
 
 namespace Stratis.FederatedPeg.IntegrationTests.Tools.FederatedNetworkScripts
 {
-    public class FederatedNetworkScriptGenerator : FederatedNetowrkScriptBase<StratisTest, FederatedPegRegTest>
+    public class FederatedNetworkScriptGenerator : FederatedNetworkScriptBase<StratisTest, FederatedPegRegTest>
     {
         public FederatedNetworkScriptGenerator() : base((StratisTest)Networks.Stratis.Testnet(), (FederatedPegRegTest)FederatedPegNetwork.NetworksSelector.Regtest())
         {
@@ -28,7 +28,6 @@ namespace Stratis.FederatedPeg.IntegrationTests.Tools.FederatedNetworkScripts
             CopyStratisChainFiles();
             CreatePoaKeyFiles();
             AddCommentedFederationDetails();
-            SetFederationVariables();
             SetTimeoutVariables();
             StartGatewayDs();
             StartChainsD();
@@ -46,16 +45,22 @@ namespace Stratis.FederatedPeg.IntegrationTests.Tools.FederatedNetworkScripts
             string portSuffix = this.GetPortNumberSuffix(primaryNodeType, nodeIndex);
             string counterPortSuffix = this.GetPortNumberSuffix(counterNodeType, nodeIndex);
 
-            return nodeSetup
+            nodeSetup
                 .SetConsoleColor(GetConsoleColor(nodeIndex))
                 .WithAgentPrefix($"fed{nodeIndex + 1}{chain}")
                 .WithDataDir($"$root_datadir\\gateway{nodeIndex + 1}")
                 .WithPort($"36{portSuffix}")
                 .WithApiPort($"38{portSuffix}")
                 .WithCounterChainApiPort($"38{counterPortSuffix}")
-                .WithRedeemScript("$redeemscript") //this.scriptAndAddresses.payToMultiSig.ToString())
-                .WithPublicKey($"$gateway{nodeIndex + 1}_public_key") //this.pubKeysByMnemonic[this.mnemonics[nodeIndex]].ToString())
-                ;
+                .WithRedeemScript(this.scriptAndAddresses.payToMultiSig.ToString())
+                .WithPublicKey(this.pubKeysByMnemonic[this.mnemonics[nodeIndex]].ToString());
+
+            List<string> federationIps = chain == "main" ? this.mainFederationIps : this.sideFederationIps;
+
+            //filter out current node from the federationIps
+            nodeSetup.WithFederationIps(this.mainFederationIps.Where(ip => !ip.Contains(nodeSetup.Port.ToString())));
+
+            return nodeSetup;
         }
 
         private void SetupNodes()
@@ -65,13 +70,11 @@ namespace Stratis.FederatedPeg.IntegrationTests.Tools.FederatedNetworkScripts
             {
                 this.configuredGatewayNodes.Add(NodeSetup
                     .Configure($"Gateway{i + 1} MAIN", NodeType.GatewayMain, NetworkType.Testnet, "$path_to_federationgatewayd", (nodeSetup) => this.DefaultGatewayConfigurator(nodeSetup, i))
-                    .WithFederationIps(this.mainFederationIps)
                     .WithCustomArguments("-mincoinmaturity=1 -mindepositconfirmations=1")
                 );
 
                 this.configuredGatewayNodes.Add(NodeSetup
                     .Configure($"Gateway{i + 1} SIDE", NodeType.GatewaySide, NetworkType.Regtest, "$path_to_federationgatewayd", (nodeSetup) => this.DefaultGatewayConfigurator(nodeSetup, i))
-                    .WithFederationIps(this.sideFederationIps)
                     .WithCustomArguments("-mincoinmaturity=1 -mindepositconfirmations=1 -txindex = 1")
                 );
             }
@@ -79,7 +82,7 @@ namespace Stratis.FederatedPeg.IntegrationTests.Tools.FederatedNetworkScripts
             // MainChainUser.
             this.configuredUserNodes.Add(NodeSetup
                 .Configure($"MAIN Chain User", NodeType.UserMain, NetworkType.Testnet, "$path_to_stratisd")
-                .SetConsoleColor("80")
+                .SetConsoleColor("0D")
                 .WithAgentPrefix("mainuser")
                 .WithDataDir($"$root_datadir\\MainchainUser")
                 .WithPort($"36178")
@@ -94,7 +97,7 @@ namespace Stratis.FederatedPeg.IntegrationTests.Tools.FederatedNetworkScripts
             // SidechainUser.
             this.configuredUserNodes.Add(NodeSetup
                 .Configure($"SIDE Chain User", NodeType.UserSide, NetworkType.Regtest, "$path_to_sidechaind")
-                .SetConsoleColor("87")
+                .SetConsoleColor("0C")
                 .WithAgentPrefix("sideuser")
                 .WithDataDir($"$root_datadir\\SidechainUser")
                 .WithPort($"26179")
@@ -228,9 +231,6 @@ namespace Stratis.FederatedPeg.IntegrationTests.Tools.FederatedNetworkScripts
                 for (int i = 0; i < this.federationMembersCount; i++)
                 {
                     this.AppendLine($"$params = @{{ \"mnemonic\" = \"{this.mnemonics[i]}\"; \"password\" = \"password\" }}");
-                    this.AppendLine($"Invoke-WebRequest -Uri http://localhost:38{GetPortNumberSuffix(c, i)}/api/FederationWallet/import-key -Method post -Body ($params|ConvertTo-Json) -ContentType \"application/json\"");
-                    this.AppendLine("timeout $interval_time");
-                    this.AppendLine($"$params = @{{ \"password\" = \"password\" }}");
                     this.AppendLine(
                         $"Invoke-WebRequest -Uri http://localhost:38{GetPortNumberSuffix(c, i)}/api/FederationWallet/enable-federation -Method post -Body ($params|ConvertTo-Json) -ContentType \"application/json\"");
                     this.AppendLine("timeout $long_interval_time");
@@ -245,20 +245,6 @@ namespace Stratis.FederatedPeg.IntegrationTests.Tools.FederatedNetworkScripts
             this.AppendLine("# The interval between starting the networks run, in seconds.");
             this.AppendLine("$interval_time = 5");
             this.AppendLine("$long_interval_time = 10");
-            this.AppendLine(Environment.NewLine);
-        }
-
-        private void SetFederationVariables()
-        {
-            this.AppendLine($"$mainchain_federationips = \"{string.Join(",", this.mainFederationIps)}\"");
-            this.AppendLine($"$sidechain_federationips = \"{string.Join(",", this.sideFederationIps)}\"");
-            this.AppendLine($"$redeemscript = \"{this.scriptAndAddresses.payToMultiSig}\"");
-            this.AppendLine($"$sidechain_multisig_address = \"{this.scriptAndAddresses.sidechainMultisigAddress}\"");
-
-            for (int i = 0; i < this.federationMembersCount; i++)
-            {
-                this.AppendLine($"$gateway{i + 1}_public_key = \"{this.pubKeysByMnemonic[this.mnemonics[i]]}\"");
-            };
             this.AppendLine(Environment.NewLine);
         }
 
@@ -293,7 +279,7 @@ namespace Stratis.FederatedPeg.IntegrationTests.Tools.FederatedNetworkScripts
         {
             this.AppendLine(Environment.NewLine);
             this.AppendLine("#Creating Debugging Dashboard and opening it on $browser");
-            this.AppendLine("Create-Dashboard");
+            this.AppendLine($"Create-Dashboard");
             this.AppendLine(Environment.NewLine);
         }
     }

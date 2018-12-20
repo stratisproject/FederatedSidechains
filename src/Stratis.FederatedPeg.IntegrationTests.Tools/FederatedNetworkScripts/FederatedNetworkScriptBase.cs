@@ -11,7 +11,7 @@ using Stratis.Sidechains.Networks;
 
 namespace Stratis.FederatedPeg.IntegrationTests.Tools.FederatedNetworkScripts
 {
-    public abstract class FederatedNetowrkScriptBase<TMainNetwork, TSideNetwork> where TMainNetwork : Network where TSideNetwork : Network
+    public abstract class FederatedNetworkScriptBase<TMainNetwork, TSideNetwork> where TMainNetwork : Network where TSideNetwork : Network
     {
         private bool initialized;
         private StringBuilder stringBuilder;
@@ -26,14 +26,13 @@ namespace Stratis.FederatedPeg.IntegrationTests.Tools.FederatedNetworkScripts
 
         protected Dictionary<Mnemonic, PubKey> pubKeysByMnemonic;
 
-
         protected List<string> mainFederationIps = new List<string>();
         protected List<string> sideFederationIps = new List<string>();
 
         protected List<NodeSetup> configuredGatewayNodes = new List<NodeSetup>();
         protected List<NodeSetup> configuredUserNodes = new List<NodeSetup>();
 
-        public FederatedNetowrkScriptBase(TMainNetwork mainchainNetwork, TSideNetwork sidechainNetwork)
+        public FederatedNetworkScriptBase(TMainNetwork mainchainNetwork, TSideNetwork sidechainNetwork)
         {
             this.mainchainNetwork = Guard.NotNull(mainchainNetwork, nameof(mainchainNetwork));
             this.sidechainNetwork = Guard.NotNull(sidechainNetwork, nameof(sidechainNetwork));
@@ -63,7 +62,6 @@ namespace Stratis.FederatedPeg.IntegrationTests.Tools.FederatedNetworkScripts
 
             this.initialized = true;
         }
-
 
         protected virtual void BuildFederationIps()
         {
@@ -133,19 +131,23 @@ namespace Stratis.FederatedPeg.IntegrationTests.Tools.FederatedNetworkScripts
 
         protected void AppendResource(string resourcePath)
         {
+            this.AppendLine(this.GetResource(resourcePath));
+            this.AppendLine(Environment.NewLine);
+        }
+
+        protected string GetResource(string resourcePath)
+        {
             try
             {
                 using (Stream stream = this.GetType().GetTypeInfo().Assembly.GetManifestResourceStream(resourcePath))
                 using (StreamReader reader = new StreamReader(stream, Encoding.UTF8))
-                    this.AppendLine(reader.ReadToEnd());
+                    return reader.ReadToEnd();
             }
             catch (Exception ex)
             {
                 Console.WriteLine($"Cannot load resource {resourcePath}");
                 throw;
             }
-
-            this.AppendLine(Environment.NewLine);
         }
 
         public string GenerateScript()
