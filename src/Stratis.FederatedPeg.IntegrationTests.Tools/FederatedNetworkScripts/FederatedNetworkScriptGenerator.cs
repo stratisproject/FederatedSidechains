@@ -79,7 +79,7 @@ namespace Stratis.FederatedPeg.IntegrationTests.Tools.FederatedNetworkScripts
             // MainChainUser.
             this.configuredUserNodes.Add(NodeSetup
                 .Configure($"MAIN Chain User", NodeType.UserMain, NetworkType.Testnet, "$path_to_stratisd")
-                .SetConsoleColor("1C")
+                .SetConsoleColor("80")
                 .WithAgentPrefix("mainuser")
                 .WithDataDir($"$root_datadir\\MainchainUser")
                 .WithPort($"36178")
@@ -94,7 +94,7 @@ namespace Stratis.FederatedPeg.IntegrationTests.Tools.FederatedNetworkScripts
             // SidechainUser.
             this.configuredUserNodes.Add(NodeSetup
                 .Configure($"SIDE Chain User", NodeType.UserSide, NetworkType.Regtest, "$path_to_sidechaind")
-                .SetConsoleColor("1D")
+                .SetConsoleColor("87")
                 .WithAgentPrefix("sideuser")
                 .WithDataDir($"$root_datadir\\SidechainUser")
                 .WithPort($"26179")

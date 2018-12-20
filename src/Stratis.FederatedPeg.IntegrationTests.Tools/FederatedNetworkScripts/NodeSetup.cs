@@ -215,7 +215,7 @@ namespace Stratis.FederatedPeg.IntegrationTests.Tools.FederatedNetworkScripts
                 sb.Append($"-federationips={string.Join(",", this.FederationIps)} ");
 
             if (!string.IsNullOrWhiteSpace(this.RedeemScript))
-                sb.Append($"-redeemscript={this.RedeemScript} ");
+                sb.Append($"-redeemscript=\"\"{this.RedeemScript}\"\" ");
 
             if (!string.IsNullOrWhiteSpace(this.PublicKey))
                 sb.Append($"-publickey={this.PublicKey} ");
