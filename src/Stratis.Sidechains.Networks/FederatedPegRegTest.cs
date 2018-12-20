@@ -27,8 +27,8 @@ namespace Stratis.Sidechains.Networks
 
         internal FederatedPegRegTest()
         {
-            this.Name = FederatedPegNetwork.RegTestNetworkName;
-            this.CoinTicker = FederatedPegNetwork.TestCoinSymbol;
+            this.Name = "FederatedPegRegTest";
+            this.CoinTicker = "TFPG";
             this.Magic = 0x522357C;
             this.DefaultPort = 26179;
             this.DefaultMaxOutboundConnections = 16;

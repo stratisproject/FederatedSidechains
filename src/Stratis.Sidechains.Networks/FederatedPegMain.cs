@@ -15,8 +15,8 @@ namespace Stratis.Sidechains.Networks
     {
         internal FederatedPegMain()
         {
-            this.Name = FederatedPegNetwork.MainNetworkName;
-            this.CoinTicker = FederatedPegNetwork.CoinSymbol;
+            this.Name = "FederatedPegMain";
+            this.CoinTicker = "FPG";
             this.Magic = 0x522357A;
 
             var consensusFactory = new SmartContractPoAConsensusFactory();

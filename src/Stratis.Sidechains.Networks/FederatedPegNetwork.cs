@@ -6,14 +6,6 @@ namespace Stratis.Sidechains.Networks
 {
     public static class FederatedPegNetwork
     {
-        public const string ChainName = "FederatedPeg";
-        public const string MainNetworkName = ChainName + "Main";
-        public const string TestNetworkName = ChainName + "Test";
-        public const string RegTestNetworkName = ChainName + "RegTest";
-
-        public const string CoinSymbol = "FPG";
-        public const string TestCoinSymbol = "T" + CoinSymbol;
-
         public static NetworksSelector NetworksSelector
         {
             get
