@@ -18,7 +18,7 @@ using Stratis.SmartContracts.Core.State;
 
 namespace Stratis.FederatedPeg.IntegrationTests.Utils
 {
-    public static class CoreNodeExtensions
+    public static class FederatedPegTestExtensions
     {
         private const string WalletName = "mywallet";
         private const string WalletPassword = "password";
