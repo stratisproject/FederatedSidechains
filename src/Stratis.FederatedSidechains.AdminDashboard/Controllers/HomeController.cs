@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Net;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.SignalR;
@@ -18,7 +17,7 @@ namespace Stratis.FederatedSidechains.AdminDashboard.Controllers
     {
         private readonly IDistributedCache distributedCache;
         private readonly DefaultEndpointsSettings defaultEndpointsSettings;
-        public readonly IHubContext<DataUpdaterHub> updaterHub;
+        private readonly IHubContext<DataUpdaterHub> updaterHub;
 
         public HomeController(IDistributedCache distributedCache, IHubContext<DataUpdaterHub> hubContext, IOptions<DefaultEndpointsSettings> defaultEndpointsSettings)
         {
@@ -79,6 +78,10 @@ namespace Stratis.FederatedSidechains.AdminDashboard.Controllers
             if(!string.IsNullOrEmpty(this.distributedCache.GetString("DashboardData")))
             {
                 var dashboardModel = JsonConvert.DeserializeObject<DashboardModel>(this.distributedCache.GetString("DashboardData"));
+                this.ViewBag.History = new[] {
+                    dashboardModel.StratisNode.History,
+                    dashboardModel.SidechainNode.History
+                };
                 return PartialView("Dashboard", dashboardModel);
             }
             return NoContent();
