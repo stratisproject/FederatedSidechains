@@ -64,12 +64,10 @@ namespace Stratis.FederatedPeg.IntegrationTests.Utils
                 {
                     feature.FeatureServices(services =>
                     {
-                        // Get default CHT implementation and replace it with the test implementation.
                         ServiceDescriptor cht = services.FirstOrDefault(x => x.ServiceType == typeof(BlockDefinition));
 
                         services.Remove(cht);
                         services.AddSingleton<BlockDefinition, TestFederatedPegBlockDefinition>();
-                        //.AddSingleton<TestChainedHeaderTree>(provider => provider.GetService<IChainedHeaderTree>() as TestChainedHeaderTree);
                     });
                 }
             });
