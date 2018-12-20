@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using NBitcoin;
@@ -7,6 +8,7 @@ using Stratis.Bitcoin.Consensus;
 using Stratis.Bitcoin.Primitives;
 using Stratis.FederatedPeg.Features.FederationGateway.Interfaces;
 using Stratis.FederatedPeg.Features.FederationGateway.Models;
+using Stratis.FederatedPeg.Features.FederationGateway.RestClients;
 
 namespace Stratis.FederatedPeg.Features.FederationGateway.SourceChain
 {
@@ -52,6 +54,10 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.SourceChain
 
             var maturedBlocks = new List<MaturedBlockDepositsModel>();
 
+            // Half of the timeout. We will also need time to convert it to json.
+            int maxTimeCollectionCanTakeMs = RestApiClientBase.TimeoutMs / 2;
+            var cancellation = new CancellationTokenSource(maxTimeCollectionCanTakeMs);
+
             for (int i = blockHeight; (i <= matureTipHeight) && (i < blockHeight + maxBlocks); i++)
             {
                 ChainedHeader currentHeader = consensusTip.GetAncestor(i);
@@ -64,6 +70,12 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.SourceChain
                     throw new InvalidOperationException($"Unable to get deposits for block at height {currentHeader.Height}");
 
                 maturedBlocks.Add(maturedBlockDeposits);
+
+                if (cancellation.IsCancellationRequested && maturedBlocks.Count > 1)
+                {
+                    this.logger.LogDebug("Stop matured blocks collection because it's taking too long. Send what we've collected.");
+                    break;
+                }
             }
 
             return maturedBlocks;

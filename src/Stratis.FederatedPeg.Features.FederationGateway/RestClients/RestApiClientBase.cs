@@ -26,7 +26,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.RestClients
         /// <summary>Delay between retries.</summary>
         private const int AttemptDelayMs = 1000;
 
-        private const int TimeoutMs = 60_000;
+        public const int TimeoutMs = 60_000;
 
         private readonly RetryPolicy policy;
 
