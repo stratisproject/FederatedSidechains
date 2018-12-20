@@ -19,9 +19,6 @@ namespace Stratis.Sidechains.Networks
         /// <summary> The default name used for the federated peg configuration file. </summary>
         private const string NetworkDefaultConfigFilename = "fedpeg.conf";
 
-        // public IList<Mnemonic> FederationMnemonics { get; }
-        public IList<Key> FederationKeys { get; private set; }
-
         internal FederatedPegTest()
         {
             this.Name = FederatedPegNetwork.TestNetworkName;

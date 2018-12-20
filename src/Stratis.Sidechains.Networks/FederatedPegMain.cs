@@ -13,8 +13,6 @@ namespace Stratis.Sidechains.Networks
     /// </summary>
     public class FederatedPegMain : PoANetwork
     {
-        public List<PubKey> FederationPubKeys { get; private set; }
-
         internal FederatedPegMain()
         {
             this.Name = FederatedPegNetwork.MainNetworkName;
