@@ -39,7 +39,6 @@ namespace Stratis.FederatedPeg.IntegrationTests.Utils
                 .AddFederationGateway()
                 .UseFederatedPegPoAMining()
                 .UseMempool()
-                .UseWallet()
                 .UseTransactionNotification()
                 .UseBlockNotification()
                 .UseApi()
