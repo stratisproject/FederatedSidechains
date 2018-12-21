@@ -227,18 +227,17 @@ namespace Stratis.FederatedPeg.Features.FederationGateway
                                 + " Federation Status: " + (isFederationActive ? "Active" : "Inactive"));
             benchLog.AppendLine();
 
-            var apiSettings = (ApiSettings)this.fullNode.Services.ServiceProvider.GetService(typeof(ApiSettings));
             if (!isFederationActive)
             {
-                var warning =
-                      Environment.NewLine + "".PadRight(59, '=') + " W A R N I N G " + "".PadRight(59, '=')
-                    + Environment.NewLine
-                    + Environment.NewLine + "This federation node is not enabled. You will not be able to store or participate in signing of transactions until you enable it."
-                    + Environment.NewLine + $"If not done previously, please enable your federation node using " + $"{apiSettings.ApiUri}/api/FederationWallet/{FederationWalletRouteEndPoint.EnableFederation}."
-                    + Environment.NewLine
-                    + Environment.NewLine + "".PadRight(133, '=')
-                    + Environment.NewLine;
-                benchLog.AppendLine(warning);
+                var apiSettings = (ApiSettings)this.fullNode.Services.ServiceProvider.GetService(typeof(ApiSettings));
+
+                benchLog.AppendLine("".PadRight(59, '=') + " W A R N I N G " + "".PadRight(59, '='));
+                benchLog.AppendLine();
+                benchLog.AppendLine("This federation node is not enabled. You will not be able to store or participate in signing of transactions until you enable it.");
+                benchLog.AppendLine("If not done previously, please enable your federation node using " + $"{apiSettings.ApiUri}/api/FederationWallet/{FederationWalletRouteEndPoint.EnableFederation}.");
+                benchLog.AppendLine();
+                benchLog.AppendLine("".PadRight(133, '='));
+                benchLog.AppendLine();
             }
 
             // Display recent withdrawals (if any).
