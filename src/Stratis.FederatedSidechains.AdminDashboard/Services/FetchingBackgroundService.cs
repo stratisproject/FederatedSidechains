@@ -23,7 +23,7 @@ namespace Stratis.FederatedSidechains.AdminDashboard.Services
         private readonly DefaultEndpointsSettings defaultEndpointsSettings;
         private readonly IDistributedCache distributedCache;
         public readonly IHubContext<DataUpdaterHub> updaterHub;
-        private bool successfullyBuilt = false;
+        private bool successfullyBuilt;
         private Timer dataRetrieverTimer;
 
         public FetchingBackgroundService(IDistributedCache distributedCache, IOptions<DefaultEndpointsSettings> defaultEndpointsSettings, IHubContext<DataUpdaterHub> hubContext)
@@ -177,8 +177,9 @@ namespace Stratis.FederatedSidechains.AdminDashboard.Services
                 if(successfullyBuilt)
                 {
                     await this.updaterHub.Clients.All.SendAsync("NodeUnavailable");
-                    successfullyBuilt = false;
                 }
+                await this.distributedCache.RemoveAsync("DashboardData");
+                successfullyBuilt = false;
             }
         }
             
@@ -201,7 +202,7 @@ namespace Stratis.FederatedSidechains.AdminDashboard.Services
         private bool PerformNodeCheck() => this.PortCheck(new Uri(this.defaultEndpointsSettings.StratisNode).Port) && this.PortCheck(new Uri(this.defaultEndpointsSettings.SidechainNode).Port);
 
         /// <summary>
-        /// Perform a port TCP scan
+        /// Perform a TCP port scan
         /// </summary>
         /// <param name="port">Specify the port to scan</param>
         /// <returns>True if the port is opened</returns>

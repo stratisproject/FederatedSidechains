@@ -51,7 +51,7 @@ namespace Stratis.FederatedSidechains.AdminDashboard.Controllers
             {
                 var nodeUnavailable = !string.IsNullOrEmpty(this.distributedCache.GetString("NodeUnavailable"));
                 this.ViewBag.NodeUnavailable = nodeUnavailable;
-                this.ViewBag.Status = nodeUnavailable ? "Unavailable API" : "Initialization...";
+                this.ViewBag.Status = nodeUnavailable ? "API Unavailable" : "Initialization...";
                 return View("Initialization");
             }
 

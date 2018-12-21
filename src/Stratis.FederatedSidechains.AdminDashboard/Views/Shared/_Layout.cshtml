@@ -4,7 +4,12 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Stratis Federated Sidechains Dashboard</title>
-    <link href="~/css/default.css" rel="stylesheet" />
+    <environment include="Development">
+      <link href="~/css/default.css" rel="stylesheet" />
+    </environment>
+    <environment exclude="Development">
+      <link href="~/css/default.min.css" rel="stylesheet" />
+    </environment>
      <link rel="stylesheet" type="text/css" href="~/lib/node-snackbar/dist/snackbar.min.css" />
      <link rel="stylesheet" type="text/css" href="~/lib/nprogress/nprogress.css" />
 	<link rel="icon" type="image/svg" href="~/images/logo.svg" />

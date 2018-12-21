@@ -11,15 +11,13 @@ $(document).ready(function()
         if($('.modal').hasClass('show') == false)
         {
             $("#container").load("/update-dashboard");
+            Snackbar.close();
         }
         NProgress.done();
     });
     signalrHub.on("NodeUnavailable", function () {
         $(".status").text("API Unavailable");
         Snackbar.show({text: "The full nodes API are unavailable", pos: "bottom-center", duration: 0});
-        setTimeout(function() {
-            document.location.reload();
-        }, 10000);
     });
     signalrHub.start();
 
@@ -28,6 +26,7 @@ $(document).ready(function()
         if(CacheIsDifferent)
         {
             $("#container").load("/update-dashboard");
+            Snackbar.close();
         }
     });
 
