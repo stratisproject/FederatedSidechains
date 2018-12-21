@@ -139,7 +139,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.Wallet
             IDateTimeProvider dateTimeProvider,
             IFederationGatewaySettings federationGatewaySettings,
             IWithdrawalExtractor withdrawalExtractor,
-            ICrossChainTransferStore crossChainTransferStore = null,    // Not required for store tests.
+            ICrossChainTransferStore crossChainTransferStore,
             MempoolManager mempoolManager = null,                       // Not required for store tests.
             IBroadcasterManager broadcasterManager = null)              // No need to know about transactions the node broadcasted.
         {
@@ -152,6 +152,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.Wallet
             Guard.NotNull(nodeLifetime, nameof(nodeLifetime));
             Guard.NotNull(federationGatewaySettings, nameof(federationGatewaySettings));
             Guard.NotNull(withdrawalExtractor, nameof(withdrawalExtractor));
+            Guard.NotNull(crossChainTransferStore, nameof(crossChainTransferStore));
 
             this.lockObject = new object();
 
