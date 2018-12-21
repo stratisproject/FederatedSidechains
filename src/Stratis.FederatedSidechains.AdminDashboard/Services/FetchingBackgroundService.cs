@@ -55,8 +55,8 @@ namespace Stratis.FederatedSidechains.AdminDashboard.Services
             ApiResponse stratisStatus = await ApiRequester.GetRequestAsync(this.defaultEndpointsSettings.StratisNode, "/api/Node/status");
             ApiResponse stratisRawmempool = await ApiRequester.GetRequestAsync(this.defaultEndpointsSettings.StratisNode, "/api/Mempool/getrawmempool");
             ApiResponse stratisBestBlock = await ApiRequester.GetRequestAsync(this.defaultEndpointsSettings.StratisNode, "/api/Consensus/getbestblockhash");
-            //ApiResponse stratisWalletHistory = await ApiRequester.GetRequestAsync(this.defaultEndpointsSettings.StratisNode, $"/api/Wallet/history?WalletName={walletName}&AccountName=account%200");
             ApiResponse stratisWalletBalances = await ApiRequester.GetRequestAsync(this.defaultEndpointsSettings.StratisNode, "/api/FederationWallet/balance");
+            ApiResponse stratisWalletHistory = await ApiRequester.GetRequestAsync(this.defaultEndpointsSettings.StratisNode, "/api/FederationWallet/history?maxEntriesToReturn=10");
             ApiResponse stratisFederationInfo = await ApiRequester.GetRequestAsync(this.defaultEndpointsSettings.StratisNode, "/api/FederationGateway/info");
             #endregion
 
@@ -64,8 +64,8 @@ namespace Stratis.FederatedSidechains.AdminDashboard.Services
             ApiResponse sidechainStatus = await ApiRequester.GetRequestAsync(this.defaultEndpointsSettings.SidechainNode, "/api/Node/status");
             ApiResponse sidechainRawmempool = await ApiRequester.GetRequestAsync(this.defaultEndpointsSettings.SidechainNode, "/api/Mempool/getrawmempool");
             ApiResponse sidechainBestBlock = await ApiRequester.GetRequestAsync(this.defaultEndpointsSettings.SidechainNode, "/api/Consensus/getbestblockhash");
-            //ApiResponse sidechainWalletHistory = await ApiRequester.GetRequestAsync(this.defaultEndpointsSettings.SidechainNode, $"/api/Wallet/history?WalletName={walletName}&AccountName=account%200");
             ApiResponse sidechainWalletBalances = await ApiRequester.GetRequestAsync(this.defaultEndpointsSettings.SidechainNode, "/api/FederationWallet/balance");
+            ApiResponse sidechainWalletHistory = await ApiRequester.GetRequestAsync(this.defaultEndpointsSettings.SidechainNode, "/api/FederationWallet/history?maxEntriesToReturn=10");
             ApiResponse sidechainFederationInfo = await ApiRequester.GetRequestAsync(this.defaultEndpointsSettings.SidechainNode, "/api/FederationGateway/info");
             #endregion
 
@@ -97,7 +97,7 @@ namespace Stratis.FederatedSidechains.AdminDashboard.Services
                         BlockHash = stratisBestBlock.Content,
                         BlockHeight = stratisStatus.Content.blockStoreHeight,
                         MempoolSize = stratisRawmempool.Content.Count,
-                        History = new JArray(),   //stratisWalletHistory.Content.history[0].transactionsHistory,
+                        History = stratisWalletHistory.Content,
                         ConfirmedBalance = (double)stratisWalletBalances.Content.balances[0].amountConfirmed / 100000000,
                         UnconfirmedBalance = (double)stratisWalletBalances.Content.balances[0].amountUnconfirmed / 100000000
                     },  
@@ -111,7 +111,7 @@ namespace Stratis.FederatedSidechains.AdminDashboard.Services
                         BlockHash = sidechainBestBlock.Content,
                         BlockHeight = sidechainStatus.Content.blockStoreHeight,
                         MempoolSize = sidechainRawmempool.Content.Count,
-                        History = new JArray(),   //sidechainWalletHistory.Content.history[0].transactionsHistory,
+                        History = sidechainWalletHistory.Content,
                         ConfirmedBalance = (double)sidechainWalletBalances.Content.balances[0].amountConfirmed / 100000000,
                         UnconfirmedBalance = (double)sidechainWalletBalances.Content.balances[0].amountUnconfirmed / 100000000
                     }

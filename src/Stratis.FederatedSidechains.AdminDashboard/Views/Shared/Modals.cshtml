@@ -140,7 +140,6 @@
                             <th class="text-center" scope="col">Status</th>
                             <th class="text-center" scope="col">Destination</th>
                             <th class="text-center" scope="col">Tx ID</th>
-                            <th class="text-center" scope="col">Seen in block</th>
                             <th class="text-center" scope="col">Confirmed in block</th>
                             <th class="text-center" scope="col">Amount</th>
                         </tr>
@@ -148,35 +147,13 @@
                     <tbody>
                         @foreach(dynamic transaction in (JArray)ViewBag.History[0])
                         {
-                            if(transaction.type == "send")
-                            {
                             <tr>
                                 <td class="text-center"><i class="material-icons text-green md-18">check_circle</i></td>
-                                <td class="text-center text-truncate"><code>@(transaction.payments[0].destinationAddress)</code></td>
-                                <td class="text-left text-truncate" style="max-width: 110px;"><a href="https://chainz.cryptoid.info/strat/tx.dws?@(transaction.id).htm" target="_blank">@transaction.id</a></td>
-                                <td class="text-center">@DateTimeOffset.FromUnixTimeSeconds((long)transaction.timestamp).ToString("g")</td>
-                                <td class="text-center">-</td>
-                                <td class="text-right">@(((double)transaction.amount/100000000).ToString("N8")) STRAT</td>
+                                <td class="text-center text-truncate"><code>@(transaction.withdrawal.targetAddress)</code></td>
+                                <td class="text-left text-truncate" style="max-width: 110px;"><a href="https://chainz.cryptoid.info/strat/tx.dws?@(transaction.id).htm" target="_blank">@transaction.withdrawal.id</a></td>
+                                <td class="text-center">@transaction.withdrawal.blockNumber</td>
+                                <td class="text-right">@(((double)transaction.withdrawal.amount/100000000).ToString("N8")) STRAT</td>
                             </tr>
-                            }
-                            else
-                            {
-                            <tr>
-                                @if(transaction.confirmedInBlock > 0)
-                                {
-                                    <td class="text-center"><i class="material-icons text-green md-18">check_circle</i></td>
-                                }
-                                else
-                                {
-                                    <td class="text-center"><i class="material-icons text-yellow md-18">schedule</i></td>
-                                }
-                                <td class="text-center text-truncate"><code>@transaction.toAddress</code></td>
-                                <td class="text-left text-truncate" style="max-width: 110px;"><a href="https://chainz.cryptoid.info/strat/tx.dws?@(transaction.id).htm" target="_blank">@transaction.id</a></td>
-                                <td class="text-center">@DateTimeOffset.FromUnixTimeSeconds((long)transaction.timestamp).ToString("g")</td>
-                                <td class="text-center">@transaction.confirmedInBlock</td>
-                                <td class="text-right">@(((double)transaction.amount/100000000).ToString("N8")) STRAT</td>
-                            </tr>
-                            }
                         }
                     </tbody>
                     @if(((JArray)ViewBag.History[0]).Count == 0)
@@ -208,7 +185,6 @@
                             <th class="text-center" scope="col">Status</th>
                             <th class="text-center" scope="col">Destination</th>
                             <th class="text-center" scope="col">Tx ID</th>
-                            <th class="text-center" scope="col">Seen in block</th>
                             <th class="text-center" scope="col">Confirmed in block</th>
                             <th class="text-center" scope="col">Amount</th>
                         </tr>
@@ -216,35 +192,13 @@
                     <tbody>
                         @foreach(dynamic transaction in (JArray)ViewBag.History[1])
                         {
-                            if(transaction.type == "send")
-                            {
                             <tr>
-                                <td class="text-center"><i class="material-icons text-green md-18">check_circle</i></td>
-                                <td class="text-center text-truncate"><code>@(transaction.payments[0].destinationAddress)</code></td>
-                                <td class="text-left text-truncate" style="max-width: 110px;"><a href="https://chainz.cryptoid.info/strat/tx.dws?@(transaction.id).htm" target="_blank">@transaction.id</a></td>
-                                <td class="text-center">@DateTimeOffset.FromUnixTimeSeconds((long)transaction.timestamp).ToString("g")</td>
-                                <td class="text-center">-</td>
-                                <td class="text-right">@(((double)transaction.amount/100000000).ToString("N8")) STRAT</td>
+                            <td class="text-center"><i class="material-icons text-green md-18">check_circle</i></td>
+                            <td class="text-center text-truncate"><code>@(transaction.withdrawal.targetAddress)</code></td>
+                            <td class="text-left text-truncate" style="max-width: 110px;"><a href="https://chainz.cryptoid.info/strat/tx.dws?@(transaction.id).htm" target="_blank">@transaction.withdrawal.id</a></td>
+                            <td class="text-center">@transaction.withdrawal.blockNumber</td>
+                            <td class="text-right">@(((double)transaction.withdrawal.amount/100000000).ToString("N8")) STRAT</td>
                             </tr>
-                            }
-                            else
-                            {
-                            <tr>
-                                @if(transaction.confirmedInBlock > 0)
-                                {
-                                    <td class="text-center"><i class="material-icons text-green md-18">check_circle</i></td>
-                                }
-                                else
-                                {
-                                    <td class="text-center"><i class="material-icons text-yellow md-18">schedule</i></td>
-                                }
-                                <td class="text-center text-truncate"><code>@transaction.toAddress</code></td>
-                                <td class="text-left text-truncate" style="max-width: 110px;"><a href="https://chainz.cryptoid.info/strat/tx.dws?@(transaction.id).htm" target="_blank">@transaction.id</a></td>
-                                <td class="text-center">@DateTimeOffset.FromUnixTimeSeconds((long)transaction.timestamp).ToString("g")</td>
-                                <td class="text-center">@transaction.confirmedInBlock</td>
-                                <td class="text-right">@(((double)transaction.amount/100000000).ToString("N8")) STRAT</td>
-                            </tr>
-                            }
                         }
                     </tbody>
                     @if(((JArray)ViewBag.History[1]).Count == 0)
