@@ -104,19 +104,40 @@ namespace Stratis.FederatedPeg.Tests.ControllersTests
         [Fact]
         public void Sync()
         {
+            ChainedHeader header = this.chain.Tip;
 
+            bool called = false;
+            this.walletSyncManager.When(x => x.SyncFromHeight(header.Height)).Do(info => called = true);
+
+            this.controller.Sync(new HashModel() { Hash = header.HashBlock.ToString() });
+
+            Assert.True(called);
         }
 
         [Fact]
         public void EnableFederation()
         {
+            bool called = false;
+            this.walletManager.When(x => x.EnableFederation(null)).Do(info => called = true);
 
+            this.controller.EnableFederation(new EnableFederationRequest());
+
+            Assert.True(called);
         }
 
         [Fact]
         public void RemoveTransactions()
         {
+            var hashSet = new HashSet<(uint256, DateTimeOffset)>();
+            hashSet.Add((uint256.One, DateTimeOffset.MinValue));
 
+            this.walletManager.RemoveAllTransactions().Returns(info => hashSet);
+
+            IActionResult result = this.controller.RemoveTransactions(new RemoveFederationTransactionsModel());
+
+            IEnumerable<RemovedTransactionModel> model = ActionResultToModel<IEnumerable<RemovedTransactionModel>>(result);
+
+            Assert.Single(model);
         }
 
         private T ActionResultToModel<T>(IActionResult result) where T : class
