@@ -10,9 +10,9 @@
     <environment exclude="Development">
       <link href="~/css/default.min.css" rel="stylesheet" />
     </environment>
-     <link rel="stylesheet" type="text/css" href="~/lib/node-snackbar/dist/snackbar.min.css" />
-     <link rel="stylesheet" type="text/css" href="~/lib/nprogress/nprogress.css" />
-	<link rel="icon" type="image/svg" href="~/images/logo.svg" />
+    <link rel="stylesheet" type="text/css" href="~/lib/node-snackbar/dist/snackbar.min.css" />
+    <link rel="stylesheet" type="text/css" href="~/lib/nprogress/nprogress.css" />
+    <link rel="icon" type="image/svg" href="~/images/logo.svg" />
 </head>
 <body>
   <div class="modal fade" data-keyboard="false" data-backdrop="static" id="miningPublicKeys" tabindex="-1" role="dialog" aria-labelledby="miningPublicKeys" aria-hidden="true">
@@ -46,11 +46,11 @@
     </div>
   </div>
   <nav class="navbar navbar-dark bg-purple fixed-top">
-    <a class="navbar-brand mr-4" href="#">
-      <img src="~/images/logo_white.svg" width="30" height="30" class="d-inline-block align-top" alt="">
+    <a class="navbar-brand mr-4" href="https://stratisplatform.com/" target="_blank">
+      <img src="~/images/logo_white.svg" width="30" height="30" class="d-inline-block align-top" alt="Stratis" />
     </a>
     <div class="navbar-text text-white">Federation members dashboard for Apex</div>
-    <span class="badge badge-purple ml-auto">Status: <span class="status">@(ViewBag.Status ?? "Warning")</span>
+    <span class="badge badge-purple ml-auto">Status: <span class="status">@(ViewBag.Status ?? "Warning")</span></span>
   </nav>
   <nav class="navbar navbar-light bg-white py-1 fixed-top d-flex align-items-center" style="margin-top:56px;">
     <div class="navbar-text d-inline">
@@ -62,11 +62,7 @@
     <div class="navbar-text d-inline">
       <ul class="list-inline mb-0 ml-5 ml-md-2 d-flex align-items-center">
         <li class="list-inline-item text-dark">Apex wallet address</li>
-        <li class="list-inline-item text-truncate">@(ViewBag.SidechainMultisigAddress ?? "Not Running")
-          <a href="#">
-            <i class="material-icons">file_copy</i>
-          </a>
-        </li>
+        <li class="list-inline-item text-truncate">@(ViewBag.SidechainMultisigAddress ?? "Not Running")</li>
       </ul>
     </div>
     <div class="navbar-text ml-auto">

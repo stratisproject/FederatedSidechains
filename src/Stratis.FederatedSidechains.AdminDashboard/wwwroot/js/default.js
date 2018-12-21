@@ -17,7 +17,7 @@ $(document).ready(function()
     });
     signalrHub.on("NodeUnavailable", function () {
         $(".status").text("API Unavailable");
-        Snackbar.show({text: "The full nodes API are unavailable", pos: "bottom-center", duration: 0});
+        Snackbar.show({text: "The full nodes API are unavailable", pos: "bottom-center", duration: 0, actionText: 'REFRESH', onActionClick: function() {document.location.reload();}});
     });
     signalrHub.start();
 
