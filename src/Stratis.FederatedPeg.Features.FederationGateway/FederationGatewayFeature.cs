@@ -231,14 +231,14 @@ namespace Stratis.FederatedPeg.Features.FederationGateway
             if (!isFederationActive)
             {
                 var warning =
-                                                    "=============================================".PadLeft(10,'=')
-                           + Environment.NewLine
-                           + Environment.NewLine +  "Federation node not enabled. You will not be able to sign transactions until you enable it."
-                           + Environment.NewLine + $"If not done previously, please enable your federation node using "
-                           + Environment.NewLine + $"{apiSettings.ApiUri}/api/FederationWallet/{FederationWalletRouteEndPoint.EnableFederation}"
-                           + Environment.NewLine
-                           + Environment.NewLine + $"============================================".PadLeft(10, '=')
-                           + Environment.NewLine;
+                      Environment.NewLine + "".PadRight(59, '=') + " W A R N I N G " + "".PadRight(59, '=')
+                    + Environment.NewLine
+                    + Environment.NewLine +  "This federation node is not enabled. You will not be able to store or participate in signing of transactions until you enable it."
+                    + Environment.NewLine + $"If not done previously, please enable your federation node using "
+                    + $"{apiSettings.ApiUri}/api/FederationWallet/{FederationWalletRouteEndPoint.EnableFederation}."
+                    + Environment.NewLine
+                    + Environment.NewLine + "".PadRight(133, '=')
+                    + Environment.NewLine;
                 benchLog.AppendLine(warning);
             }
 
