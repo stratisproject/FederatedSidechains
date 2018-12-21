@@ -61,6 +61,8 @@ namespace Stratis.FederatedSidechains.AdminDashboard.Controllers
                 dashboardModel.StratisNode.History,
                 dashboardModel.SidechainNode.History
             };
+            this.ViewBag.StratisTicker = dashboardModel.StratisNode.CoinTicker;
+            this.ViewBag.SidechainTicker= dashboardModel.SidechainNode.CoinTicker;
             this.ViewBag.MainchainMultisigAddress = dashboardModel.MainchainWalletAddress;
             this.ViewBag.SidechainMultisigAddress = dashboardModel.SidechainWalletAddress;
             this.ViewBag.MiningPubKeys = dashboardModel.MiningPublicKeys;
@@ -83,6 +85,8 @@ namespace Stratis.FederatedSidechains.AdminDashboard.Controllers
                     dashboardModel.StratisNode.History,
                     dashboardModel.SidechainNode.History
                 };
+                this.ViewBag.StratisTicker = dashboardModel.StratisNode.CoinTicker;
+                this.ViewBag.SidechainTicker= dashboardModel.SidechainNode.CoinTicker;
                 return PartialView("Dashboard", dashboardModel);
             }
             return NoContent();

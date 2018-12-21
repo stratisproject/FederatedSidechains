@@ -75,9 +75,9 @@
                      <li class="col-12">
                         <ul class="list-inline">
                            <li class="list-inline-item"><strong>Wallet balance :</strong></li>
-                           <li class="list-inline-item text-green">Confirmed: @Model.StratisNode.ConfirmedBalance.ToString("N8")</li>
+                           <li class="list-inline-item text-green">Confirmed: @Model.StratisNode.ConfirmedBalance.ToString("N8") @Model.StratisNode.CoinTicker</li>
                            <li class="list-inline-item text-muted">/</li>
-                           <li class="list-inline-item text-muted">Unconfirmed: @Model.StratisNode.UnconfirmedBalance.ToString("N8")</li>
+                           <li class="list-inline-item text-muted">Unconfirmed: @Model.StratisNode.UnconfirmedBalance.ToString("N8") @Model.StratisNode.CoinTicker</li>
                         </ul>
                      </li>
                   </ul>
@@ -156,7 +156,7 @@
                            <td class="text-center text-truncate"><code>@(transaction.withdrawal.targetAddress)</code></td>
                            <td class="text-left text-truncate" style="max-width: 110px;"><a href="https://chainz.cryptoid.info/strat/tx.dws?@(transaction.id).htm" target="_blank">@transaction.withdrawal.id</a></td>
                            <td class="text-center">@transaction.withdrawal.blockNumber</td>
-                           <td class="text-right">@(((double)transaction.withdrawal.amount/100000000).ToString("N8")) STRAT</td>
+                           <td class="text-right">@(((double)transaction.withdrawal.amount/100000000).ToString("N8")) @Model.StratisNode.CoinTicker</td>
                         </tr>
                      }
                   </tbody>
@@ -241,9 +241,9 @@
                      <li class="col-12">
                         <ul class="list-inline">
                            <li class="list-inline-item"><strong>Wallet balance :</strong></li>
-                           <li class="list-inline-item text-green">Confirmed: @Model.SidechainNode.ConfirmedBalance.ToString("N8")</li>
+                           <li class="list-inline-item text-green">Confirmed: @Model.SidechainNode.ConfirmedBalance.ToString("N8") @Model.SidechainNode.CoinTicker</li>
                            <li class="list-inline-item text-muted">/</li>
-                           <li class="list-inline-item text-muted">Unconfirmed: @Model.SidechainNode.UnconfirmedBalance.ToString("N8")</li>
+                           <li class="list-inline-item text-muted">Unconfirmed: @Model.SidechainNode.UnconfirmedBalance.ToString("N8") @Model.SidechainNode.CoinTicker</li>
                         </ul>
                      </li>
                   </ul>
@@ -322,7 +322,7 @@
                            <td class="text-center text-truncate"><code>@(transaction.withdrawal.targetAddress)</code></td>
                            <td class="text-left text-truncate" style="max-width: 110px;"><a href="https://chainz.cryptoid.info/strat/tx.dws?@(transaction.id).htm" target="_blank">@transaction.withdrawal.id</a></td>
                            <td class="text-center">@transaction.withdrawal.blockNumber</td>
-                           <td class="text-right">@(((double)transaction.withdrawal.amount/100000000).ToString("N8")) STRAT</td>
+                           <td class="text-right">@(((double)transaction.withdrawal.amount/100000000).ToString("N8")) @Model.SidechainNode.CoinTicker</td>
                         </tr>
                      }
                   </tbody>
