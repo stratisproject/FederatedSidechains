@@ -14,6 +14,13 @@ $(document).ready(function()
         }
         NProgress.done();
     });
+    signalrHub.on("NodeUnavailable", function () {
+        $(".status").text("API Unavailable");
+        Snackbar.show({text: "The full nodes API are unavailable", pos: "bottom-center", duration: 0});
+        setTimeout(function() {
+            document.location.reload();
+        }, 10000);
+    });
     signalrHub.start();
 
     // Detects modal closing for refresh the dashboard

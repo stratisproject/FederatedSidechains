@@ -16,7 +16,7 @@
                   <ul class="list-inline float-right d-flex align-items-center">
                      <li class="list-inline-item">
                         <span class="badge badge-@(Model.StratisNode.SyncingStatus >= 100 ? "success":"warning")">
-                        <i class="material-icons">sync</i> Syncing... @Model.StratisNode.SyncingStatus%
+                           <i class="material-icons">sync</i> @(Model.StratisNode.SyncingStatus >= 100 ? "Synced":"Syncing") @Model.StratisNode.SyncingStatus%
                         </span>
                      </li>
                      <li class="list-inline-item ml-3">
@@ -39,13 +39,13 @@
                      <li class="col-12 col-xl-6">
                         <ul class="list-inline">
                            <li class="list-inline-item"><strong>Web API URL :</strong></li>
-                           <li class="list-inline-item"><a href="@Model.StratisNode.WebAPIUrl">@Model.StratisNode.WebAPIUrl</a></li>
+                           <li class="list-inline-item"><a target="_blank" href="@Model.StratisNode.WebAPIUrl">@Model.StratisNode.WebAPIUrl</a></li>
                         </ul>
                      </li>
                      <li class="col-12 col-xl-6">
                         <ul class="list-inline">
                            <li class="list-inline-item"><strong>Swagger :</strong></li>
-                           <li class="list-inline-item"><a href="@Model.StratisNode.SwaggerUrl">@Model.StratisNode.SwaggerUrl</a></li>
+                           <li class="list-inline-item"><a target="_blank" href="@Model.StratisNode.SwaggerUrl">@Model.StratisNode.SwaggerUrl</a></li>
                         </ul>
                      </li>
                   </ul>
@@ -90,7 +90,7 @@
                               <td class="text-left">@peer.Endpoint</td>
                               <td class="text-center">@peer.Type</td>
                               <td class="text-center">height:@peer.Height</td>
-                              <td class="text-right">agent:@peer.Version</td>
+                              <td style="width: 250px;" nowrap class="text-left">agent:@peer.Version</td>
                            </tr>
                         }
                      </tbody>
@@ -112,7 +112,7 @@
                               <td class="text-left">@member.Endpoint</td>
                               <td class="text-center">@member.Type</td>
                               <td class="text-center">height:@member.Height</td>
-                              <td class="text-right">agent:@member.Version</td>
+                              <td style="width: 250px;" nowrap class="text-left">agent:@member.Version</td>
                            </tr>
                         }
                      </tbody>
@@ -205,7 +205,7 @@
                   <ul class="list-inline float-right d-flex align-items-center">
                      <li class="list-inline-item">
                         <span class="badge badge-@(Model.SidechainNode.SyncingStatus >= 100 ? "success":"warning")">
-                        <i class="material-icons">sync</i> Synced @Model.SidechainNode.SyncingStatus%
+                           <i class="material-icons">sync</i> @(Model.SidechainNode.SyncingStatus >= 100 ? "Synced":"Syncing") @Model.SidechainNode.SyncingStatus%
                         </span>
                      </li>
                      <li class="list-inline-item ml-3">
@@ -228,13 +228,13 @@
                      <li class="col-12 col-xl-6">
                         <ul class="list-inline">
                            <li class="list-inline-item"><strong>Web API URL :</strong></li>
-                           <li class="list-inline-item"><a href="@Model.SidechainNode.WebAPIUrl">@Model.SidechainNode.WebAPIUrl</a></li>
+                           <li class="list-inline-item"><a target="_blank" href="@Model.SidechainNode.WebAPIUrl">@Model.SidechainNode.WebAPIUrl</a></li>
                         </ul>
                      </li>
                      <li class="col-12 col-xl-6">
                         <ul class="list-inline">
                            <li class="list-inline-item"><strong>Swagger :</strong></li>
-                           <li class="list-inline-item"><a href="@Model.StratisNode.SwaggerUrl">@Model.SidechainNode.SwaggerUrl</a></li>
+                           <li class="list-inline-item"><a target="_blank" href="@Model.StratisNode.SwaggerUrl">@Model.SidechainNode.SwaggerUrl</a></li>
                         </ul>
                      </li>
                   </ul>
@@ -279,7 +279,7 @@
                               <td class="text-left">@peer.Endpoint</td>
                               <td class="text-center">@peer.Type</td>
                               <td class="text-center">height:@peer.Height</td>
-                              <td class="text-right">agent:@peer.Version</td>
+                              <td style="width: 250px;" nowrap class="text-left">agent:@peer.Version</td>
                            </tr>
                         }
                      </tbody>
@@ -301,7 +301,7 @@
                               <td class="text-left">@member.Endpoint</td>
                               <td class="text-center">@member.Type</td>
                               <td class="text-center">height:@member.Height</td>
-                              <td class="text-right">agent:@member.Version</td>
+                              <td style="width: 250px;" nowrap class="text-left">agent:@member.Version</td>
                            </tr>
                         }
                      </tbody>
