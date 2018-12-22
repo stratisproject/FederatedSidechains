@@ -14,16 +14,16 @@ namespace Stratis.Sidechains.Networks
     public class FederatedPegMain : PoANetwork
     {
         /// <summary> The name of the root folder containing the different federated peg blockchains.</summary>
-        private const string NetworkRootFolderName = "fedpeg";
+        private const string NetworkRootFolderName = "cirrus";
 
         /// <summary> The default name used for the federated peg configuration file. </summary>
-        private const string NetworkDefaultConfigFilename = "fedpeg.conf";
+        private const string NetworkDefaultConfigFilename = "cirrus.conf";
 
         internal FederatedPegMain()
         {
-            this.Name = "FederatedPegMain";
-            this.CoinTicker = "FPG";
-            this.Magic = 0x522357A;
+            this.Name = "CirrusMain";
+            this.CoinTicker = "CRS";
+            this.Magic = 0x522357A0;
             this.DefaultPort = 16179;
             this.DefaultMaxOutboundConnections = 16;
             this.DefaultMaxInboundConnections = 109;
@@ -80,7 +80,7 @@ namespace Stratis.Sidechains.Networks
             this.Consensus = new Consensus(
                 consensusFactory: consensusFactory,
                 consensusOptions: consensusOptions,
-                coinType: 400,
+                coinType: 401,
                 hashGenesisBlock: genesisBlock.GetHash(),
                 subsidyHalvingInterval: 210000,
                 majorityEnforceBlockUpgrade: 750,
@@ -113,8 +113,8 @@ namespace Stratis.Sidechains.Networks
 
             // Same as current smart contracts test networks to keep tests working
             this.Base58Prefixes = new byte[12][];
-            this.Base58Prefixes[(int)Base58Type.PUBKEY_ADDRESS] = new byte[] { 35 }; // F
-            this.Base58Prefixes[(int)Base58Type.SCRIPT_ADDRESS] = new byte[] { 95 }; // f
+            this.Base58Prefixes[(int)Base58Type.PUBKEY_ADDRESS] = new byte[] { 28 }; // C
+            this.Base58Prefixes[(int)Base58Type.SCRIPT_ADDRESS] = new byte[] { 88 }; // c
             this.Base58Prefixes[(int)Base58Type.SECRET_KEY] = new byte[] { (239) };
             this.Base58Prefixes[(int)Base58Type.ENCRYPTED_SECRET_KEY_NO_EC] = new byte[] { 0x01, 0x42 };
             this.Base58Prefixes[(int)Base58Type.ENCRYPTED_SECRET_KEY_EC] = new byte[] { 0x01, 0x43 };
