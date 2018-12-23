@@ -16,6 +16,9 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.RestClients
 
         /// <summary><see cref="FederationGatewayController.GetMaturedBlockDepositsAsync"/></summary>
         Task<List<MaturedBlockDepositsModel>> GetMaturedBlockDepositsAsync(MaturedBlockRequestModel model, CancellationToken cancellation = default(CancellationToken));
+
+        /// <summary><see cref="FederationGatewayController.GetBlockHeightClosestToTimestamp"/></summary>
+        Task<ClosestHeightModel> GetBlockHeightClosestToTimestampAsync(uint timestamp, CancellationToken cancellation = default(CancellationToken));
     }
 
     /// <inheritdoc cref="IFederationGatewayClient"/>
@@ -36,6 +39,14 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.RestClients
         public Task<List<MaturedBlockDepositsModel>> GetMaturedBlockDepositsAsync(MaturedBlockRequestModel model, CancellationToken cancellation = default(CancellationToken))
         {
             return this.SendPostRequestAsync<MaturedBlockRequestModel, List<MaturedBlockDepositsModel>>(model, FederationGatewayRouteEndPoint.GetMaturedBlockDeposits, cancellation);
+        }
+
+        /// <inheritdoc />
+        public Task<ClosestHeightModel> GetBlockHeightClosestToTimestampAsync(uint timestamp, CancellationToken cancellation = default(CancellationToken))
+        {
+            string parameters = $"{nameof(timestamp)}={timestamp}";
+
+            return this.SendGetRequestAsync<ClosestHeightModel>(FederationGatewayRouteEndPoint.GetBlockHeightClosestToTimestamp, cancellation, parameters);
         }
     }
 }

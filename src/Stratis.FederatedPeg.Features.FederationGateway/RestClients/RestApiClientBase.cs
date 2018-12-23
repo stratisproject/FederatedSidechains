@@ -50,6 +50,51 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.RestClients
                 }, onRetry: OnRetry);
         }
 
+        protected async Task<HttpResponseMessage> SendGetRequestAsync(string apiMethodName, CancellationToken cancellation, string requestParameters = null)
+        {
+            string url = $"{this.endpointUrl}/{apiMethodName}";
+
+            if (requestParameters != null)
+                url += $"?{requestParameters}";
+
+            var publicationUri = new Uri(url);
+
+            HttpResponseMessage response = null;
+
+            using (HttpClient client = this.httpClientFactory.CreateClient())
+            {
+                try
+                {
+                    // Retry the following call according to the policy.
+                    await this.policy.ExecuteAsync(async token =>
+                    {
+                        this.logger.LogDebug("Sending get request to Uri '{0}'.", publicationUri);
+                        response = await client.GetAsync(publicationUri, cancellation).ConfigureAwait(false);
+                    }, cancellation);
+                }
+                catch (OperationCanceledException)
+                {
+                    this.logger.LogTrace("(-)[CANCELLED]:null");
+                    return null;
+                }
+                catch (Exception ex)
+                {
+                    this.logger.LogError("The counter-chain daemon is not ready to receive API calls at this time ({0})", publicationUri);
+                    return new HttpResponseMessage() { ReasonPhrase = ex.Message, StatusCode = HttpStatusCode.InternalServerError };
+                }
+            }
+
+            this.logger.LogTrace("(-)[SUCCESS]");
+            return response;
+        }
+
+        protected async Task<Response> SendGetRequestAsync<Response>(string apiMethodName, CancellationToken cancellation, string requestParameters = null) where Response : class
+        {
+            HttpResponseMessage response = await this.SendGetRequestAsync(apiMethodName, cancellation, requestParameters).ConfigureAwait(false);
+
+            return await this.ParseResponseAsync<Response>(response).ConfigureAwait(false);
+        }
+
         protected async Task<HttpResponseMessage> SendPostRequestAsync<Model>(Model requestModel, string apiMethodName, CancellationToken cancellation) where Model : class
         {
             if (requestModel == null)
@@ -100,10 +145,15 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.RestClients
         {
             HttpResponseMessage response = await this.SendPostRequestAsync(requestModel, apiMethodName, cancellation).ConfigureAwait(false);
 
+            return await this.ParseResponseAsync<Response>(response).ConfigureAwait(false);
+        }
+
+        private async Task<Response> ParseResponseAsync<Response>(HttpResponseMessage message) where Response : class
+        {
             // Parse response.
-            if ((response != null) && response.IsSuccessStatusCode && (response.Content != null))
+            if ((message != null) && message.IsSuccessStatusCode && (message.Content != null))
             {
-                string successJson = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
+                string successJson = await message.Content.ReadAsStringAsync().ConfigureAwait(false);
                 if (successJson != null)
                 {
                     Response responseModel = JsonConvert.DeserializeObject<Response>(successJson);

@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using NBitcoin;
 using NBitcoin.Protocol;
+using Newtonsoft.Json;
 using NSubstitute;
 using Stratis.Bitcoin.Consensus;
 using Stratis.Bitcoin.Configuration;
@@ -74,6 +75,7 @@ namespace Stratis.FederatedPeg.Tests
                 this.leaderReceiver,
                 this.federationGatewaySettings,
                 this.federationWalletManager,
+                this.consensusManager,
                 this.federationManager);
 
             return controller;
@@ -236,6 +238,7 @@ namespace Stratis.FederatedPeg.Tests
                 this.leaderReceiver,
                 settings,
                 this.federationWalletManager,
+                this.consensusManager,
                 this.federationManager);
 
             IActionResult result = controller.GetInfo();
@@ -275,6 +278,7 @@ namespace Stratis.FederatedPeg.Tests
                 this.leaderReceiver,
                 settings,
                 this.federationWalletManager,
+                this.consensusManager,
                 this.federationManager);
 
             IActionResult result = controller.GetInfo();
@@ -292,6 +296,27 @@ namespace Stratis.FederatedPeg.Tests
             model.MinCoinMaturity.Should().Be(1);
             model.MinimumDepositConfirmations.Should().Be(1);
             model.MultisigPublicKey.Should().Be(multisigPubKey);
+        }
+
+        [Fact]
+        public void GetBlockHeightClosestToTimestampTest()
+        {
+            FederationGatewayController controller = this.CreateController();
+
+            List<ChainedHeader> headers = ChainedHeadersHelper.CreateConsecutiveHeaders(1000);
+
+            for (int i = 0; i < headers.Count; i++)
+                headers[i].Header.Time = (uint)(i * 3);
+
+            this.consensusManager.Tip.Returns(headers.Last());
+
+            ChainedHeader targetHeader = headers[500];
+
+            JsonResult result = controller.GetBlockHeightClosestToTimestamp(targetHeader.Header.Time);
+
+            var responseHeight = result.Value as ClosestHeightModel;
+
+            Assert.Equal(targetHeader.Height, responseHeight.Height);
         }
     }
 }
