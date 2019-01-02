@@ -1,9 +1,9 @@
 ﻿using System.Collections.Generic;
 using System.Net.Http;
+using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using Stratis.FederatedPeg.Features.FederationGateway.Controllers;
-using Stratis.FederatedPeg.Features.FederationGateway.Interfaces;
 using Stratis.FederatedPeg.Features.FederationGateway.Models;
 
 namespace Stratis.FederatedPeg.Features.FederationGateway.RestClients
@@ -11,14 +11,11 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.RestClients
     /// <summary>Rest client for <see cref="FederationGatewayController"/>.</summary>
     public interface IFederationGatewayClient
     {
-        /// <summary><see cref="FederationGatewayController.PushMaturedBlock"/></summary>
-        Task PushMaturedBlockAsync(MaturedBlockDepositsModel model);
-
         /// <summary><see cref="FederationGatewayController.PushCurrentBlockTip"/></summary>
-        Task PushCurrentBlockTipAsync(BlockTipModel model);
+        Task<HttpResponseMessage> PushCurrentBlockTipAsync(BlockTipModel model, CancellationToken cancellation = default(CancellationToken));
 
         /// <summary><see cref="FederationGatewayController.GetMaturedBlockDepositsAsync"/></summary>
-        Task<List<MaturedBlockDepositsModel>> GetMaturedBlockDepositsAsync(MaturedBlockRequestModel model);
+        Task<List<MaturedBlockDepositsModel>> GetMaturedBlockDepositsAsync(MaturedBlockRequestModel model, CancellationToken cancellation = default(CancellationToken));
     }
 
     /// <inheritdoc cref="IFederationGatewayClient"/>
@@ -30,21 +27,15 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.RestClients
         }
 
         /// <inheritdoc />
-        public Task PushMaturedBlockAsync(MaturedBlockDepositsModel model)
+        public Task<HttpResponseMessage> PushCurrentBlockTipAsync(BlockTipModel model, CancellationToken cancellation = default(CancellationToken))
         {
-            return this.SendPostRequestAsync(model, FederationGatewayRouteEndPoint.PushMaturedBlocks);
+            return this.SendPostRequestAsync(model, FederationGatewayRouteEndPoint.PushCurrentBlockTip, cancellation);
         }
 
         /// <inheritdoc />
-        public Task PushCurrentBlockTipAsync(BlockTipModel model)
+        public Task<List<MaturedBlockDepositsModel>> GetMaturedBlockDepositsAsync(MaturedBlockRequestModel model, CancellationToken cancellation = default(CancellationToken))
         {
-            return this.SendPostRequestAsync(model, FederationGatewayRouteEndPoint.PushCurrentBlockTip);
-        }
-
-        /// <inheritdoc />
-        public Task<List<MaturedBlockDepositsModel>> GetMaturedBlockDepositsAsync(MaturedBlockRequestModel model)
-        {
-            return this.SendPostRequestAsync<MaturedBlockRequestModel, List<MaturedBlockDepositsModel>>(model, FederationGatewayRouteEndPoint.GetMaturedBlockDeposits);
+            return this.SendPostRequestAsync<MaturedBlockRequestModel, List<MaturedBlockDepositsModel>>(model, FederationGatewayRouteEndPoint.GetMaturedBlockDeposits, cancellation);
         }
     }
 }

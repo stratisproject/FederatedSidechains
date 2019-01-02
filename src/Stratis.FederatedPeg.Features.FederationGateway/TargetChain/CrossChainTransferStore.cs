@@ -10,6 +10,7 @@ using Stratis.Bitcoin.Configuration;
 using Stratis.Bitcoin.Features.BlockStore;
 using Stratis.Bitcoin.Utilities;
 using Stratis.FederatedPeg.Features.FederationGateway.Interfaces;
+using Stratis.FederatedPeg.Features.FederationGateway.Models;
 using Stratis.FederatedPeg.Features.FederationGateway.Wallet;
 
 namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
@@ -36,8 +37,8 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
 
         public CrossChainTransferStore(Network network, DataFolder dataFolder, ConcurrentChain chain, IFederationGatewaySettings settings, IDateTimeProvider dateTimeProvider,
             ILoggerFactory loggerFactory, IWithdrawalExtractor withdrawalExtractor, IFullNode fullNode, IBlockRepository blockRepository,
-            IFederationWalletManager federationWalletManager, IFederationWalletTransactionHandler federationWalletTransactionHandler)
-            : base(network, loggerFactory, chain, dataFolder, settings)
+            IFederationWalletManager federationWalletManager, IFederationWalletTransactionHandler federationWalletTransactionHandler, DBreezeSerializer dbreezeSerializer)
+            : base(network, loggerFactory, chain, dataFolder, settings, dbreezeSerializer)
         {
             Guard.NotNull(network, nameof(network));
             Guard.NotNull(dataFolder, nameof(dataFolder));
@@ -109,12 +110,6 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
             return this.depositsIdsByStatus[CrossChainTransferStatus.Suspended].Count != 0;
         }
 
-        /// <inheritdoc />
-        public bool CanPersistMatureDeposits()
-        {
-            return this.federationWalletManager.IsFederationActive();
-        }
-
         /// <summary>
         /// The store will chase the wallet tip. This will ensure that we can rely on
         /// information recorded in the wallet such as the list of unspent UTXO's.
@@ -168,7 +163,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
                     if (walletTran.GetHash() == partialTransfer.PartialTransaction.GetHash())
                         continue;
 
-                    if (CrossChainTransfer.TemplatesMatch(walletTran, partialTransfer.PartialTransaction))
+                    if (CrossChainTransfer.TemplatesMatch(this.network, walletTran, partialTransfer.PartialTransaction))
                     {
                         this.logger.LogTrace("Could not find transaction by hash {0} but found it by matching template.", partialTransfer.PartialTransaction.GetHash());
                         this.logger.LogTrace("Will update transfer with wallet transaction {0}.", walletTran.GetHash());
@@ -308,10 +303,10 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
         }
 
         /// <inheritdoc />
-        public Task<bool> RecordLatestMatureDepositsAsync(IMaturedBlockDeposits[] maturedBlockDeposits)
+        public Task<bool> RecordLatestMatureDepositsAsync(IList<MaturedBlockDepositsModel> maturedBlockDeposits)
         {
             Guard.NotNull(maturedBlockDeposits, nameof(maturedBlockDeposits));
-            Guard.Assert(!maturedBlockDeposits.Any(m => m.Deposits.Any(d => d.BlockNumber != m.Block.BlockHeight || d.BlockHash != m.Block.BlockHash)));
+            Guard.Assert(!maturedBlockDeposits.Any(m => m.Deposits.Any(d => d.BlockNumber != m.BlockInfo.BlockHeight || d.BlockHash != m.BlockInfo.BlockHash)));
 
             return Task.Run(() =>
             {
@@ -323,18 +318,18 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
                     int originalDepositHeight = this.NextMatureDepositHeight;
 
                     maturedBlockDeposits = maturedBlockDeposits
-                        .OrderBy(a => a.Block.BlockHeight)
-                        .SkipWhile(m => m.Block.BlockHeight < this.NextMatureDepositHeight).ToArray();
+                        .OrderBy(a => a.BlockInfo.BlockHeight)
+                        .SkipWhile(m => m.BlockInfo.BlockHeight < this.NextMatureDepositHeight).ToArray();
 
-                    if (maturedBlockDeposits.Length == 0 ||
-                        maturedBlockDeposits.First().Block.BlockHeight != this.NextMatureDepositHeight)
+                    if (maturedBlockDeposits.Count == 0 ||
+                        maturedBlockDeposits.First().BlockInfo.BlockHeight != this.NextMatureDepositHeight)
                     {
                         this.logger.LogTrace("No block found starting at height {0}.", this.NextMatureDepositHeight);
                         this.logger.LogTrace("(-):[NO_VIABLE_BLOCKS]");
                         return true;
                     }
 
-                    if (maturedBlockDeposits.Last().Block.BlockHeight != this.NextMatureDepositHeight + maturedBlockDeposits.Length - 1)
+                    if (maturedBlockDeposits.Last().BlockInfo.BlockHeight != this.NextMatureDepositHeight + maturedBlockDeposits.Count - 1)
                     {
                         this.logger.LogTrace("Input containing duplicate blocks will be ignored.");
                         this.logger.LogTrace("(-):[DUPLICATE_BLOCKS]");
@@ -344,11 +339,10 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
                     this.Synchronize();
 
                     FederationWallet wallet = this.federationWalletManager.GetWallet();
-                    bool? canPersist = null;
 
-                    for (int j = 0; j < maturedBlockDeposits.Length; j++)
+                    for (int j = 0; j < maturedBlockDeposits.Count; j++)
                     {
-                        if (maturedBlockDeposits[j].Block.BlockHeight != this.NextMatureDepositHeight)
+                        if (maturedBlockDeposits[j].BlockInfo.BlockHeight != this.NextMatureDepositHeight)
                             continue;
 
                         IReadOnlyList<IDeposit> deposits = maturedBlockDeposits[j].Deposits;
@@ -358,10 +352,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
                             continue;
                         }
 
-                        // CanPersistMatureDeposits is a bit slow. Call it only once.
-                        canPersist = canPersist ?? this.CanPersistMatureDeposits();
-
-                        if (!(bool)canPersist)
+                        if (!this.federationWalletManager.IsFederationActive())
                         {
                             this.logger.LogError("The store can't persist mature deposits at the moment.");
                             this.logger.LogTrace("(-)");

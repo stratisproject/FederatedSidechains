@@ -1,5 +1,7 @@
 ﻿using System.Collections.Generic;
 using NBitcoin;
+using Stratis.Bitcoin.Primitives;
+using Stratis.FederatedPeg.Features.FederationGateway.Models;
 
 namespace Stratis.FederatedPeg.Features.FederationGateway.Interfaces
 {
@@ -32,7 +34,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.Interfaces
         /// </summary>
         /// <param name="newlyMaturedBlock">The newly matured block.</param>
         /// <returns>The matured deposits.</returns>
-        IMaturedBlockDeposits ExtractBlockDeposits(ChainedHeader newlyMaturedBlock);
+        MaturedBlockDepositsModel ExtractBlockDeposits(ChainedHeaderBlock newlyMaturedBlock);
 
         uint MinimumDepositConfirmations { get; }
     }

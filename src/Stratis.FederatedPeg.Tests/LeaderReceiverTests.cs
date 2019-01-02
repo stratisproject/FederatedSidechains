@@ -2,7 +2,7 @@ using System;
 using FluentAssertions;
 using Microsoft.Extensions.Logging;
 using NSubstitute;
-using Stratis.FederatedPeg.Features.FederationGateway.Interfaces;
+using Stratis.FederatedPeg.Features.FederationGateway;
 using Stratis.FederatedPeg.Features.FederationGateway.TargetChain;
 using Xunit;
 
@@ -46,7 +46,7 @@ namespace Stratis.FederatedPeg.Tests
 
             string logMsg = $"Received federated leader: {PublicKey}.";
 
-            this.logger.Received(receivedLeaderCount).Log(LogLevel.Debug,
+            this.logger.Received(receivedLeaderCount).Log(LogLevel.Information,
                 Arg.Any<EventId>(),
                 Arg.Is<object>(o => o.ToString() == logMsg),
                 null,

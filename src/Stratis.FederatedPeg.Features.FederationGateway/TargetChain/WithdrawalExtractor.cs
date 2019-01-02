@@ -7,6 +7,18 @@ using Stratis.FederatedPeg.Features.FederationGateway.Interfaces;
 
 namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
 {
+    /// <summary>
+    /// This component is responsible for finding all deposits made from the federation's
+    /// multisig address to a target address, find out if they represent a cross chain transfer
+    /// and if so, extract the details into an <see cref="IWithdrawal"/>.
+    /// </summary>
+    public interface IWithdrawalExtractor
+    {
+        IReadOnlyList<IWithdrawal> ExtractWithdrawalsFromBlock(Block block, int blockHeight);
+
+        IWithdrawal ExtractWithdrawalFromTransaction(Transaction transaction, uint256 blockHash, int blockHeight);
+    }
+
     public class WithdrawalExtractor : IWithdrawalExtractor
     {
         private readonly IOpReturnDataReader opReturnDataReader;
@@ -35,7 +47,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
             var withdrawals = new List<IWithdrawal>();
             foreach (Transaction transaction in block.Transactions)
             {
-                IWithdrawal withdrawal = ExtractWithdrawalFromTransaction(transaction, block.GetHash(), blockHeight);
+                IWithdrawal withdrawal = this.ExtractWithdrawalFromTransaction(transaction, block.GetHash(), blockHeight);
                 if (withdrawal != null) withdrawals.Add(withdrawal);
             }
 
@@ -47,12 +59,12 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
         public IWithdrawal ExtractWithdrawalFromTransaction(Transaction transaction, uint256 blockHash, int blockHeight)
         {
             if (transaction.Outputs.Count(this.IsTargetAddressCandidate) != 1) return null;
-            if (!IsOnlyFromMultisig(transaction)) return null;
+            if (!this.IsOnlyFromMultisig(transaction)) return null;
 
             if (!this.opReturnDataReader.TryGetTransactionId(transaction, out string depositId))
                 return null;
 
-            this.logger.LogTrace(
+            this.logger.LogDebug(
                 "Processing received transaction with source deposit id: {0}. Transaction hash: {1}.",
                 depositId,
                 transaction.GetHash());
@@ -62,9 +74,10 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
                 uint256.Parse(depositId),
                 transaction.GetHash(),
                 targetAddressOutput.Value,
-                targetAddressOutput.ScriptPubKey.GetScriptAddress(this.network).ToString(),
+                targetAddressOutput.ScriptPubKey.GetDestinationAddress(this.network).ToString(),
                 blockHeight,
                 blockHash);
+
             return withdrawal;
         }
 

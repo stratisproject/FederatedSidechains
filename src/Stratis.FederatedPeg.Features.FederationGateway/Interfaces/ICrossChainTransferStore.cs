@@ -2,6 +2,8 @@
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using NBitcoin;
+using Stratis.FederatedPeg.Features.FederationGateway.Models;
+using Stratis.FederatedPeg.Features.FederationGateway.TargetChain;
 
 namespace Stratis.FederatedPeg.Features.FederationGateway.Interfaces
 {
@@ -29,7 +31,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.Interfaces
         /// New partial transactions are recorded in the wallet to ensure that future transactions will not
         /// attempt to re-use UTXO's.
         /// </remarks>
-        Task<bool> RecordLatestMatureDepositsAsync(IMaturedBlockDeposits[] blockDeposits);
+        Task<bool> RecordLatestMatureDepositsAsync(IList<MaturedBlockDepositsModel> blockDeposits);
 
         /// <summary>Returns transactions by status. Orders the results by UTXO selection order.</summary>
         /// <param name="status">The status to get the transactions for.</param>
@@ -60,10 +62,6 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.Interfaces
         /// <summary>Determines if the store contains suspended transactions.</summary>
         /// <returns><c>True</c> if the store contains suspended transaction and <c>false</c> otherwise.</returns>
         bool HasSuspended();
-
-        /// <summary>Determines if the store can persist mature deposits.</summary>
-        /// <returns><c>True</c> if the store can persist mature deposits and <c>false</c> otherwise.</returns>
-        bool CanPersistMatureDeposits();
 
         /// <summary>
         /// Verifies that the transaction's input UTXO's have been reserved by the wallet.

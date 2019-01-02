@@ -46,6 +46,7 @@ namespace Stratis.FederatedPeg.Tests
         protected IAsyncLoopFactory asyncLoopFactory;
         protected INodeLifetime nodeLifetime;
         protected IConnectionManager connectionManager;
+        protected DBreezeSerializer dBreezeSerializer;
         protected Dictionary<uint256, Block> blockDict;
         protected List<Transaction> fundingTransactions;
         protected FederationWallet wallet;
@@ -62,13 +63,11 @@ namespace Stratis.FederatedPeg.Tests
         /// <summary>
         /// Initializes the cross-chain transfer tests.
         /// </summary>
-        public CrossChainTestBase()
+        /// <param name="network">The network to run the tests for.</param>
+        public CrossChainTestBase(Network network = null)
         {
-            this.network = FederatedPegNetwork.NetworksSelector.Regtest();
+            this.network = network ?? FederatedPegNetwork.NetworksSelector.Regtest();
             NetworkRegistration.Register(this.network);
-
-            var serializer = new DBreezeSerializer();
-            serializer.Initialize(this.network);
 
             this.loggerFactory = Substitute.For<ILoggerFactory>();
             this.logger = Substitute.For<ILogger>();
@@ -84,6 +83,7 @@ namespace Stratis.FederatedPeg.Tests
             this.walletFeePolicy = Substitute.For<IWalletFeePolicy>();
             this.nodeLifetime = new NodeLifetime();
             this.connectionManager = Substitute.For<IConnectionManager>();
+            this.dBreezeSerializer = new DBreezeSerializer(this.network);
 
             this.wallet = null;
             this.federationGatewaySettings = Substitute.For<IFederationGatewaySettings>();
@@ -195,12 +195,17 @@ namespace Stratis.FederatedPeg.Tests
             this.wallet.EncryptedSeed = encryptedSeed;
 
             this.federationWalletManager.Secret = new WalletSecret() { WalletPassword = walletPassword };
+
+            System.Reflection.FieldInfo prop = this.federationWalletManager.GetType().GetField("isFederationActive",
+                System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+
+            prop.SetValue(this.federationWalletManager, true);
         }
 
         protected ICrossChainTransferStore CreateStore()
         {
             return new CrossChainTransferStore(this.network, this.dataFolder, this.chain, this.federationGatewaySettings, this.dateTimeProvider,
-                this.loggerFactory, this.withdrawalExtractor, this.fullNode, this.blockRepository, this.federationWalletManager, this.federationWalletTransactionHandler);
+                this.loggerFactory, this.withdrawalExtractor, this.fullNode, this.blockRepository, this.federationWalletManager, this.federationWalletTransactionHandler, this.dBreezeSerializer);
         }
 
         /// <summary>
@@ -222,9 +227,6 @@ namespace Stratis.FederatedPeg.Tests
         /// <returns>The last chained header.</returns>
         protected ChainedHeader AppendBlock(params Transaction[] transactions)
         {
-            ChainedHeader last = null;
-            uint nonce = RandomUtils.GetUInt32();
-
             Block block = this.network.CreateBlock();
 
             // Create coinbase.
@@ -238,9 +240,21 @@ namespace Stratis.FederatedPeg.Tests
 
             block.UpdateMerkleRoot();
             block.Header.HashPrevBlock = this.chain.Tip.HashBlock;
-            block.Header.Nonce = nonce;
-            if (!this.chain.TrySetTip(block.Header, out last))
+            block.Header.Nonce = RandomUtils.GetUInt32();
+
+            return AppendBlock(block);
+        }
+
+        /// <summary>
+        /// Adds a previously created block to the dictionary used by the mock block repository.
+        /// </summary>
+        /// <param name="block">The block to add.</param>
+        /// <returns>The last chained header.</returns>
+        protected ChainedHeader AppendBlock(Block block)
+        {
+            if (!this.chain.TrySetTip(block.Header, out ChainedHeader last))
                 throw new InvalidOperationException("Previous not existing");
+
             this.blockDict[block.GetHash()] = block;
 
             this.federationWalletSyncManager.ProcessBlock(block);

@@ -1,12 +1,16 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using Microsoft.Extensions.Logging;
 using NBitcoin;
 using NSubstitute;
+using NSubstitute.Core;
+using Stratis.Bitcoin.Consensus;
 using Stratis.Bitcoin.Features.BlockStore;
 using Stratis.Bitcoin.Primitives;
-using Stratis.FederatedPeg.Features.FederationGateway;
+using Stratis.Bitcoin.Tests.Common;
 using Stratis.FederatedPeg.Features.FederationGateway.Interfaces;
+using Stratis.FederatedPeg.Features.FederationGateway.Models;
 using Stratis.FederatedPeg.Features.FederationGateway.SourceChain;
 using Xunit;
 
@@ -18,61 +22,50 @@ namespace Stratis.FederatedPeg.Tests
 
         private readonly ILoggerFactory loggerFactory;
 
-        private IFederationGatewaySettings federationSettings;
-
         private readonly ILogger logger;
 
-        private readonly IBlockRepository blockRepository;
-
-        private readonly ConcurrentChain chain;
+        private readonly IConsensusManager consensusManager;
 
         public MaturedBlocksProviderTests()
         {
             this.loggerFactory = Substitute.For<ILoggerFactory>();
             this.logger = Substitute.For<ILogger>();
             this.loggerFactory.CreateLogger(null).ReturnsForAnyArgs(this.logger);
-            this.federationSettings = Substitute.For<IFederationGatewaySettings>();
             this.depositExtractor = Substitute.For<IDepositExtractor>();
-            this.chain = Substitute.ForPartsOf<ConcurrentChain>();
-            this.blockRepository = Substitute.For<IBlockRepository>();
+            this.consensusManager = Substitute.For<IConsensusManager>();
         }
 
         [Fact]
         public void GetMaturedBlocksAsyncReturnsDeposits()
         {
-            var blocks = new List<Block>();
-            uint256 previous = 0;
-            for (int i = 0; i < 10; i++)
+            List<ChainedHeader> headers = ChainedHeadersHelper.CreateConsecutiveHeaders(10, null, true);
+
+            foreach (ChainedHeader chainedHeader in headers)
+                chainedHeader.Block = new Block(chainedHeader.Header);
+
+            List<ChainedHeaderBlock> blocks = new List<ChainedHeaderBlock>(headers.Count);
+            foreach (ChainedHeader chainedHeader in headers)
+                blocks.Add(new ChainedHeaderBlock(chainedHeader.Block, chainedHeader));
+
+            ChainedHeader tip = headers.Last();
+
+            this.consensusManager.GetBlockDataAsync(Arg.Any<uint256>()).Returns(delegate(CallInfo info)
             {
-                blocks.Add(this.ChainedHeaderBuilder(i, previous).Block);
-                previous = blocks.Last().GetHash();
-            }
+                uint256 hash = (uint256) info[0];
+                ChainedHeaderBlock block = blocks.Single(x => x.ChainedHeader.HashBlock == hash);
+                return block;
+            });
 
-            ChainedHeader tip = ChainedHeaderBuilder(10);
-            this.chain.Tip.Returns(tip);
+            uint zero = 0;
+            this.depositExtractor.MinimumDepositConfirmations.Returns(info => zero);
+            this.depositExtractor.ExtractBlockDeposits(null).ReturnsForAnyArgs(new MaturedBlockDepositsModel(new MaturedBlockInfoModel(), new List<IDeposit>()));
+            this.consensusManager.Tip.Returns(tip);
 
-            this.blockRepository.GetBlocksAsync(Arg.Any<List<uint256>>()).Returns(blocks);
+            var maturedBlocksProvider = new MaturedBlocksProvider(this.loggerFactory, this.depositExtractor, this.consensusManager);
 
-            var maturedBlocksProvider = new MaturedBlocksProvider(this.loggerFactory, this.chain, this.depositExtractor, this.blockRepository);
-
-            List<IMaturedBlockDeposits> deposits = maturedBlocksProvider.GetMaturedDepositsAsync(0, 10).GetAwaiter().GetResult();
+            List<MaturedBlockDepositsModel> deposits = maturedBlocksProvider.GetMaturedDepositsAsync(0, 10).GetAwaiter().GetResult();
 
             Assert.Equal(10, deposits.Count);
-        }
-
-        private ChainedHeaderBlock ChainHeaderBlockBuilder(int height = 0, uint256 previous = null)
-        {
-            ChainedHeader chainedHeader = ChainedHeaderBuilder(height);
-
-            return new ChainedHeaderBlock(chainedHeader.Block, chainedHeader);
-        }
-
-        private ChainedHeader ChainedHeaderBuilder(int height, uint256 previous = null)
-        {
-            var chainedHeader = new ChainedHeader(new BlockHeader(), previous ?? uint256.Zero, height);
-            this.chain.GetBlock(height).Returns(chainedHeader);
-            chainedHeader.Block = new Block();
-            return chainedHeader;
         }
     }
 }

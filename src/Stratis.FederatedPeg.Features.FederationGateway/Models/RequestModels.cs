@@ -18,25 +18,17 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.Models
         }
     }
 
-    public class ImportMemberKeyRequest : RequestModel
-    {
-        [Required(ErrorMessage = "A mnemonic is required.")]
-        public string Mnemonic { get; set; }
-
-        [Required(ErrorMessage = "A password is required.")]
-        public string Password { get; set; }
-    }
-
     /// <summary>
     /// Model for the "enablefederation" request.
     /// </summary>
     public class EnableFederationRequest : RequestModel
     {
-        /// <summary>
-        /// The federation wallet password.
-        /// </summary>
+        public string Mnemonic { get; set; }
+
         [Required(ErrorMessage = "A password is required.")]
         public string Password { get; set; }
+
+        public string Passphrase { get; set; }
     }
 
     /// <summary>

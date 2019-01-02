@@ -58,6 +58,9 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
         /// <summary>Access to DBreeze database.</summary>
         private readonly DBreezeEngine DBreeze;
 
+        /// <summary>The DBreeze serializer used to serialize / deserialize objects stored in the DBreeze database.</summary>
+        private readonly DBreezeSerializer DBreezeSerializer;
+
         /// <summary>
         /// Constructs the class controlling the underlying DBreeze database.
         /// </summary>
@@ -66,18 +69,21 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
         /// <param name="chain">The concurrent chain associated with the objects in the database.</param>
         /// <param name="dataFolder">The datafolder where the database files will be persisted.</param>
         /// <param name="federationGatewaySettings">Used to identify the MultiSigAddress that the database is for.</param>
+        /// <param name="dbreezeSerializer">The DBreeze serializer used to serialize / deserialize stored objects.</param>
         public CrossChainDB(
             Network network,
             ILoggerFactory loggerFactory,
             ConcurrentChain chain,
             DataFolder dataFolder,
-            IFederationGatewaySettings federationGatewaySettings)
+            IFederationGatewaySettings federationGatewaySettings,
+            DBreezeSerializer dbreezeSerializer)
         {
             Guard.NotNull(network, nameof(network));
             Guard.NotNull(loggerFactory, nameof(loggerFactory));
             Guard.NotNull(chain, nameof(chain));
             Guard.NotNull(dataFolder, nameof(dataFolder));
             Guard.NotNull(federationGatewaySettings, nameof(federationGatewaySettings));
+            Guard.NotNull(dbreezeSerializer, nameof(dbreezeSerializer));
 
             this.network = network;
             this.logger = loggerFactory.CreateLogger(this.GetType().FullName);
@@ -92,6 +98,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
             string folder = Path.Combine(dataFolder.RootPath, depositStoreName);
             Directory.CreateDirectory(folder);
             this.DBreeze = new DBreezeEngine(folder);
+            this.DBreezeSerializer = dbreezeSerializer;
 
             // Initialize tracking deposits by status.
             foreach (object status in typeof(CrossChainTransferStatus).GetEnumValues())
@@ -134,7 +141,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
         /// <inheritdoc />
         public CrossChainDBTransaction GetTransaction(CrossChainTransactionMode mode = CrossChainTransactionMode.Read)
         {
-            CrossChainDBTransaction xdbTransaction = CrossChainDBTransaction.GetTransaction(this.DBreeze, this.network, (ICrossChainLookups)this, mode);
+            CrossChainDBTransaction xdbTransaction = CrossChainDBTransaction.GetTransaction(this.DBreeze, this.DBreezeSerializer, (ICrossChainLookups)this, mode);
 
             this.logger.LogTrace("Transaction '{0}' created for {1}.", xdbTransaction, mode);
 

@@ -11,6 +11,24 @@ using Stratis.FederatedPeg.Features.FederationGateway.Interfaces;
 
 namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
 {
+    /// <summary>
+    /// This component is responsible retrieving signed multisig transactions (from <see cref="ICrossChainTransferStore"/>)
+    /// and broadcasting them into the network.
+    /// </summary>
+    public interface ISignedMultisigTransactionBroadcaster
+    {
+        /// <summary>
+        /// Broadcast signed transactions that are not in the mempool.
+        /// </summary>
+        /// <param name="leaderProvider">
+        /// The current federated leader.
+        /// </param>
+        /// <remarks>
+        /// The current federated leader equal the <see cref="IFederationGatewaySettings.PublicKey"/> before it can broadcast the transactions.
+        /// </remarks>
+        Task BroadcastTransactionsAsync(ILeaderProvider leaderProvider);
+    }
+
     public class SignedMultisigTransactionBroadcaster : ISignedMultisigTransactionBroadcaster, IDisposable
     {
         private readonly ILogger logger;
@@ -20,12 +38,8 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
         private readonly MempoolManager mempoolManager;
         private readonly IBroadcasterManager broadcasterManager;
 
-        public SignedMultisigTransactionBroadcaster(ILoggerFactory loggerFactory,
-                                                    ICrossChainTransferStore store,
-                                                    ILeaderReceiver leaderReceiver,
-                                                    IFederationGatewaySettings settings,
-                                                    MempoolManager mempoolManager,
-                                                    IBroadcasterManager broadcasterManager)
+        public SignedMultisigTransactionBroadcaster(ILoggerFactory loggerFactory, ICrossChainTransferStore store, ILeaderReceiver leaderReceiver, IFederationGatewaySettings settings,
+            MempoolManager mempoolManager, IBroadcasterManager broadcasterManager)
         {
             Guard.NotNull(loggerFactory, nameof(loggerFactory));
             Guard.NotNull(store, nameof(store));
@@ -40,7 +54,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
             this.mempoolManager = mempoolManager;
             this.broadcasterManager = broadcasterManager;
 
-            this.leaderReceiverSubscription = leaderReceiver.LeaderProvidersStream.Subscribe(async m => await BroadcastTransactionsAsync(m).ConfigureAwait(false));
+            this.leaderReceiverSubscription = leaderReceiver.LeaderProvidersStream.Subscribe(async m => await this.BroadcastTransactionsAsync(m).ConfigureAwait(false));
             this.logger.LogDebug("Subscribed to {0}", nameof(leaderReceiver), nameof(leaderReceiver.LeaderProvidersStream));
         }
 
@@ -59,13 +73,15 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
 
             foreach (KeyValuePair<uint256, Transaction> transaction in transactions)
             {
-                TxMempoolInfo txInfo = await this.mempoolManager.InfoAsync(transaction.Key).ConfigureAwait(false);
+                TxMempoolInfo txInfo = await this.mempoolManager.InfoAsync(transaction.Value.GetHash()).ConfigureAwait(false);
 
                 if (txInfo != null)
                 {
                     this.logger.LogTrace("Transaction ID '{0}' already in the mempool.", transaction.Key);
                     continue;
                 }
+
+                this.logger.LogInformation("Broadcasting deposit-id={0} a signed multisig transaction {1} to the network.", transaction.Key, transaction.Value.GetHash());
 
                 await this.broadcasterManager.BroadcastTransactionAsync(transaction.Value).ConfigureAwait(false);
             }

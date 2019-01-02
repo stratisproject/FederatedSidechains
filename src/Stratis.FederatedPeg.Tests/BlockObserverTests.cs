@@ -1,15 +1,17 @@
 ﻿using System.Collections.Generic;
+using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using NBitcoin;
 using NSubstitute;
 using Stratis.Bitcoin;
-using Stratis.Bitcoin.Features.BlockStore;
+using Stratis.Bitcoin.Consensus;
 using Stratis.Bitcoin.Primitives;
 using Stratis.FederatedPeg.Features.FederationGateway;
 using Stratis.FederatedPeg.Features.FederationGateway.Interfaces;
 using Stratis.FederatedPeg.Features.FederationGateway.Notifications;
 using Stratis.FederatedPeg.Features.FederationGateway.RestClients;
 using Stratis.FederatedPeg.Features.FederationGateway.SourceChain;
+using Stratis.FederatedPeg.Features.FederationGateway.TargetChain;
 using Stratis.FederatedPeg.Tests.Utils;
 using Xunit;
 
@@ -23,8 +25,6 @@ namespace Stratis.FederatedPeg.Tests
 
         private readonly IDepositExtractor depositExtractor;
 
-        private readonly ILeaderProvider leaderProvider;
-
         private readonly IFederationGatewaySettings federationGatewaySettings;
 
         private readonly IFullNode fullNode;
@@ -34,8 +34,6 @@ namespace Stratis.FederatedPeg.Tests
         private readonly uint minimumDepositConfirmations;
 
         private readonly IFederationGatewayClient federationGatewayClient;
-
-        private readonly IMaturedBlocksProvider maturedBlocksProvider;
 
         private readonly IOpReturnDataReader opReturnDataReader;
 
@@ -47,6 +45,8 @@ namespace Stratis.FederatedPeg.Tests
 
         private readonly IReadOnlyList<IWithdrawal> extractedWithdrawals;
 
+        private readonly IConsensusManager consensusManager;
+
         public BlockObserverTests()
         {
             this.minimumDepositConfirmations = 10;
@@ -54,20 +54,17 @@ namespace Stratis.FederatedPeg.Tests
             this.federationGatewaySettings = Substitute.For<IFederationGatewaySettings>();
             this.federationGatewaySettings.MinimumDepositConfirmations.Returns(this.minimumDepositConfirmations);
 
-            this.leaderProvider = Substitute.For<ILeaderProvider>();
             this.federationWalletSyncManager = Substitute.For<IFederationWalletSyncManager>();
             this.fullNode = Substitute.For<IFullNode>();
             this.federationGatewayClient = Substitute.For<IFederationGatewayClient>();
-            this.maturedBlocksProvider = Substitute.For<IMaturedBlocksProvider>();
             this.chain = Substitute.ForPartsOf<ConcurrentChain>();
             this.fullNode.NodeService<ConcurrentChain>().Returns(this.chain);
             this.loggerFactory = Substitute.For<ILoggerFactory>();
             this.opReturnDataReader = Substitute.For<IOpReturnDataReader>();
-
+            this.consensusManager = Substitute.For<IConsensusManager>();
             this.withdrawalExtractor = Substitute.For<IWithdrawalExtractor>();
             this.extractedWithdrawals = TestingValues.GetWithdrawals(2);
-            this.withdrawalExtractor.ExtractWithdrawalsFromBlock(null, 0)
-                .ReturnsForAnyArgs(this.extractedWithdrawals);
+            this.withdrawalExtractor.ExtractWithdrawalsFromBlock(null, 0).ReturnsForAnyArgs(this.extractedWithdrawals);
 
             this.withdrawalReceiver = Substitute.For<IWithdrawalReceiver>();
 
@@ -77,23 +74,18 @@ namespace Stratis.FederatedPeg.Tests
                 this.opReturnDataReader,
                 this.fullNode);
 
-            this.maturedBlocksProvider = new MaturedBlocksProvider(
-                this.loggerFactory,
-                this.chain,
-                this.depositExtractor,
-                Substitute.For<IBlockRepository>());
-
             this.blockObserver = new BlockObserver(
                 this.federationWalletSyncManager,
                 this.depositExtractor,
                 this.withdrawalExtractor,
                 this.withdrawalReceiver,
-                this.federationGatewayClient,
-                this.maturedBlocksProvider);
+                this.federationGatewayClient);
         }
 
-        [Fact]
-        public void BlockObserver_Should_Not_Try_To_Extract_Deposits_Before_MinimumDepositConfirmations()
+        [Retry(3)]
+        // This test requires retries because we are asserting result of a background thread that calls API.
+        // This will work in real life but in tests it produces a race condition and therefore requires retries.
+        public async Task BlockObserverShouldNotTryToExtractDepositsBeforeMinimumDepositConfirmationsAsync()
         {
             int confirmations = (int)this.minimumDepositConfirmations - 1;
 
@@ -105,32 +97,42 @@ namespace Stratis.FederatedPeg.Tests
             this.federationWalletSyncManager.Received(1).ProcessBlock(earlyBlock);
             this.withdrawalExtractor.ReceivedWithAnyArgs(1).ExtractWithdrawalsFromBlock(earlyBlock, 0);
             this.withdrawalReceiver.Received(1).ReceiveWithdrawals(Arg.Is(this.extractedWithdrawals));
-            this.federationGatewayClient.ReceivedWithAnyArgs(1).PushCurrentBlockTipAsync(null);
-            this.federationGatewayClient.ReceivedWithAnyArgs(0).PushMaturedBlockAsync(null);
+
+            await Task.Delay(500).ConfigureAwait(false);
+
+            await this.federationGatewayClient.ReceivedWithAnyArgs(1).PushCurrentBlockTipAsync(null);
         }
 
-        [Fact]
-        public void BlockObserver_Should_Try_To_Extract_Deposits_After_MinimumDepositConfirmations()
+        [Retry(3)]
+        // This test requires retries because we are asserting result of a background thread that calls API.
+        // This will work in real life but in tests it produces a race condition and therefore requires retries.
+        public void BlockObserverShouldTryToExtractDepositsAfterMinimumDepositConfirmations()
         {
             (ChainedHeaderBlock chainedHeaderBlock, Block block) blockBuilder = this.ChainHeaderBlockBuilder();
 
             this.blockObserver.OnNext(blockBuilder.chainedHeaderBlock);
 
             this.federationWalletSyncManager.Received(1).ProcessBlock(blockBuilder.block);
-            this.federationGatewayClient.ReceivedWithAnyArgs(1).PushMaturedBlockAsync(null);
+
+            this.federationGatewayClient.ReceivedWithAnyArgs(1).PushCurrentBlockTipAsync(null);
         }
 
-        [Fact]
-        public void BlockObserver_Should_Send_Block_Tip()
+        [Retry(3)]
+        // This test requires retries because we are asserting result of a background thread that calls API.
+        // This will work in real life but in tests it produces a race condition and therefore requires retries.
+        public async Task BlockObserverShouldSendBlockTipAsync()
         {
             ChainedHeaderBlock chainedHeaderBlock = this.ChainHeaderBlockBuilder().chainedHeaderBlock;
 
             this.blockObserver.OnNext(chainedHeaderBlock);
-            this.federationGatewayClient.ReceivedWithAnyArgs(1).PushCurrentBlockTipAsync(null);
+
+            await Task.Delay(5000).ConfigureAwait(false);
+
+            await this.federationGatewayClient.ReceivedWithAnyArgs(1).PushCurrentBlockTipAsync(null);
         }
 
         [Fact]
-        public void BlockObserver_Should_Extract_Withdrawals()
+        public void BlockObserverShouldExtractWithdrawals()
         {
             ChainedHeaderBlock chainedHeaderBlock = this.ChainHeaderBlockBuilder().chainedHeaderBlock;
 
@@ -140,7 +142,7 @@ namespace Stratis.FederatedPeg.Tests
         }
 
         [Fact]
-        public void BlockObserver_Should_Send_Extracted_Withdrawals_To_WithdrawalReceiver()
+        public void BlockObserverShouldSendExtractedWithdrawalsToWithdrawalReceiver()
         {
             ChainedHeaderBlock chainedHeaderBlock = this.ChainHeaderBlockBuilder().chainedHeaderBlock;
 
@@ -161,6 +163,8 @@ namespace Stratis.FederatedPeg.Tests
             var chainedHeaderBlock = new ChainedHeaderBlock(block, chainedHeader);
 
             chainedHeaderBlock.ChainedHeader.Block = chainedHeaderBlock.Block;
+
+            this.consensusManager.GetBlockDataAsync(uint256.Zero).Returns(chainedHeaderBlock);
 
             return (chainedHeaderBlock, block);
         }

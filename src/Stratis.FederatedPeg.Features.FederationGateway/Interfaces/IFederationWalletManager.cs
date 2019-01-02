@@ -103,13 +103,6 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.Interfaces
         WalletSecret Secret { get; set; }
 
         /// <summary>
-        /// Imports the federation member's mnemonic key.
-        /// </summary>
-        /// <param name="password">The user's password.</param>
-        /// <param name="mnemonic">The user's mnemonic.</param>
-        void ImportMemberKey(string password, string mnemonic);
-
-        /// <summary>
         /// Finds all withdrawal transactions with optional filtering by deposit id or transaction id.
         /// </summary>
         /// <param name="depositId">Filters by this deposit id if not <c>null</c>.</param>
@@ -138,9 +131,23 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.Interfaces
         bool IsFederationActive();
 
         /// <summary>
+        /// Enables federation.
+        /// </summary>
+        /// <param name="password">The federation wallet password.</param>
+        /// <param name="mnemonic">The user's mnemonic.</param>
+        /// <param name="passphrase">A passphrase used to derive the private key from the mnemonic.</param>
+        void EnableFederation(string password, string mnemonic = null, string passphrase = null);
+
+        /// <summary>
         /// Removes all the transactions from the federation wallet.
         /// </summary>
         /// <returns>A list of objects made up of transaction IDs along with the time at which they were created.</returns>
         HashSet<(uint256, DateTimeOffset)> RemoveAllTransactions();
+
+        /// <summary>
+        /// Enumerate withdrawals starting with the most recent.
+        /// </summary>
+        /// <returns>An enumeration of IWithdrawal objects.</returns>
+        IEnumerable<IWithdrawal> GetWithdrawals();
     }
 }

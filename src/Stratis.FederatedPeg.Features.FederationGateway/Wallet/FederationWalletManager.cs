@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.CompilerServices;
+using System.Security;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using NBitcoin;
@@ -12,6 +13,7 @@ using Stratis.Bitcoin.Features.Wallet.Broadcasting;
 using Stratis.Bitcoin.Features.Wallet.Interfaces;
 using Stratis.Bitcoin.Utilities;
 using Stratis.FederatedPeg.Features.FederationGateway.Interfaces;
+using Stratis.FederatedPeg.Features.FederationGateway.TargetChain;
 
 [assembly: InternalsVisibleTo("Stratis.Bitcoin.Features.FederationWallet.Tests")]
 
@@ -92,6 +94,9 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.Wallet
         /// <summary>Provider of time functions.</summary>
         private readonly IDateTimeProvider dateTimeProvider;
 
+        /// <summary>Indicates whether the federation is active.</summary>
+        private bool isFederationActive;
+
         public uint256 WalletTipHash { get; set; }
 
         public bool ContainsWallets => throw new NotImplementedException();
@@ -154,6 +159,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.Wallet
             this.federationGatewaySettings = federationGatewaySettings;
             this.withdrawalExtractor = withdrawalExtractor;
             this.outpointLookup = new Dictionary<OutPoint, TransactionData>();
+            this.isFederationActive = false;
 
             // register events
             if (this.broadcasterManager != null)
@@ -169,8 +175,6 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.Wallet
 
         public void Start()
         {
-            this.logger.LogTrace("()");
-
             // Find the wallet and load it in memory.
             if (this.fileStorage.Exists(WalletFileName))
                 this.Wallet = this.fileStorage.LoadByFileName(WalletFileName);
@@ -190,33 +194,24 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.Wallet
             // save the wallets file every 5 minutes to help against crashes.
             this.asyncLoop = this.asyncLoopFactory.Run("wallet persist job", token =>
             {
-                this.logger.LogTrace("()");
-
                 this.SaveWallet();
                 this.logger.LogInformation("Wallets saved to file at {0}.", this.dateTimeProvider.GetUtcNow());
 
-                this.logger.LogTrace("(-)");
                 return Task.CompletedTask;
             },
             this.nodeLifetime.ApplicationStopping,
             repeatEvery: TimeSpan.FromMinutes(WalletSavetimeIntervalInMinutes),
             startAfter: TimeSpan.FromMinutes(WalletSavetimeIntervalInMinutes));
-
-            this.logger.LogTrace("(-)");
         }
 
         /// <inheritdoc />
         public void Stop()
         {
-            this.logger.LogTrace("()");
-
             if (this.broadcasterManager != null)
                 this.broadcasterManager.TransactionStateChanged -= this.BroadcasterManager_TransactionStateChanged;
 
             this.asyncLoop?.Dispose();
             this.SaveWallet();
-
-            this.logger.LogTrace("(-)");
         }
 
         /// <inheritdoc />
@@ -229,15 +224,12 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.Wallet
                 items = this.Wallet.MultiSigAddress.Transactions.Select(t => new FlatHistory { Address = this.Wallet.MultiSigAddress, Transaction = t }).ToArray();
             }
 
-            this.logger.LogTrace("(-):*.Count={0}", items.Count());
             return items;
         }
 
         /// <inheritdoc />
         public int LastBlockHeight()
         {
-            this.logger.LogTrace("()");
-
             if (this.Wallet == null)
             {
                 int height = this.chain.Tip.Height;
@@ -246,7 +238,6 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.Wallet
             }
 
             int res = this.Wallet.LastBlockSyncedHeight ?? 0;
-            this.logger.LogTrace("(-):{0}", res);
             return res;
         }
 
@@ -256,8 +247,6 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.Wallet
         /// <returns>Hash of the last block received by the wallets.</returns>
         public uint256 LastReceivedBlockHash()
         {
-            this.logger.LogTrace("()");
-
             if (this.Wallet == null)
             {
                 uint256 hash = this.chain.Tip.HashBlock;
@@ -272,27 +261,23 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.Wallet
                 lastBlockSyncedHash = this.chain.Tip.HashBlock;
             }
 
-            this.logger.LogTrace("(-):'{0}'", lastBlockSyncedHash);
             return lastBlockSyncedHash;
         }
 
         /// <inheritdoc />
-        public IEnumerable<Wallet.UnspentOutputReference> GetSpendableTransactionsInWallet(int confirmations = 0)
+        public IEnumerable<UnspentOutputReference> GetSpendableTransactionsInWallet(int confirmations = 0)
         {
-            this.logger.LogTrace("({0}:'{1}'", nameof(confirmations), confirmations);
-
             if (this.Wallet == null)
             {
                 return Enumerable.Empty<Wallet.UnspentOutputReference>();
             }
 
-            Wallet.UnspentOutputReference[] res;
+            UnspentOutputReference[] res;
             lock (this.lockObject)
             {
                 res = this.Wallet.GetSpendableTransactions(this.chain.Tip.Height, confirmations).ToArray();
             }
 
-            this.logger.LogTrace("(-):*.Count={0}", res.Count());
             return res;
         }
 
@@ -300,7 +285,6 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.Wallet
         public void RemoveBlocks(ChainedHeader fork)
         {
             Guard.NotNull(fork, nameof(fork));
-            this.logger.LogTrace("({0}:'{1}'", nameof(fork), fork);
 
             lock (this.lockObject)
             {
@@ -316,8 +300,6 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.Wallet
 
                 this.UpdateLastBlockSyncedHeight(fork);
             }
-
-            this.logger.LogTrace("(-)");
         }
 
 
@@ -326,7 +308,6 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.Wallet
         {
             Guard.NotNull(block, nameof(block));
             Guard.NotNull(chainedHeader, nameof(chainedHeader));
-            this.logger.LogTrace("({0}:'{1}',{2}:'{3}')", nameof(block), block.GetHash(), nameof(chainedHeader), chainedHeader);
 
             // If there is no wallet yet, update the wallet tip hash and do nothing else.
             if (this.Wallet == null)
@@ -380,8 +361,6 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.Wallet
                     this.SaveWallet();
                 }
             }
-
-            this.logger.LogTrace("(-)");
         }
 
         /// <inheritdoc />
@@ -389,7 +368,6 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.Wallet
         {
             Guard.NotNull(transaction, nameof(transaction));
             uint256 hash = transaction.GetHash();
-            this.logger.LogTrace("({0}:'{1}',{2}:{3})", nameof(transaction), hash, nameof(blockHeight), blockHeight);
 
             if (this.Wallet == null)
             {
@@ -471,7 +449,6 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.Wallet
                 }
             }
 
-            this.logger.LogTrace("(-)");
             return foundSendingTrx || foundReceivingTrx;
         }
 
@@ -480,7 +457,6 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.Wallet
         {
             Guard.NotNull(transaction, nameof(transaction));
             uint256 hash = transaction.GetHash();
-            this.logger.LogTrace("({0}:'{1}')", nameof(transaction), hash);
 
             bool updatedWallet = false;
 
@@ -520,8 +496,6 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.Wallet
                 }
             }
 
-            this.logger.LogTrace("(-)");
-
             return updatedWallet;
         }
 
@@ -559,8 +533,6 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.Wallet
             Guard.NotNull(utxo, nameof(utxo));
 
             uint256 transactionHash = transaction.GetHash();
-
-            this.logger.LogTrace("({0}:'{1}',{2}:{3})", nameof(transaction), transactionHash, nameof(blockHeight), blockHeight);
 
             // Get the collection of transactions to add to.
             Script script = utxo.ScriptPubKey;
@@ -623,7 +595,6 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.Wallet
             }
 
             this.TransactionFoundInternal(script);
-            this.logger.LogTrace("(-)");
         }
 
         /// <summary>
@@ -641,9 +612,6 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.Wallet
         {
             Guard.NotNull(transaction, nameof(transaction));
             Guard.NotNull(paidToOutputs, nameof(paidToOutputs));
-
-            this.logger.LogTrace("({0}:'{1}',{2}:'{3}',{4}:{5},{6}:'{7}')", nameof(transaction), transaction.GetHash(),
-                nameof(spendingTransactionId), spendingTransactionId, nameof(spendingTransactionIndex), spendingTransactionIndex, nameof(blockHeight), blockHeight);
 
             // Get the transaction being spent.
             TransactionData spentTransaction = this.Wallet.MultiSigAddress.Transactions.SingleOrDefault(t => (t.Id == spendingTransactionId) && (t.Index == spendingTransactionIndex));
@@ -723,8 +691,6 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.Wallet
                     spentTransaction.SpendingDetails.CreationTime = DateTimeOffset.FromUnixTimeSeconds(block.Header.Time);
                 }
             }
-
-            this.logger.LogTrace("(-)");
         }
 
         /// <summary>
@@ -769,18 +735,13 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.Wallet
 
         public void TransactionFoundInternal(Script script)
         {
-            this.logger.LogTrace("()");
-
             // Persists the wallet file.
             this.SaveWallet();
-            this.logger.LogTrace("()");
         }
 
         /// <inheritdoc />
         public void SaveWallet()
         {
-            this.logger.LogTrace("()");
-
             if (this.Wallet != null)
             {
                 lock (this.lockObject)
@@ -788,8 +749,6 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.Wallet
                     this.fileStorage.SaveToFile(this.Wallet, WalletFileName);
                 }
             }
-
-            this.logger.LogTrace("(-)");
         }
 
         /// <inheritdoc />
@@ -808,6 +767,20 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.Wallet
                 }
 
                 return walletUpdated;
+            }
+        }
+
+        /// <inheritdoc />
+        public IEnumerable<IWithdrawal> GetWithdrawals()
+        {
+            foreach (TransactionData transactionData in this.Wallet.MultiSigAddress.Transactions.OrderByDescending(t => t.CreationTime))
+            {
+                Transaction walletTrx = transactionData.GetFullTransaction(this.network);
+                IWithdrawal withdrawal = this.withdrawalExtractor.ExtractWithdrawalFromTransaction(walletTrx, transactionData.BlockHash, transactionData.BlockHeight ?? 0);
+                if (withdrawal == null)
+                    continue;
+
+                yield return withdrawal;
             }
         }
 
@@ -883,7 +856,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.Wallet
                 // All the input UTXO's should be present in spending details of the multi-sig address.
                 List<Coin> coins = checkSignature ? new List<Coin>() : null;
                 // Verify that the transaction has valid UTXOs.
-                if (!TransactionHasValidUTXOs(transaction, coins))
+                if (!this.TransactionHasValidUTXOs(transaction, coins))
                     return false;
 
                 // Verify that there are no earlier unspent UTXOs.
@@ -902,6 +875,11 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.Wallet
                     TransactionBuilder builder = new TransactionBuilder(this.Wallet.Network).AddCoins(coins);
                     if (!builder.Verify(transaction, this.federationGatewaySettings.TransactionFee, out TransactionPolicyError[] errors))
                     {
+                        foreach (TransactionPolicyError transactionPolicyError in errors)
+                        {
+                            this.logger.LogError("TransactionBuilder.Verify FAILED - {0}", transactionPolicyError.ToString());
+                        }
+
                         return false;
                     }
                 }
@@ -911,48 +889,9 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.Wallet
         }
 
         /// <inheritdoc />
-        public bool IsFederationActive()
-        {
-            // If federation is acive then the extended key in the wallet can be used to derive the public key.
-            FederationWallet wallet = this.Wallet;
-            if (wallet == null || this.Secret == null)
-                return false;
-
-            Key key = wallet.MultiSigAddress.GetPrivateKey(wallet.EncryptedSeed, this.Secret.WalletPassword, this.network);
-
-            if (key.PubKey.ToHex() == this.federationGatewaySettings.PublicKey)
-                return true;
-
-            this.logger.LogInformation("The wallet public key {0} does not match the federation member's public key {1}", key.PubKey.ToHex(), this.federationGatewaySettings.PublicKey);
-
-            return false;
-        }
-
-        /// <summary>
-        /// Identifies the earliest multisig transaction data input associated with a transaction.
-        /// </summary>
-        /// <param name="transaction">The transaction to find the earliest multisig transaction data input for.</param>
-        /// <returns>The earliest multisig transaction data input.</returns>
-        private TransactionData MultiSigInput(Transaction transaction)
-        {
-            foreach (TxIn input in transaction.Inputs)
-            {
-                Wallet.TransactionData transactionData = this.Wallet.MultiSigAddress.Transactions
-                    .Where(t => t?.SpendingDetails?.TransactionId == transaction.GetHash() && t.Id == input.PrevOut.Hash && t.Index == input.PrevOut.N)
-                    .FirstOrDefault();
-
-                if (transactionData != null)
-                    return transactionData;
-            }
-
-            return null;
-        }
-
-        /// <inheritdoc />
         public void UpdateLastBlockSyncedHeight(ChainedHeader chainedHeader)
         {
             Guard.NotNull(chainedHeader, nameof(chainedHeader));
-            this.logger.LogTrace("({0}:'{1}')", nameof(chainedHeader), chainedHeader);
 
             lock (this.lockObject)
             {
@@ -965,10 +904,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.Wallet
                 this.Wallet.LastBlockSyncedHash = chainedHeader.HashBlock;
             }
 
-            this.logger.LogTrace("(-)");
-
             this.WalletTipHash = chainedHeader.HashBlock;
-            this.logger.LogTrace("(-)");
         }
 
         /// <summary>
@@ -1008,70 +944,72 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.Wallet
             return wallet;
         }
 
-        /// <summary>
-        /// Updates details of the last block synced in a wallet when the chain of headers finishes downloading.
-        /// </summary>
-        /// <param name="wallets">The wallets to update when the chain has downloaded.</param>
-        /// <param name="date">The creation date of the block with which to update the wallet.</param>
-        private void UpdateWhenChainDownloaded(IEnumerable<FederationWallet> wallets, DateTime date)
-        {
-            this.asyncLoopFactory.RunUntil("WalletManager.DownloadChain", this.nodeLifetime.ApplicationStopping,
-                () => this.chain.IsDownloaded(),
-                () =>
-                {
-                    int heightAtDate = this.chain.GetHeightAtTime(date);
-
-                    foreach (FederationWallet wallet in wallets)
-                    {
-                        this.logger.LogTrace("The chain of headers has finished downloading, updating wallet with height {0}", heightAtDate);
-                        this.UpdateLastBlockSyncedHeight(this.chain.GetBlock(heightAtDate));
-                        this.SaveWallet();
-                    }
-                },
-                (ex) =>
-                {
-                    // in case of an exception while waiting for the chain to be at a certain height, we just cut our losses and
-                    // sync from the current height.
-                    this.logger.LogError($"Exception occurred while waiting for chain to download: {ex.Message}");
-
-                    foreach (FederationWallet wallet in wallets)
-                    {
-                        this.UpdateLastBlockSyncedHeight(this.chain.Tip);
-                    }
-                },
-                TimeSpans.FiveSeconds);
-        }
-
         /// <inheritdoc />
-        public void ImportMemberKey(string password, string mnemonic)
+        public void EnableFederation(string password, string mnemonic = null, string passphrase = null)
         {
             Guard.NotEmpty(password, nameof(password));
-            Guard.NotEmpty(mnemonic, nameof(mnemonic));
 
-            // Get the extended key.
-            ExtKey extendedKey;
+            // Protect against de-activation if the federation is already active.
+            if (this.isFederationActive)
+            {
+                this.logger.LogWarning("(-):[FEDERATION_ALREADY_ACTIVE]");
+                return;
+            }
+
+            // Get the key and encrypted seed.
+            Key key = null;
+            string encryptedSeed = this.Wallet.EncryptedSeed;
+
+            if (!string.IsNullOrEmpty(mnemonic))
+            {
+                ExtKey extendedKey;
+                try
+                {
+                    extendedKey = HdOperations.GetExtendedKey(mnemonic, passphrase);
+                }
+                catch (NotSupportedException ex)
+                {
+                    this.logger.LogTrace("Exception occurred: {0}", ex.ToString());
+                    this.logger.LogTrace("(-)[EXCEPTION]");
+
+                    if (ex.Message == "Unknown")
+                        throw new WalletException("Please make sure you enter valid mnemonic words.");
+
+                    throw;
+                }
+
+                // Create a wallet file.
+                key = extendedKey.PrivateKey;
+                encryptedSeed = key.GetEncryptedBitcoinSecret(password, this.network).ToWif();
+            }
+
             try
             {
-                extendedKey = HdOperations.GetExtendedKey(mnemonic);
+                if (key == null)
+                    key = Key.Parse(encryptedSeed, password, this.Wallet.Network);
+
+                bool isValidKey = key.PubKey.ToHex() == this.federationGatewaySettings.PublicKey;
+                if (!isValidKey)
+                {
+                    this.logger.LogInformation("The wallet public key {0} does not match the federation member's public key {1}", key.PubKey.ToHex(), this.federationGatewaySettings.PublicKey);
+                    return;
+                }
+
+                this.Secret = new WalletSecret() { WalletPassword = password };
+                this.Wallet.EncryptedSeed = encryptedSeed;
+                this.SaveWallet();
+
+                this.isFederationActive = isValidKey;
             }
-            catch (NotSupportedException ex)
+            catch (Exception ex)
             {
-                this.logger.LogTrace("Exception occurred: {0}", ex.ToString());
-                this.logger.LogTrace("(-)[EXCEPTION]");
-
-                if (ex.Message == "Unknown")
-                    throw new WalletException("Please make sure you enter valid mnemonic words.");
-
-                throw;
+                throw new SecurityException(ex.Message);
             }
+        }
 
-            // Create a wallet file.
-            string encryptedSeed = extendedKey.PrivateKey.GetEncryptedBitcoinSecret(password, this.network).ToWif();
-
-            this.Wallet.EncryptedSeed = encryptedSeed;
-            this.SaveWallet();
-
-            this.logger.LogTrace("(-)");
+        public bool IsFederationActive()
+        {
+            return this.isFederationActive;
         }
 
         public FederationWallet GetWallet()

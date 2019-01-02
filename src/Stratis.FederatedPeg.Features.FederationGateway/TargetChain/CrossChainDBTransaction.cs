@@ -16,17 +16,16 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
 
     public class CrossChainDBTransaction : IDisposable
     {
-        private readonly Network network;
+        private readonly DBreezeSerializer dBreezeSerializer;
         private DBreeze.Transactions.Transaction transaction;
         private readonly ICrossChainLookups crossChainLookups;
         private readonly CrossChainTransactionMode mode;
         private StatusChangeTracker tracker;
 
-        // TODO: We need the network argument due to a shortcoming/inconsistency in our DBreeze serialization.
-        private CrossChainDBTransaction(DBreeze.Transactions.Transaction transaction, Network network, ICrossChainLookups updateLookups, CrossChainTransactionMode mode)
+        private CrossChainDBTransaction(DBreeze.Transactions.Transaction transaction, DBreezeSerializer dbreezeSerializer, ICrossChainLookups updateLookups, CrossChainTransactionMode mode)
         {
             this.transaction = transaction;
-            this.network = network;
+            this.dBreezeSerializer = dbreezeSerializer;
             this.crossChainLookups = updateLookups;
             this.mode = mode;
 
@@ -40,9 +39,9 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
             this.tracker = new StatusChangeTracker();
         }
 
-        public static CrossChainDBTransaction GetTransaction(DBreezeEngine dBreezeEngine, Network network, ICrossChainLookups updateLookups, CrossChainTransactionMode mode)
+        public static CrossChainDBTransaction GetTransaction(DBreezeEngine dBreezeEngine, DBreezeSerializer dbreezeSerializer, ICrossChainLookups updateLookups, CrossChainTransactionMode mode)
         {
-            return new CrossChainDBTransaction(dBreezeEngine.GetTransaction(eTransactionTablesLockTypes.EXCLUSIVE), network, updateLookups, mode);
+            return new CrossChainDBTransaction(dBreezeEngine.GetTransaction(eTransactionTablesLockTypes.EXCLUSIVE), dbreezeSerializer, updateLookups, mode);
         }
 
         public ICrossChainTransfer GetTransfer(uint256 depositId)
@@ -53,7 +52,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
             {
                 // Workaround for shortcoming in DBreeze serialization.
                 var crossChainTransfer = new CrossChainTransfer();
-                crossChainTransfer.FromBytes(transferRow.Value, this.network.Consensus.ConsensusFactory);
+                crossChainTransfer.FromBytes(transferRow.Value, this.dBreezeSerializer.Network.Consensus.ConsensusFactory);
                 crossChainTransfer.RecordDbStatus();
 
                 return crossChainTransfer;
@@ -68,7 +67,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
             {
                 // Workaround for shortcoming in DBreeze serialization.
                 var crossChainTransfer = new CrossChainTransfer();
-                crossChainTransfer.FromBytes(transferRow.Value, this.network.Consensus.ConsensusFactory);
+                crossChainTransfer.FromBytes(transferRow.Value, this.dBreezeSerializer.Network.Consensus.ConsensusFactory);
                 crossChainTransfer.RecordDbStatus();
 
                 yield return crossChainTransfer;
@@ -124,7 +123,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
             }
             catch (Exception)
             {
-                blockLocator.Blocks = new List<uint256> { this.network.GenesisHash };
+                blockLocator.Blocks = new List<uint256> { this.dBreezeSerializer.Network.GenesisHash };
             }
 
             return blockLocator;

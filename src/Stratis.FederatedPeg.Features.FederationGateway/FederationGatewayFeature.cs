@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
@@ -17,6 +16,7 @@ using Stratis.Bitcoin.Builder.Feature;
 using Stratis.Bitcoin.Configuration.Logging;
 using Stratis.Bitcoin.Connection;
 using Stratis.Bitcoin.Consensus;
+using Stratis.Bitcoin.Features.Api;
 using Stratis.Bitcoin.Features.Consensus;
 using Stratis.Bitcoin.Features.Consensus.CoinViews;
 using Stratis.Bitcoin.Features.Miner;
@@ -36,6 +36,9 @@ using Stratis.FederatedPeg.Features.FederationGateway.SourceChain;
 using Stratis.FederatedPeg.Features.FederationGateway.TargetChain;
 using Stratis.FederatedPeg.Features.FederationGateway.Wallet;
 using Stratis.FederatedPeg.Features.FederationGateway.RestClients;
+using Stratis.Bitcoin.Features.MemoryPool;
+using System.Collections.Generic;
+using Stratis.FederatedPeg.Features.FederationGateway.Models;
 
 [assembly: InternalsVisibleTo("Stratis.FederatedPeg.Features.FederationGateway.Tests")]
 [assembly: InternalsVisibleTo("Stratis.FederatedPeg.IntegrationTests")]
@@ -49,10 +52,6 @@ namespace Stratis.FederatedPeg.Features.FederationGateway
     {
         public const string FederationGatewayFeatureNamespace = "federationgateway";
 
-        private readonly IMaturedBlocksRequester maturedBlockRequester;
-
-        private readonly IMaturedBlocksProvider maturedBlocksProvider;
-
         private readonly Signals signals;
 
         private readonly IDepositExtractor depositExtractor;
@@ -60,8 +59,6 @@ namespace Stratis.FederatedPeg.Features.FederationGateway
         private readonly IWithdrawalExtractor withdrawalExtractor;
 
         private readonly IWithdrawalReceiver withdrawalReceiver;
-
-        private readonly ILeaderProvider leaderProvider;
 
         private IDisposable blockSubscriberDisposable;
 
@@ -89,15 +86,20 @@ namespace Stratis.FederatedPeg.Features.FederationGateway
 
         private readonly IFederationGatewayClient federationGatewayClient;
 
+        private readonly MempoolManager mempoolManager;
+
+        private readonly IMaturedBlocksSyncManager maturedBlocksSyncManager;
+
+        private readonly IWithdrawalHistoryProvider withdrawalHistoryProvider;
+
+        private readonly ILogger logger;
+
         public FederationGatewayFeature(
             ILoggerFactory loggerFactory,
-            IMaturedBlocksRequester maturedBlocksRequester,
-            IMaturedBlocksProvider maturedBlocksProvider,
             Signals signals,
             IDepositExtractor depositExtractor,
             IWithdrawalExtractor withdrawalExtractor,
             IWithdrawalReceiver withdrawalReceiver,
-            ILeaderProvider leaderProvider,
             IConnectionManager connectionManager,
             IFederationGatewaySettings federationGatewaySettings,
             IFullNode fullNode,
@@ -108,16 +110,16 @@ namespace Stratis.FederatedPeg.Features.FederationGateway
             INodeStats nodeStats,
             ICrossChainTransferStore crossChainTransferStore,
             IPartialTransactionRequester partialTransactionRequester,
-            IFederationGatewayClient federationGatewayClient)
+            IFederationGatewayClient federationGatewayClient,
+            MempoolManager mempoolManager,
+            IMaturedBlocksSyncManager maturedBlocksSyncManager,
+            IWithdrawalHistoryProvider withdrawalHistoryProvider)
         {
             this.loggerFactory = loggerFactory;
-            this.maturedBlockRequester = maturedBlocksRequester;
-            this.maturedBlocksProvider = maturedBlocksProvider;
             this.signals = signals;
             this.depositExtractor = depositExtractor;
             this.withdrawalExtractor = withdrawalExtractor;
             this.withdrawalReceiver = withdrawalReceiver;
-            this.leaderProvider = leaderProvider;
             this.connectionManager = connectionManager;
             this.federationGatewaySettings = federationGatewaySettings;
             this.fullNode = fullNode;
@@ -128,6 +130,11 @@ namespace Stratis.FederatedPeg.Features.FederationGateway
             this.crossChainTransferStore = crossChainTransferStore;
             this.partialTransactionRequester = partialTransactionRequester;
             this.federationGatewayClient = federationGatewayClient;
+            this.mempoolManager = mempoolManager;
+            this.maturedBlocksSyncManager = maturedBlocksSyncManager;
+            this.withdrawalHistoryProvider = withdrawalHistoryProvider;
+
+            this.logger = loggerFactory.CreateLogger(this.GetType().FullName);
 
             // add our payload
             var payloadProvider = (PayloadProvider)this.fullNode.Services.ServiceProvider.GetService(typeof(PayloadProvider));
@@ -140,31 +147,24 @@ namespace Stratis.FederatedPeg.Features.FederationGateway
         public override Task InitializeAsync()
         {
             // Subscribe to receiving blocks and transactions.
-            this.blockSubscriberDisposable = this.signals.SubscribeForBlocksConnected(
-                new BlockObserver(
-                    this.walletSyncManager,
-                    this.depositExtractor,
-                    this.withdrawalExtractor,
-                    this.withdrawalReceiver,
-                    this.federationGatewayClient,
-                    this.maturedBlocksProvider));
+            this.blockSubscriberDisposable = this.signals.SubscribeForBlocksConnected(new BlockObserver(this.walletSyncManager, this.depositExtractor, this.withdrawalExtractor,
+                this.withdrawalReceiver, this.federationGatewayClient));
 
             this.transactionSubscriberDisposable = this.signals.SubscribeForTransactions(new TransactionObserver(this.walletSyncManager));
 
             this.crossChainTransferStore.Initialize();
 
+            // maturedBlocksSyncManager should be initialized only after crossChainTransferStore.
+            this.maturedBlocksSyncManager.Initialize();
+
             this.federationWalletManager.Start();
             this.walletSyncManager.Start();
             this.crossChainTransferStore.Start();
             this.partialTransactionRequester.Start();
-            // TODO investiagte why are we doing this. Looks incorrect.
-            this.maturedBlockRequester.GetMoreBlocksAsync().GetAwaiter().GetResult();
 
             // Connect the node to the other federation members.
             foreach (IPEndPoint federationMemberIp in this.federationGatewaySettings.FederationNodeIpEndPoints)
-            {
                 this.connectionManager.AddNodeAddress(federationMemberIp);
-            }
 
             NetworkPeerConnectionParameters networkPeerConnectionParameters = this.connectionManager.Parameters;
             networkPeerConnectionParameters.TemplateBehaviors.Add(new PartialTransactionsBehavior(this.loggerFactory, this.federationWalletManager,
@@ -177,12 +177,18 @@ namespace Stratis.FederatedPeg.Features.FederationGateway
         {
             this.blockSubscriberDisposable.Dispose();
             this.transactionSubscriberDisposable.Dispose();
+
+            // Sync manager has to be disposed BEFORE cross chain transfer store.
+            this.maturedBlocksSyncManager.Dispose();
+
             this.crossChainTransferStore.Dispose();
         }
 
         private void AddInlineStats(StringBuilder benchLogs)
         {
-            if (this.federationWalletManager == null) return;
+            if (this.federationWalletManager == null)
+                return;
+
             int height = this.federationWalletManager.LastBlockHeight();
             ChainedHeader block = this.chain.GetBlock(height);
             uint256 hashBlock = block == null ? 0 : block.HashBlock;
@@ -195,16 +201,54 @@ namespace Stratis.FederatedPeg.Features.FederationGateway
 
         private void AddComponentStats(StringBuilder benchLog)
         {
+            try
+            {
+                string stats = this.CollectStats();
+                benchLog.Append(stats);
+            }
+            catch (Exception e)
+            {
+                this.logger.LogError(e.ToString());
+                throw;
+            }
+        }
+
+        private string CollectStats()
+        {
+            StringBuilder benchLog = new StringBuilder();
             benchLog.AppendLine();
             benchLog.AppendLine("====== Federation Wallet ======");
 
             (Money ConfirmedAmount, Money UnConfirmedAmount) balances = this.federationWalletManager.GetWallet().GetSpendableAmount();
+            bool isFederationActive = this.federationWalletManager.IsFederationActive();
             benchLog.AppendLine("Federation Wallet: ".PadRight(LoggingConfiguration.ColumnLength)
                                 + " Confirmed balance: " + balances.ConfirmedAmount.ToString().PadRight(LoggingConfiguration.ColumnLength)
                                 + " Unconfirmed balance: " + balances.UnConfirmedAmount.ToString().PadRight(LoggingConfiguration.ColumnLength)
-                                + " Federation Status: " + (this.federationWalletManager.IsFederationActive() ? "Active" : "Inactive"));
+                                + " Federation Status: " + (isFederationActive ? "Active" : "Inactive"));
             benchLog.AppendLine();
 
+            if (!isFederationActive)
+            {
+                var apiSettings = (ApiSettings)this.fullNode.Services.ServiceProvider.GetService(typeof(ApiSettings));
+
+                benchLog.AppendLine("".PadRight(59, '=') + " W A R N I N G " + "".PadRight(59, '='));
+                benchLog.AppendLine();
+                benchLog.AppendLine("This federation node is not enabled. You will not be able to store or participate in signing of transactions until you enable it.");
+                benchLog.AppendLine("If not done previously, please enable your federation node using " + $"{apiSettings.ApiUri}/api/FederationWallet/{FederationWalletRouteEndPoint.EnableFederation}.");
+                benchLog.AppendLine();
+                benchLog.AppendLine("".PadRight(133, '='));
+                benchLog.AppendLine();
+            }
+
+            // Display recent withdrawals (if any).
+            List<WithdrawalModel> withdrawals = this.withdrawalHistoryProvider.GetHistory(5);
+            if (withdrawals.Count > 0)
+            {
+                benchLog.AppendLine("--- Recent Withdrawals ---");
+                foreach (WithdrawalModel withdrawal in withdrawals)
+                    benchLog.AppendLine(withdrawal.ToString());
+                benchLog.AppendLine();
+            }
 
             benchLog.AppendLine("====== NodeStore ======");
             this.AddBenchmarkLine(benchLog, new (string, int)[] {
@@ -227,6 +271,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway
                 4);
 
             benchLog.AppendLine();
+            return benchLog.ToString();
         }
 
         private void AddBenchmarkLine(StringBuilder benchLog, (string Value, int ValuePadding)[] items, int maxItemsPerLine = int.MaxValue)
@@ -264,15 +309,12 @@ namespace Stratis.FederatedPeg.Features.FederationGateway
                     services =>
                     {
                         services.AddSingleton<IHttpClientFactory, HttpClientFactory>();
-                        services.AddSingleton<IMaturedBlockReceiver, MaturedBlockReceiver>();
-                        services.AddSingleton<IMaturedBlocksRequester, RestMaturedBlockRequester>();
                         services.AddSingleton<IMaturedBlocksProvider, MaturedBlocksProvider>();
                         services.AddSingleton<IFederationGatewaySettings, FederationGatewaySettings>();
                         services.AddSingleton<IOpReturnDataReader, OpReturnDataReader>();
                         services.AddSingleton<IDepositExtractor, DepositExtractor>();
                         services.AddSingleton<IWithdrawalExtractor, WithdrawalExtractor>();
                         services.AddSingleton<IWithdrawalReceiver, WithdrawalReceiver>();
-                        services.AddSingleton<IEventPersister, EventsPersister>();
                         services.AddSingleton<FederationGatewayController>();
                         services.AddSingleton<IFederationWalletSyncManager, FederationWalletSyncManager>();
                         services.AddSingleton<IFederationWalletTransactionHandler, FederationWalletTransactionHandler>();
@@ -284,6 +326,8 @@ namespace Stratis.FederatedPeg.Features.FederationGateway
                         services.AddSingleton<ISignedMultisigTransactionBroadcaster, SignedMultisigTransactionBroadcaster>();
                         services.AddSingleton<IPartialTransactionRequester, PartialTransactionRequester>();
                         services.AddSingleton<IFederationGatewayClient, FederationGatewayClient>();
+                        services.AddSingleton<IMaturedBlocksSyncManager, MaturedBlocksSyncManager>();
+                        services.AddSingleton<IWithdrawalHistoryProvider, WithdrawalHistoryProvider>();
                     });
             });
             return fullNodeBuilder;

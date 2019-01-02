@@ -81,6 +81,12 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.Interfaces
         void SetPartialTransaction(Transaction partialTransaction);
 
         /// <summary>
+        /// Gets the number of sigatures in the first input of the transaction.
+        /// </summary>
+        /// <returns>Number of signatures.</returns>
+        int GetSignatureCount(Network network);
+
+        /// <summary>
         /// Used by the store to note down the status as recorded in the database.
         /// This allows the store to update its internal deposit-by-status lookup.
         /// </summary>

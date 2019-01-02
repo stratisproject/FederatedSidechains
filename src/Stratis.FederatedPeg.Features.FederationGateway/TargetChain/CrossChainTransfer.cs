@@ -159,8 +159,16 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
         /// <param name="partialTransaction1">First transaction.</param>
         /// <param name="partialTransaction2">Second transaction.</param>
         /// <returns><c>True</c> if identical and <c>false</c> otherwise.</returns>
-        public static bool TemplatesMatch(Transaction partialTransaction1, Transaction partialTransaction2)
+        public static bool TemplatesMatch(Network network, Transaction partialTransaction1, Transaction partialTransaction2)
         {
+            if (network.Consensus.IsProofOfStake)
+            {
+                if (partialTransaction1.Time != partialTransaction2.Time)
+                {
+                    return false;
+                }
+            }
+
             if ((partialTransaction1.Inputs.Count != partialTransaction2.Inputs.Count) ||
                 (partialTransaction1.Outputs.Count != partialTransaction2.Outputs.Count))
             {
@@ -191,6 +199,24 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
         }
 
         /// <inheritdoc />
+        public int GetSignatureCount(Network network)
+        {
+            Guard.NotNull(this.PartialTransaction, nameof(this.PartialTransaction));
+            Guard.Assert(this.PartialTransaction.Inputs.Any());
+
+            Script scriptSig = this.PartialTransaction.Inputs[0].ScriptSig;
+            if (scriptSig == null)
+                return 0;
+
+            // Remove the script from the end.
+            scriptSig = new Script(scriptSig.ToOps().SkipLast(1));
+
+            TransactionSignature[] result = PayToMultiSigTemplate.Instance.ExtractScriptSigParameters(network, scriptSig);
+
+            return result?.Count(s => s != null) ?? 0;
+        }
+
+        /// <inheritdoc />
         public void RecordDbStatus()
         {
             this.dbStatus = this.status;
@@ -201,7 +227,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
         {
             Guard.Assert(this.status == CrossChainTransferStatus.Partial);
 
-            Transaction[] validPartials = partialTransactions.Where(p => TemplatesMatch(p, this.partialTransaction) && p.GetHash() != this.PartialTransaction.GetHash()).ToArray();
+            Transaction[] validPartials = partialTransactions.Where(p => TemplatesMatch(builder.Network, p, this.partialTransaction) && p.GetHash() != this.PartialTransaction.GetHash()).ToArray();
             if (validPartials.Any())
             {
                 var allPartials = new Transaction[validPartials.Length + 1];
