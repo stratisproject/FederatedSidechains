@@ -254,6 +254,8 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
         {
             try
             {
+                this.logger.LogInformation("BuildDeterministicTransaction depositId(opReturnData)={0} recipient.ScriptPubKey={1} recipient.Amount={2}", depositId, recipient.ScriptPubKey, recipient.Amount);
+
                 // Build the multisig transaction template.
                 uint256 opReturnData = depositId;
                 string walletPassword = this.federationWalletManager.Secret.WalletPassword;
@@ -271,20 +273,24 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
 
                 // Build the transaction.
                 Transaction transaction = this.federationWalletTransactionHandler.BuildTransaction(multiSigContext);
-                if (this.network.Consensus.IsProofOfStake)
-                {
-                    transaction.Time = blockTime;
-
-                    if (sign)
-                    {
-                        transaction = multiSigContext.TransactionBuilder.SignTransaction(transaction);
-                    }
-                }
-
                 if (transaction == null)
+                {
                     this.logger.LogTrace("Failed to create deterministic transaction.");
+                }
                 else
+                {
+                    if (this.network.Consensus.IsProofOfStake)
+                    {
+                        transaction.Time = blockTime;
+
+                        if (sign)
+                        {
+                            transaction = multiSigContext.TransactionBuilder.SignTransaction(transaction);
+                        }
+                    }
+
                     this.logger.LogInformation("transaction = {0}", transaction.ToString(this.network, RawFormat.BlockExplorer));
+                }
 
                 return transaction;
             }
@@ -398,7 +404,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
 
                                 uint blockTime = maturedDeposit.BlockInfo.BlockTime;
 
-                                transaction = BuildDeterministicTransaction(deposit.Id, blockTime, recipient);
+                                transaction = this.BuildDeterministicTransaction(deposit.Id, blockTime, recipient);
 
                                 if (transaction != null)
                                 {
@@ -502,11 +508,12 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
                     this.logger.LogTrace("()");
                     this.Synchronize();
 
+                    this.logger.LogInformation("Get and ValidateCrossChainTransfers : {0}", depositId);
                     ICrossChainTransfer transfer = this.ValidateCrossChainTransfers(this.Get(new[] { depositId })).FirstOrDefault();
 
                     if (transfer == null)
                     {
-                        this.logger.LogInformation("FAILED ValidateCrossChainTransfers : {0}", depositId);
+                        this.logger.LogInformation("FAILED Get and ValidateCrossChainTransfers : {0}", depositId);
                         this.logger.LogTrace("(-)[MERGE_NOTFOUND]");
                         return null;
                     }
