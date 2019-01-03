@@ -1,9 +1,12 @@
-﻿using Stratis.FederatedPeg.Features.FederationGateway.TargetChain;
+﻿using System;
+using System.Collections.Generic;
+using NBitcoin;
 
 namespace Stratis.FederatedPeg.Features.FederationGateway.Interfaces
 {
     public interface ICrossChainLookups
     {
-        void UpdateLookups(StatusChangeTracker tracker);
+        Dictionary<Type, IChangeTracker> CreateTrackers();
+        void UpdateLookups(Dictionary<Type, IChangeTracker> trackers);
     }
 }

@@ -5,8 +5,28 @@ using Stratis.FederatedPeg.Features.FederationGateway.Interfaces;
 
 namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
 {
-    public class StatusChangeTracker : Dictionary<ICrossChainTransfer, CrossChainTransferStatus?>
+    public class StatusChangeTracker : Dictionary<ICrossChainTransfer, CrossChainTransferStatus?>, IChangeTracker
     {
+        public void RecordValue(IBitcoinSerializable transfer, object status)
+        {
+            this[(ICrossChainTransfer)transfer] = (CrossChainTransferStatus)status;
+        }
+
+        public void RecordDbValue(IBitcoinSerializable transfer)
+        {
+            RecordValue(transfer, GetDbValue(transfer));
+        }
+
+        public object GetDbValue(IBitcoinSerializable transfer)
+        {
+            return ((ICrossChainTransfer)transfer).DbStatus;
+        }
+
+        public void SetDbValue(IBitcoinSerializable transfer)
+        {
+            ((ICrossChainTransfer)transfer).RecordDbStatus();
+        }
+
         /// <summary>
         /// Records changes to transfers for the purpose of synchronizing the transient lookups after the DB commit.
         /// </summary>
@@ -23,13 +43,13 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
             if (status != null)
             {
                 // If setting the status then record the previous status.
-                this[transfer] = transfer.Status;
+                RecordValue(transfer, transfer.Status);
                 transfer.SetStatus((CrossChainTransferStatus)status, blockHash, blockHeight);
             }
             else
             {
-                // If not setting the status then assume there is no previous status.
-                this[transfer] = null;
+                // This is a new object and there is no previous status.
+                RecordValue(transfer, null);
             }
         }
 

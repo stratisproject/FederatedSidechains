@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Collections.Generic;
+using NBitcoin;
 using Stratis.FederatedPeg.Features.FederationGateway.TargetChain;
 
 namespace Stratis.FederatedPeg.Features.FederationGateway.Interfaces
@@ -16,9 +18,15 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.Interfaces
         /// <returns>The <see cref="CrossChainDBTransaction"/> object.</returns>
         CrossChainDBTransaction GetTransaction(CrossChainTransactionMode mode = CrossChainTransactionMode.Read);
 
+        /// <summary>
+        /// Creates trackers for recording information on how to update the lookups.
+        /// </summary>
+        /// <returns>Trackers for recording information on how to update the lookups.</returns>
+        Dictionary<Type, IChangeTracker> CreateTrackers();
+
         /// <summary>Updates the internal lookups based on the changes recorded in the tracker object.</summary>
-        /// <param name="tracker">Information about how to update the lookups.</param>
+        /// <param name="trackers">Trackers recording information about how to update the lookups.</param>
         /// <remarks>This method should is only intended be called by the <see cref="CrossChainDBTransaction"/> class.</remarks>
-        void UpdateLookups(StatusChangeTracker tracker);
+        void UpdateLookups(Dictionary<Type, IChangeTracker> trackers);
     }
 }

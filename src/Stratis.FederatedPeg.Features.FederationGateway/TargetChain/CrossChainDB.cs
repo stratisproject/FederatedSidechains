@@ -141,7 +141,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
         /// <inheritdoc />
         public CrossChainDBTransaction GetTransaction(CrossChainTransactionMode mode = CrossChainTransactionMode.Read)
         {
-            CrossChainDBTransaction xdbTransaction = CrossChainDBTransaction.GetTransaction(this.DBreeze, this.DBreezeSerializer, (ICrossChainLookups)this, mode);
+            CrossChainDBTransaction xdbTransaction = new CrossChainDBTransaction(this.DBreeze, this.DBreezeSerializer, (ICrossChainLookups)this, mode);
 
             this.logger.LogTrace("Transaction '{0}' created for {1}.", xdbTransaction, mode);
 
@@ -309,22 +309,21 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
             }
         }
 
-        /// <summary>Updates the status lookup based on a transfer and its previous status.</summary>
-        /// <param name="transfer">The cross-chain transfer that was update.</param>
-        /// <param name="oldStatus">The old status.</param>
-        private void TransferStatusUpdated(ICrossChainTransfer transfer, CrossChainTransferStatus? oldStatus)
+        /// <inheritdoc />
+        public Dictionary<Type, IChangeTracker> CreateTrackers()
         {
-            if (oldStatus != null)
-            {
-                this.depositsIdsByStatus[(CrossChainTransferStatus)oldStatus].Remove(transfer.DepositTransactionId);
-            }
+            var trackers = new Dictionary<Type, IChangeTracker>();
 
-            this.depositsIdsByStatus[transfer.Status].Add(transfer.DepositTransactionId);
+            trackers[typeof(ICrossChainTransfer)] = new StatusChangeTracker();
+
+            return trackers;
         }
 
         /// <inheritdoc />
-        public void UpdateLookups(StatusChangeTracker tracker)
+        public void UpdateLookups(Dictionary<Type, IChangeTracker> trackers)
         {
+            StatusChangeTracker tracker = (StatusChangeTracker)trackers[typeof(ICrossChainTransfer)];
+
             foreach (uint256 hash in tracker.UniqueBlockHashes())
             {
                 if (this.depositIdsByBlockHash.ContainsKey(hash)) continue;
@@ -334,7 +333,6 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
             foreach (KeyValuePair<ICrossChainTransfer, CrossChainTransferStatus?> kv in tracker)
             {
                 ICrossChainTransfer transfer = kv.Key;
-                CrossChainTransferStatus? status = kv.Value;
 
                 if (transfer.DepositHeight == null && transfer.DbStatus != null /* Not new */)
                 {
@@ -344,7 +342,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
                 }
                 else
                 {
-                    this.TransferStatusUpdated(transfer, status);
+                    this.TransferStatusUpdated(transfer, tracker[transfer]);
 
                     if (transfer.BlockHash != null && transfer.BlockHeight != null)
                     {
@@ -356,6 +354,19 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
             }
 
             this.logger.LogTrace("Lookups updated from tracker containing {0} items.", tracker.Count);
+        }
+
+        /// <summary>Updates the status lookup based on a transfer and its previous status.</summary>
+        /// <param name="transfer">The cross-chain transfer that was updated.</param>
+        /// <param name="oldStatus">The old status.</param>
+        private void TransferStatusUpdated(ICrossChainTransfer transfer, CrossChainTransferStatus? oldStatus)
+        {
+            if (oldStatus != null)
+            {
+                this.depositsIdsByStatus[(CrossChainTransferStatus)oldStatus].Remove(transfer.DepositTransactionId);
+            }
+
+            this.depositsIdsByStatus[transfer.Status].Add(transfer.DepositTransactionId);
         }
 
         public virtual void Dispose()

@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using DBreeze;
 using DBreeze.DataTypes;
 using NBitcoin;
 using Stratis.Bitcoin.Utilities;
@@ -8,106 +7,152 @@ using Stratis.FederatedPeg.Features.FederationGateway.Interfaces;
 
 namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
 {
+    /// <summary>Supported DBreeze transaction modes.</summary>
     public enum CrossChainTransactionMode
     {
         Read,
         ReadWrite
     }
 
+    /// <summary>
+    /// The purpose of this class is to restrict the operations that can be performed on the underlying
+    /// database - i.e. it provides a "higher level" layer to the underlying DBreeze transaction.
+    /// As such it provides a guarantees that any transient lookups will be kept in step with changes
+    /// to the database. It also handles all required serialization here in one place.
+    /// </summary>
     public class CrossChainDBTransaction : IDisposable
     {
+        /// <summary>The serializer to use for this transaction.</summary>
         private readonly DBreezeSerializer dBreezeSerializer;
-        private DBreeze.Transactions.Transaction transaction;
-        private readonly ICrossChainLookups crossChainLookups;
-        private readonly CrossChainTransactionMode mode;
-        private StatusChangeTracker tracker;
 
-        private CrossChainDBTransaction(DBreeze.Transactions.Transaction transaction, DBreezeSerializer dbreezeSerializer, ICrossChainLookups updateLookups, CrossChainTransactionMode mode)
+        /// <summary>The underlying DBreeze transaction.</summary>
+        private DBreeze.Transactions.Transaction transaction;
+
+        /// <summary>Interface providing control over the updating of transient lookups.</summary>
+        private readonly ICrossChainLookups crossChainLookups;
+
+        /// <summary>The mode of the transaction.</summary>
+        private readonly CrossChainTransactionMode mode;
+
+        /// <summary>Tracking changes allows updating of transient lookups after a successful commit operation.</summary>
+        private Dictionary<Type, IChangeTracker> trackers;
+
+        /// <summary>
+        /// Constructs a transaction object that acts as a wrapper around the database tables.
+        /// </summary>
+        /// <param name="dbreeze">The DBreeze database engine.</param>
+        /// <param name="dbreezeSerializer">The DBreeze serializer to use.</param>
+        /// <param name="updateLookups">Interface providing methods to orchestrate the updating of transient lookups.</param>
+        /// <param name="mode">The mode in which to interact with the database.</param>
+        public CrossChainDBTransaction(
+            DBreeze.DBreezeEngine dbreeze,
+            DBreezeSerializer dbreezeSerializer,
+            ICrossChainLookups updateLookups,
+            CrossChainTransactionMode mode)
         {
-            this.transaction = transaction;
+            this.transaction = dbreeze.GetTransaction();
             this.dBreezeSerializer = dbreezeSerializer;
             this.crossChainLookups = updateLookups;
             this.mode = mode;
 
-            transaction.ValuesLazyLoadingIsOn = false;
+            this.transaction.ValuesLazyLoadingIsOn = false;
 
             if (mode == CrossChainTransactionMode.ReadWrite)
             {
-                transaction.SynchronizeTables(CrossChainDB.TransferTableName, CrossChainDB.CommonTableName);
+                this.transaction.SynchronizeTables(CrossChainDB.TransferTableName, CrossChainDB.CommonTableName);
             }
 
-            this.tracker = new StatusChangeTracker();
+            this.trackers = updateLookups.CreateTrackers();
         }
 
-        public static CrossChainDBTransaction GetTransaction(DBreezeEngine dBreezeEngine, DBreezeSerializer dbreezeSerializer, ICrossChainLookups updateLookups, CrossChainTransactionMode mode)
+        private void Insert<TKey, TValue>(string tableName, TKey key, TValue value) where TValue : IBitcoinSerializable
         {
-            return new CrossChainDBTransaction(dBreezeEngine.GetTransaction(eTransactionTablesLockTypes.EXCLUSIVE), dbreezeSerializer, updateLookups, mode);
+            Guard.Assert(this.mode == CrossChainTransactionMode.ReadWrite);
+
+            byte[] keyBytes = this.dBreezeSerializer.Serialize(key);
+            byte[] valueBytes = this.dBreezeSerializer.Serialize(value);
+            this.transaction.Insert(tableName, keyBytes, valueBytes);
+            if (this.trackers.TryGetValue(typeof(TValue), out IChangeTracker tracker))
+                tracker.RecordDbValue(value);
+        }
+
+        private bool Select<TKey, TValue>(string tableName, TKey key, out TValue value) where TValue : IBitcoinSerializable
+        {
+            byte[] keyBytes = this.dBreezeSerializer.Serialize(key);
+            Row<byte[], byte[]> row = this.transaction.Select<byte[], byte[]>(tableName, keyBytes);
+            value = row.Exists ? this.dBreezeSerializer.Deserialize<TValue>(row.Value) : default(TValue);
+            if (this.trackers.TryGetValue(typeof(TValue), out IChangeTracker tracker))
+                tracker.SetDbValue(value);
+            return row.Exists;
+        }
+
+        private IEnumerable<TValue> SelectForward<TKey, TValue>(string tableName) where TValue : IBitcoinSerializable
+        {
+            if (!this.trackers.TryGetValue(typeof(TValue), out IChangeTracker tracker))
+                tracker = null;
+
+            foreach (Row<byte[], byte[]> row in this.transaction.SelectForward<byte[], byte[]>(tableName))
+            {
+                TValue value = this.dBreezeSerializer.Deserialize<TValue>(row.Value);
+                if (tracker != null)
+                    tracker.SetDbValue(value);
+                yield return value;
+            }
+        }
+
+        private void RemoveKey<TKey, TValue>(string tableName, TKey key, TValue oldValue) where TValue : IBitcoinSerializable
+        {
+            Guard.Assert(this.mode == CrossChainTransactionMode.ReadWrite);
+
+            byte[] keyBytes = this.dBreezeSerializer.Serialize(key);
+            this.transaction.RemoveKey(tableName, keyBytes);
+            if (!this.trackers.TryGetValue(typeof(TValue), out IChangeTracker tracker))
+                tracker.RecordDbValue(oldValue);
         }
 
         public ICrossChainTransfer GetTransfer(uint256 depositId)
         {
-            Row<byte[], byte[]> transferRow = this.transaction.Select<byte[], byte[]>(CrossChainDB.TransferTableName, depositId.ToBytes());
+            if (!Select(CrossChainDB.TransferTableName, depositId, out ICrossChainTransfer crossChainTransfer))
+                return null;
 
-            if (transferRow.Exists)
-            {
-                // Workaround for shortcoming in DBreeze serialization.
-                var crossChainTransfer = new CrossChainTransfer();
-                crossChainTransfer.FromBytes(transferRow.Value, this.dBreezeSerializer.Network.Consensus.ConsensusFactory);
-                crossChainTransfer.RecordDbStatus();
-
-                return crossChainTransfer;
-            }
-
-            return null;
+            return crossChainTransfer;
         }
 
         public IEnumerable<ICrossChainTransfer> EnumerateTransfers()
         {
-            foreach (Row<byte[], byte[]> transferRow in this.transaction.SelectForward<byte[], byte[]>(CrossChainDB.TransferTableName))
-            {
-                // Workaround for shortcoming in DBreeze serialization.
-                var crossChainTransfer = new CrossChainTransfer();
-                crossChainTransfer.FromBytes(transferRow.Value, this.dBreezeSerializer.Network.Consensus.ConsensusFactory);
-                crossChainTransfer.RecordDbStatus();
-
+            foreach (ICrossChainTransfer crossChainTransfer in SelectForward<uint256, ICrossChainTransfer>(CrossChainDB.TransferTableName))
                 yield return crossChainTransfer;
-            }
         }
 
         public void PutTransfer(ICrossChainTransfer transfer)
         {
-            Guard.Assert(this.mode != CrossChainTransactionMode.Read);
-
-            // Record the old status
-            this.tracker[transfer] = transfer.DbStatus;
+            Guard.NotNull(transfer, nameof(transfer));
 
             // Write the transfer.
-            this.transaction.Insert(CrossChainDB.TransferTableName, transfer.DepositTransactionId.ToBytes(), transfer);
+            Insert(CrossChainDB.TransferTableName, transfer.DepositTransactionId, transfer);
         }
 
         public void DeleteTransfer(ICrossChainTransfer transfer)
         {
             Guard.NotNull(transfer, nameof(transfer));
 
-            // Only transfers that exist in the db purely due to being seen in a block will be removed.
+            // Only transfers that exist in the db solely due to being seen in a block will be removed.
             Guard.Assert(transfer.DepositHeight == null);
 
-            this.tracker[transfer] = transfer.DbStatus;
-
-            this.transaction.RemoveKey<byte[]>(CrossChainDB.TransferTableName, transfer.DepositTransactionId.ToBytes());
+            RemoveKey(CrossChainDB.TransferTableName, transfer.DepositTransactionId, transfer);
         }
 
         public void Commit()
         {
-            Guard.Assert(this.mode != CrossChainTransactionMode.Read);
+            Guard.Assert(this.mode == CrossChainTransactionMode.ReadWrite);
 
             this.transaction.Commit();
-            this.crossChainLookups.UpdateLookups(this.tracker);
+            this.crossChainLookups.UpdateLookups(this.trackers);
         }
 
         public void Rollback()
         {
-            Guard.Assert(this.mode != CrossChainTransactionMode.Read);
+            Guard.Assert(this.mode == CrossChainTransactionMode.ReadWrite);
 
             this.transaction.Rollback();
         }
@@ -127,7 +172,6 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
             }
 
             return blockLocator;
-
         }
 
         public void SaveTipHashAndHeight(BlockLocator blockLocator)
@@ -155,7 +199,8 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
         /// <returns>A concatenation of the creation time and thread id.</returns>
         public override string ToString()
         {
-            return string.Format("{0}({1})", this.transaction.CreatedUdt.GetHashCode(), this.transaction.ManagedThreadId);
+            DateTime createdDT = new DateTime(this.transaction.CreatedUdt);
+            return string.Format("{0}:{1}", createdDT, this.transaction.ManagedThreadId);
         }
 
         public void Dispose()
