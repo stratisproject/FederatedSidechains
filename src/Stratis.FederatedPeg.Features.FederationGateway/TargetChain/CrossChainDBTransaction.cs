@@ -35,7 +35,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
         private readonly CrossChainTransactionMode mode;
 
         /// <summary>Tracking changes allows updating of transient lookups after a successful commit operation.</summary>
-        private Dictionary<Type, IChangeTracker> trackers;
+        private Dictionary<string, IChangeTracker> trackers;
 
         /// <summary>
         /// Constructs a transaction object that acts as a wrapper around the database tables.
@@ -74,7 +74,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
             this.transaction.Insert(tableName, keyBytes, objBytes);
 
             // If this is a tracked class.
-            if (this.trackers.TryGetValue(typeof(TObject), out IChangeTracker tracker))
+            if (this.trackers.TryGetValue(tableName, out IChangeTracker tracker))
             {
                 // Record the object and its old value.
                 tracker.RecordOldValue(obj);
@@ -92,10 +92,19 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
                 return false;
             }
 
-            obj = this.dBreezeSerializer.Deserialize<TObject>(row.Value);
+            // Temporary workaround until DBreezeSerializer is fixed.
+            if (typeof(ICrossChainTransfer).IsAssignableFrom(typeof(TObject)))
+            {
+                obj = (TObject)Activator.CreateInstance(typeof(CrossChainTransfer));
+                obj.ReadWrite(row.Value, this.dBreezeSerializer.Network.Consensus.ConsensusFactory);
+            }
+            else
+            {
+                obj = this.dBreezeSerializer.Deserialize<TObject>(row.Value);
+            }
 
             // If this is a tracked class.
-            if (this.trackers.TryGetValue(typeof(TObject), out IChangeTracker tracker))
+            if (this.trackers.TryGetValue(tableName, out IChangeTracker tracker))
             {
                 // Set the old value on the object itself so that we can update the lookups if it is changed.
                 tracker.SetOldValue(obj);
@@ -106,7 +115,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
 
         private IEnumerable<TObject> SelectForward<TKey, TObject>(string tableName) where TObject : IBitcoinSerializable
         {
-            if (!this.trackers.TryGetValue(typeof(TObject), out IChangeTracker tracker))
+            if (!this.trackers.TryGetValue(tableName, out IChangeTracker tracker))
                 tracker = null;
 
             foreach (Row<byte[], byte[]> row in this.transaction.SelectForward<byte[], byte[]>(tableName))
@@ -132,7 +141,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
             this.transaction.RemoveKey(tableName, keyBytes);
 
             // If this is a tracked class.
-            if (!this.trackers.TryGetValue(typeof(TObject), out IChangeTracker tracker))
+            if (!this.trackers.TryGetValue(tableName, out IChangeTracker tracker))
             {
                 // Record the object and its old value.
                 tracker.RecordOldValue(obj);

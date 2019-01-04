@@ -312,19 +312,19 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
         }
 
         /// <inheritdoc />
-        public Dictionary<Type, IChangeTracker> CreateTrackers()
+        public Dictionary<string, IChangeTracker> CreateTrackers()
         {
-            var trackers = new Dictionary<Type, IChangeTracker>();
+            var trackers = new Dictionary<string, IChangeTracker>();
 
-            trackers[typeof(ICrossChainTransfer)] = new StatusChangeTracker();
+            trackers[TransferTableName] = new StatusChangeTracker();
 
             return trackers;
         }
 
         /// <inheritdoc />
-        public void UpdateLookups(Dictionary<Type, IChangeTracker> trackers)
+        public void UpdateLookups(Dictionary<string, IChangeTracker> trackers)
         {
-            StatusChangeTracker tracker = (StatusChangeTracker)trackers[typeof(ICrossChainTransfer)];
+            StatusChangeTracker tracker = (StatusChangeTracker)trackers[TransferTableName];
 
             foreach (uint256 hash in tracker.UniqueBlockHashes())
             {
