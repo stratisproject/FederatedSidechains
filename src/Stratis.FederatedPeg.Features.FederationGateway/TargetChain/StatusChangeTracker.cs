@@ -5,30 +5,32 @@ using Stratis.FederatedPeg.Features.FederationGateway.Interfaces;
 
 namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
 {
+    /// <summary>
+    /// Tracks changed transfers and records their original status.
+    /// </summary>
     public class StatusChangeTracker : Dictionary<ICrossChainTransfer, CrossChainTransferStatus?>, IChangeTracker
     {
-        public void RecordValue(IBitcoinSerializable transfer, object status)
+        /// <summary>
+        /// Records the status that was originally read from the database.
+        /// </summary>
+        /// <param name="transfer">The transfer to record the original status of.</param>
+        public void RecordOldValue(IBitcoinSerializable transfer)
         {
-            this[(ICrossChainTransfer)transfer] = (CrossChainTransferStatus)status;
+            this[(ICrossChainTransfer)transfer] = ((ICrossChainTransfer)transfer).DbStatus;
         }
 
-        public void RecordDbValue(IBitcoinSerializable transfer)
-        {
-            RecordValue(transfer, GetDbValue(transfer));
-        }
-
-        public object GetDbValue(IBitcoinSerializable transfer)
-        {
-            return ((ICrossChainTransfer)transfer).DbStatus;
-        }
-
-        public void SetDbValue(IBitcoinSerializable transfer)
+        /// <summary>
+        /// Instructs the transfer to record its (original) status. Typically called after reading it from the database.
+        /// </summary>
+        /// <param name="transfer">The transfer that should record its status.</param>
+        public void SetOldValue(IBitcoinSerializable transfer)
         {
             ((ICrossChainTransfer)transfer).RecordDbStatus();
         }
 
         /// <summary>
-        /// Records changes to transfers for the purpose of synchronizing the transient lookups after the DB commit.
+        /// This is used by standalone (not created in <see cref="CrossChainDBTransaction"/> context) trackers
+        /// to set the status on a transfer and at the same time note the change in the tracker.
         /// </summary>
         /// <param name="transfer">The cross-chain transfer to update.</param>
         /// <param name="status">The new status.</param>
@@ -36,20 +38,20 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
         /// <param name="blockHeight">The block height of the partialTransaction.</param>
         /// <remarks>
         /// Within the store the earliest status is <see cref="CrossChainTransferStatus.Partial"/>. In this case <c>null</c>
-        /// is used to flag a new transfer - a transfer with no earlier status. <c>null</c> is not written to the DB.
+        /// is used to flag a new transfer within the tracker only. It means that there is no earlier status.
         /// </remarks>
         public void SetTransferStatus(ICrossChainTransfer transfer, CrossChainTransferStatus? status = null, uint256 blockHash = null, int blockHeight = 0)
         {
             if (status != null)
             {
                 // If setting the status then record the previous status.
-                RecordValue(transfer, transfer.Status);
+                this[transfer] = transfer.Status;
                 transfer.SetStatus((CrossChainTransferStatus)status, blockHash, blockHeight);
             }
             else
             {
                 // This is a new object and there is no previous status.
-                RecordValue(transfer, null);
+                this[transfer] = null;
             }
         }
 

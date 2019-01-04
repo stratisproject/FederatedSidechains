@@ -65,49 +65,71 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
             this.trackers = updateLookups.CreateTrackers();
         }
 
-        private void Insert<TKey, TValue>(string tableName, TKey key, TValue value) where TValue : IBitcoinSerializable
+        private void Insert<TKey, TObject>(string tableName, TKey key, TObject obj) where TObject : IBitcoinSerializable
         {
             Guard.Assert(this.mode == CrossChainTransactionMode.ReadWrite);
 
             byte[] keyBytes = this.dBreezeSerializer.Serialize(key);
-            byte[] valueBytes = this.dBreezeSerializer.Serialize(value);
-            this.transaction.Insert(tableName, keyBytes, valueBytes);
-            if (this.trackers.TryGetValue(typeof(TValue), out IChangeTracker tracker))
-                tracker.RecordDbValue(value);
+            byte[] objBytes = this.dBreezeSerializer.Serialize(obj);
+            this.transaction.Insert(tableName, keyBytes, objBytes);
+
+            // If this is a tracked class.
+            if (this.trackers.TryGetValue(typeof(TObject), out IChangeTracker tracker))
+            {
+                // Record the object and its old value.
+                tracker.RecordOldValue(obj);
+            }
         }
 
-        private bool Select<TKey, TValue>(string tableName, TKey key, out TValue value) where TValue : IBitcoinSerializable
+        private bool Select<TKey, TObject>(string tableName, TKey key, out TObject obj) where TObject : IBitcoinSerializable
         {
             byte[] keyBytes = this.dBreezeSerializer.Serialize(key);
             Row<byte[], byte[]> row = this.transaction.Select<byte[], byte[]>(tableName, keyBytes);
-            value = row.Exists ? this.dBreezeSerializer.Deserialize<TValue>(row.Value) : default(TValue);
-            if (this.trackers.TryGetValue(typeof(TValue), out IChangeTracker tracker))
-                tracker.SetDbValue(value);
+            obj = row.Exists ? this.dBreezeSerializer.Deserialize<TObject>(row.Value) : default(TObject);
+
+            // If this is a tracked class.
+            if (this.trackers.TryGetValue(typeof(TObject), out IChangeTracker tracker))
+            {
+                // Set the old value on the object itself so that we can update the lookups if it is changed.
+                tracker.SetOldValue(obj);
+            }
+
             return row.Exists;
         }
 
-        private IEnumerable<TValue> SelectForward<TKey, TValue>(string tableName) where TValue : IBitcoinSerializable
+        private IEnumerable<TObject> SelectForward<TKey, TObject>(string tableName) where TObject : IBitcoinSerializable
         {
-            if (!this.trackers.TryGetValue(typeof(TValue), out IChangeTracker tracker))
+            if (!this.trackers.TryGetValue(typeof(TObject), out IChangeTracker tracker))
                 tracker = null;
 
             foreach (Row<byte[], byte[]> row in this.transaction.SelectForward<byte[], byte[]>(tableName))
             {
-                TValue value = this.dBreezeSerializer.Deserialize<TValue>(row.Value);
+                TObject obj = this.dBreezeSerializer.Deserialize<TObject>(row.Value);
+
+                // If this is a tracked class.
                 if (tracker != null)
-                    tracker.SetDbValue(value);
-                yield return value;
+                {
+                    // Set the old value on the object itself so that we can update the lookups if it is changed.
+                    tracker.SetOldValue(obj);
+                }
+
+                yield return obj;
             }
         }
 
-        private void RemoveKey<TKey, TValue>(string tableName, TKey key, TValue oldValue) where TValue : IBitcoinSerializable
+        private void RemoveKey<TKey, TObject>(string tableName, TKey key, TObject obj) where TObject : IBitcoinSerializable
         {
             Guard.Assert(this.mode == CrossChainTransactionMode.ReadWrite);
 
             byte[] keyBytes = this.dBreezeSerializer.Serialize(key);
             this.transaction.RemoveKey(tableName, keyBytes);
-            if (!this.trackers.TryGetValue(typeof(TValue), out IChangeTracker tracker))
-                tracker.RecordDbValue(oldValue);
+
+            // If this is a tracked class.
+            if (!this.trackers.TryGetValue(typeof(TObject), out IChangeTracker tracker))
+            {
+                // Record the object and its old value.
+                tracker.RecordOldValue(obj);
+            }
         }
 
         public ICrossChainTransfer GetTransfer(uint256 depositId)
