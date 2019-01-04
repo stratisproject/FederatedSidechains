@@ -83,6 +83,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.Interfaces
         /// <summary>
         /// Gets the number of sigatures in the first input of the transaction.
         /// </summary>
+        /// <param name="network">The network associated with the transfer's partial transaction.</param>
         /// <returns>Number of signatures.</returns>
         int GetSignatureCount(Network network);
 
