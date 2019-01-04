@@ -120,7 +120,18 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
 
             foreach (Row<byte[], byte[]> row in this.transaction.SelectForward<byte[], byte[]>(tableName))
             {
-                TObject obj = this.dBreezeSerializer.Deserialize<TObject>(row.Value);
+                TObject obj;
+
+                // Temporary workaround until DBreezeSerializer is fixed.
+                if (typeof(ICrossChainTransfer).IsAssignableFrom(typeof(TObject)))
+                {
+                    obj = (TObject)Activator.CreateInstance(typeof(CrossChainTransfer));
+                    obj.ReadWrite(row.Value, this.dBreezeSerializer.Network.Consensus.ConsensusFactory);
+                }
+                else
+                {
+                    obj = this.dBreezeSerializer.Deserialize<TObject>(row.Value);
+                }
 
                 // If this is a tracked class.
                 if (tracker != null)
