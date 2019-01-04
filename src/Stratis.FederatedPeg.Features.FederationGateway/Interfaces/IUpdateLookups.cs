@@ -10,15 +10,16 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.Interfaces
     public interface ICrossChainLookups
     {
         /// <summary>
-        /// Called to create trackers for a transaction.
+        /// Creates trackers for recording information on how to update the lookups.
         /// </summary>
-        /// <returns>The trackers used by a transaction.</returns>
+        /// <returns>Trackers for recording information on how to update the lookups.</returns>
         Dictionary<Type, IChangeTracker> CreateTrackers();
 
         /// <summary>
-        /// Updates the lookups affected by the changes recorded by the trackers.
+        /// Updates lookups based on the changes recorded in the tracker object.
         /// </summary>
-        /// <param name="trackers">The trackers used by a transaction.</param>
+        /// <param name="trackers">Trackers recording information about how to update the lookups.</param>
+        /// <remarks>This method is intended be called by the <see cref="CrossChainDBTransaction"/> class.</remarks>
         void UpdateLookups(Dictionary<Type, IChangeTracker> trackers);
     }
 }

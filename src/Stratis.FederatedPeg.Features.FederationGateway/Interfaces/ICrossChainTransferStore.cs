@@ -3,12 +3,11 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using NBitcoin;
 using Stratis.FederatedPeg.Features.FederationGateway.Models;
-using Stratis.FederatedPeg.Features.FederationGateway.TargetChain;
 
 namespace Stratis.FederatedPeg.Features.FederationGateway.Interfaces
 {
     /// <summary>Interface for interacting with the cross-chain transfer database.</summary>
-    public interface ICrossChainTransferStore : IDisposable, ICrossChainDB, ICrossChainLookups
+    public interface ICrossChainTransferStore : IDisposable, ICrossChainDB
     {
         /// <summary>Starts the cross-chain-transfer store.</summary>
         void Start();

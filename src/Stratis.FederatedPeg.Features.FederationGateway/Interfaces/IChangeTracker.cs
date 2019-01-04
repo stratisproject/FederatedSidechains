@@ -3,7 +3,7 @@
 namespace Stratis.FederatedPeg.Features.FederationGateway.Interfaces
 {
     /// <summary>
-    /// Tracks changes to made to objects.
+    /// Tracks changes made to objects.
     /// </summary>
     public interface IChangeTracker
     {
