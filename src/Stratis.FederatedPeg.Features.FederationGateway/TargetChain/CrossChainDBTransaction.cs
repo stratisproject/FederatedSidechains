@@ -85,7 +85,14 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
         {
             byte[] keyBytes = this.dBreezeSerializer.Serialize(key);
             Row<byte[], byte[]> row = this.transaction.Select<byte[], byte[]>(tableName, keyBytes);
-            obj = row.Exists ? this.dBreezeSerializer.Deserialize<TObject>(row.Value) : default(TObject);
+
+            if (!row.Exists)
+            {
+                obj = default(TObject);
+                return false;
+            }
+
+            obj = this.dBreezeSerializer.Deserialize<TObject>(row.Value);
 
             // If this is a tracked class.
             if (this.trackers.TryGetValue(typeof(TObject), out IChangeTracker tracker))
@@ -94,7 +101,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
                 tracker.SetOldValue(obj);
             }
 
-            return row.Exists;
+            return true;
         }
 
         private IEnumerable<TObject> SelectForward<TKey, TObject>(string tableName) where TObject : IBitcoinSerializable
@@ -134,7 +141,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
 
         public ICrossChainTransfer GetTransfer(uint256 depositId)
         {
-            if (!Select(CrossChainDB.TransferTableName, depositId, out ICrossChainTransfer crossChainTransfer))
+            if (!Select(CrossChainDB.TransferTableName, depositId, out CrossChainTransfer crossChainTransfer))
                 return null;
 
             return crossChainTransfer;
@@ -142,7 +149,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
 
         public IEnumerable<ICrossChainTransfer> EnumerateTransfers()
         {
-            foreach (ICrossChainTransfer crossChainTransfer in SelectForward<uint256, ICrossChainTransfer>(CrossChainDB.TransferTableName))
+            foreach (ICrossChainTransfer crossChainTransfer in SelectForward<uint256, CrossChainTransfer>(CrossChainDB.TransferTableName))
                 yield return crossChainTransfer;
         }
 
