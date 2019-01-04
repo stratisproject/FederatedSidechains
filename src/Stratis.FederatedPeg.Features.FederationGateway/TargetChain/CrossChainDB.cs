@@ -203,6 +203,8 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
                 // Write each transfer in order.
                 foreach (ICrossChainTransfer transfer in orderedTransfers)
                 {
+                    this.logger.LogTrace("Registering transfer: {0}.", transfer);
+
                     xdbTransaction.PutTransfer(transfer);
                 }
 

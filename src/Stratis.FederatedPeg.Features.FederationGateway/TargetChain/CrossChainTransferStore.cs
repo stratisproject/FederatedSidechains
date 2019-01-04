@@ -204,12 +204,9 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
 
                 try
                 {
-                    foreach (KeyValuePair<ICrossChainTransfer, CrossChainTransferStatus?> kv in tracker)
-                    {
-                        xdbTransaction.PutTransfer(kv.Key);
-                    }
+                    this.PutTransfers(xdbTransaction, tracker.Select(kv => kv.Key).ToArray());
+                    this.SaveNextMatureHeight(xdbTransaction, newChainATip);
 
-                    xdbTransaction.SaveNextMatureHeight(newChainATip);
                     xdbTransaction.Commit();
 
                     bool walletUpdated = false;
@@ -444,14 +441,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
                                 }
 
                                 // Update new or modified transfers.
-                                foreach (KeyValuePair<ICrossChainTransfer, CrossChainTransferStatus?> kv in tracker)
-                                {
-                                    ICrossChainTransfer transfer = kv.Key;
-
-                                    this.logger.LogTrace("Registering transfer: {0}.", transfer);
-
-                                    xdbTransaction.PutTransfer(transfer);
-                                }
+                                this.PutTransfers(xdbTransaction, tracker.Select(kv => kv.Key).ToArray());
 
                                 // Ensure we get called for a retry by NOT advancing the chain A tip if the block
                                 // contained any suspended transfers.
