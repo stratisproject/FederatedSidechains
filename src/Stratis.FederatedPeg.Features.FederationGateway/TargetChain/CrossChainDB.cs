@@ -139,7 +139,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
         }
 
         /// <inheritdoc />
-        public CrossChainDBTransaction GetTransaction(CrossChainTransactionMode mode = CrossChainTransactionMode.Read)
+        public CrossChainDBTransaction GetTransaction(CrossChainDBTransactionMode mode = CrossChainDBTransactionMode.Read)
         {
             CrossChainDBTransaction xdbTransaction = new CrossChainDBTransaction(this.DBreeze, this.DBreezeSerializer, (ICrossChainLookups)this, mode);
 

@@ -198,7 +198,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
                 return crossChainTransfers;
             }
 
-            using (CrossChainDBTransaction xdbTransaction = this.GetTransaction(CrossChainTransactionMode.ReadWrite))
+            using (CrossChainDBTransaction xdbTransaction = this.GetTransaction(CrossChainDBTransactionMode.ReadWrite))
             {
                 int oldChainATip = this.NextMatureDepositHeight;
 
@@ -307,7 +307,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
             {
                 lock (this.lockObj)
                 {
-                    using (CrossChainDBTransaction xdbTransaction = this.GetTransaction(CrossChainTransactionMode.ReadWrite))
+                    using (CrossChainDBTransaction xdbTransaction = this.GetTransaction(CrossChainDBTransactionMode.ReadWrite))
                     {
                         xdbTransaction.SaveNextMatureHeight(this.NextMatureDepositHeight);
                         xdbTransaction.Commit();
@@ -429,7 +429,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
                             }
                         }
 
-                        using (CrossChainDBTransaction xdbTransaction = this.GetTransaction(CrossChainTransactionMode.ReadWrite))
+                        using (CrossChainDBTransaction xdbTransaction = this.GetTransaction(CrossChainDBTransactionMode.ReadWrite))
                         {
                             int currentDepositHeight = this.NextMatureDepositHeight;
 
@@ -526,7 +526,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
                         return transfer.PartialTransaction;
                     }
 
-                    using (CrossChainDBTransaction xdbTransaction = this.GetTransaction(CrossChainTransactionMode.ReadWrite))
+                    using (CrossChainDBTransaction xdbTransaction = this.GetTransaction(CrossChainDBTransactionMode.ReadWrite))
                     {
                         try
                         {
@@ -645,7 +645,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
                 return;
             }
 
-            using (CrossChainDBTransaction xdbTransaction = this.GetTransaction(CrossChainTransactionMode.ReadWrite))
+            using (CrossChainDBTransaction xdbTransaction = this.GetTransaction(CrossChainDBTransactionMode.ReadWrite))
             {
                 ChainedHeader prevTip = this.TipHashAndHeight;
 
@@ -715,7 +715,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
 
                 this.logger.LogTrace("Fork height determined to be {0}", fork.Height);
 
-                using (CrossChainDBTransaction xdbTransaction = this.GetTransaction(CrossChainTransactionMode.ReadWrite))
+                using (CrossChainDBTransaction xdbTransaction = this.GetTransaction(CrossChainDBTransactionMode.ReadWrite))
                 {
                     ChainedHeader prevTip = this.TipHashAndHeight;
 
@@ -771,7 +771,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
 
                     if (this.SynchronizeBatch())
                     {
-                        using (CrossChainDBTransaction xdbTransaction = this.GetTransaction(CrossChainTransactionMode.ReadWrite))
+                        using (CrossChainDBTransaction xdbTransaction = this.GetTransaction(CrossChainDBTransactionMode.ReadWrite))
                         {
                             this.SaveTipHashAndHeight(xdbTransaction, this.TipHashAndHeight);
 
@@ -848,7 +848,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
 
         private ICrossChainTransfer[] Get(uint256[] depositIds)
         {
-            using (CrossChainDBTransaction xdbTransaction = this.GetTransaction(CrossChainTransactionMode.Read))
+            using (CrossChainDBTransaction xdbTransaction = this.GetTransaction(CrossChainDBTransactionMode.Read))
             {
                 return this.Get(xdbTransaction, depositIds);
             }

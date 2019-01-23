@@ -11,9 +11,9 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.Interfaces
         /// <summary>
         /// Creates a <see cref="CrossChainDBTransaction"/> for either read or read/write operations.
         /// </summary>
-        /// <param name="mode">The mode which is either <see cref="CrossChainTransactionMode.Read"/>
-        /// or <see cref="CrossChainTransactionMode.ReadWrite"/></param>
+        /// <param name="mode">The mode which is either <see cref="CrossChainDBTransactionMode.Read"/>
+        /// or <see cref="CrossChainDBTransactionMode.ReadWrite"/></param>
         /// <returns>The <see cref="CrossChainDBTransaction"/> object.</returns>
-        CrossChainDBTransaction GetTransaction(CrossChainTransactionMode mode = CrossChainTransactionMode.Read);
+        CrossChainDBTransaction GetTransaction(CrossChainDBTransactionMode mode = CrossChainDBTransactionMode.Read);
     }
 }

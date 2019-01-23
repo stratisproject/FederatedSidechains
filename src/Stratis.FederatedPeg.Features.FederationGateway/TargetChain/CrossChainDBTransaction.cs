@@ -8,7 +8,7 @@ using Stratis.FederatedPeg.Features.FederationGateway.Interfaces;
 namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
 {
     /// <summary>Supported DBreeze transaction modes.</summary>
-    public enum CrossChainTransactionMode
+    public enum CrossChainDBTransactionMode
     {
         Read,
         ReadWrite
@@ -17,7 +17,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
     /// <summary>
     /// The purpose of this class is to restrict the operations that can be performed on the underlying
     /// database - i.e. it provides a "higher level" layer to the underlying DBreeze transaction.
-    /// As such it provides a guarantees that any transient lookups will be kept in step with changes
+    /// As such it provides a guarantee that any transient lookups will be kept in sync with changes
     /// to the database. It also handles all required serialization here in one place.
     /// </summary>
     public class CrossChainDBTransaction : IDisposable
@@ -32,7 +32,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
         private readonly ICrossChainLookups crossChainLookups;
 
         /// <summary>The mode of the transaction.</summary>
-        private readonly CrossChainTransactionMode mode;
+        private readonly CrossChainDBTransactionMode mode;
 
         /// <summary>Tracking changes allows updating of transient lookups after a successful commit operation.</summary>
         private Dictionary<string, IChangeTracker> trackers;
@@ -48,7 +48,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
             DBreeze.DBreezeEngine dbreeze,
             DBreezeSerializer dbreezeSerializer,
             ICrossChainLookups updateLookups,
-            CrossChainTransactionMode mode)
+            CrossChainDBTransactionMode mode)
         {
             this.transaction = dbreeze.GetTransaction();
             this.dBreezeSerializer = dbreezeSerializer;
@@ -57,7 +57,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
 
             this.transaction.ValuesLazyLoadingIsOn = false;
 
-            if (mode == CrossChainTransactionMode.ReadWrite)
+            if (mode == CrossChainDBTransactionMode.ReadWrite)
             {
                 this.transaction.SynchronizeTables(CrossChainDB.TransferTableName, CrossChainDB.CommonTableName);
             }
@@ -67,7 +67,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
 
         private void Insert<TKey, TObject>(string tableName, TKey key, TObject obj) where TObject : IBitcoinSerializable
         {
-            Guard.Assert(this.mode == CrossChainTransactionMode.ReadWrite);
+            Guard.Assert(this.mode == CrossChainDBTransactionMode.ReadWrite);
 
             byte[] keyBytes = this.dBreezeSerializer.Serialize(key);
             byte[] objBytes = this.dBreezeSerializer.Serialize(obj);
@@ -146,7 +146,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
 
         private void RemoveKey<TKey, TObject>(string tableName, TKey key, TObject obj) where TObject : IBitcoinSerializable
         {
-            Guard.Assert(this.mode == CrossChainTransactionMode.ReadWrite);
+            Guard.Assert(this.mode == CrossChainDBTransactionMode.ReadWrite);
 
             byte[] keyBytes = this.dBreezeSerializer.Serialize(key);
             this.transaction.RemoveKey(tableName, keyBytes);
@@ -193,7 +193,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
 
         public void Commit()
         {
-            Guard.Assert(this.mode == CrossChainTransactionMode.ReadWrite);
+            Guard.Assert(this.mode == CrossChainDBTransactionMode.ReadWrite);
 
             this.transaction.Commit();
             this.crossChainLookups.UpdateLookups(this.trackers);
@@ -201,7 +201,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
 
         public void Rollback()
         {
-            Guard.Assert(this.mode == CrossChainTransactionMode.ReadWrite);
+            Guard.Assert(this.mode == CrossChainDBTransactionMode.ReadWrite);
 
             this.transaction.Rollback();
         }
@@ -225,7 +225,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
 
         public void SaveTipHashAndHeight(BlockLocator blockLocator)
         {
-            Guard.Assert(this.mode != CrossChainTransactionMode.Read);
+            Guard.Assert(this.mode != CrossChainDBTransactionMode.Read);
 
             this.transaction.Insert<byte[], byte[]>(CrossChainDB.CommonTableName, CrossChainDB.RepositoryTipKey, blockLocator.ToBytes());
         }
@@ -239,7 +239,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.TargetChain
 
         public void SaveNextMatureHeight(int newTip)
         {
-            Guard.Assert(this.mode != CrossChainTransactionMode.Read);
+            Guard.Assert(this.mode != CrossChainDBTransactionMode.Read);
 
             this.transaction.Insert<byte[], int>(CrossChainDB.CommonTableName, CrossChainDB.NextMatureTipKey, newTip);
         }
