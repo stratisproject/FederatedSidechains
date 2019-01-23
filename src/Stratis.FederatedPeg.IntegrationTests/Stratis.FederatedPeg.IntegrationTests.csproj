@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>netcoreapp2.1</TargetFramework>
+    <TargetFramework>netcoreapp2.2</TargetFramework>
     <DebugType>Full</DebugType>
     <IsPackable>false</IsPackable>
     <ApplicationIcon />
@@ -14,7 +14,7 @@
     <PackageReference Include="Flurl" Version="2.8.0" />
     <PackageReference Include="Flurl.Http" Version="2.4.0" />
     <PackageReference Include="NStratis" Version="4.0.0.73" />
-    <PackageReference Include="FluentAssertions" Version="5.5.3" />
+    <PackageReference Include="FluentAssertions" Version="5.6.0" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="15.9.0" />
     <PackageReference Include="Stratis.Bitcoin" Version="3.0.0.4-beta" />
     <PackageReference Include="Stratis.Bitcoin.Features.PoA" Version="3.0.0.4-beta" />
