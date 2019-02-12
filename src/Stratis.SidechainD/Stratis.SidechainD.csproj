@@ -17,9 +17,10 @@
     <PackageReference Include="Stratis.Bitcoin.Features.Consensus" Version="3.0.0.5-beta" />
     <PackageReference Include="Stratis.Bitcoin.Features.MemoryPool" Version="3.0.0.4-beta" />
     <PackageReference Include="Stratis.Bitcoin.Features.Miner" Version="3.0.0.4-beta" />
-    <PackageReference Include="Stratis.Bitcoin.Features.PoA" Version="3.0.0.5-beta" />
-    <PackageReference Include="Stratis.Bitcoin.Features.SmartContracts" Version="1.1.0" />
+    <PackageReference Include="Stratis.Bitcoin.Features.PoA" Version="3.0.0.6-novoting" />
+    <PackageReference Include="Stratis.Bitcoin.Features.SmartContracts" Version="1.1.0.2" />
     <PackageReference Include="Stratis.Bitcoin.Features.Wallet" Version="3.0.0.4-beta" />
+    <PackageReference Include="Stratis.SmartContracts.RuntimeObserver" Version="0.0.2-beta" />
   </ItemGroup>
 
   <ItemGroup>
