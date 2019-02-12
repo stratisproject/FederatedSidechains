@@ -1,7 +1,8 @@
 {
   "profiles": {
     "Stratis.SidechainD": {
-      "commandName": "Project"
+      "commandName": "Project",
+      "commandLineArgs": "-agentprefix=codingstorms"
     },
     "SidechainD with apiport": {
       "commandName": "Project",
