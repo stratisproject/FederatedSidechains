@@ -6,6 +6,7 @@ using NSubstitute;
 using Stratis.Bitcoin;
 using Stratis.Bitcoin.Consensus;
 using Stratis.Bitcoin.Primitives;
+using Stratis.Bitcoin.Signals;
 using Stratis.FederatedPeg.Features.FederationGateway;
 using Stratis.FederatedPeg.Features.FederationGateway.Interfaces;
 using Stratis.FederatedPeg.Features.FederationGateway.Notifications;
@@ -43,6 +44,8 @@ namespace Stratis.FederatedPeg.Tests
 
         private readonly IWithdrawalReceiver withdrawalReceiver;
 
+        private readonly ISignals signals;
+
         private readonly IReadOnlyList<IWithdrawal> extractedWithdrawals;
 
         private readonly IConsensusManager consensusManager;
@@ -65,8 +68,10 @@ namespace Stratis.FederatedPeg.Tests
             this.withdrawalExtractor = Substitute.For<IWithdrawalExtractor>();
             this.extractedWithdrawals = TestingValues.GetWithdrawals(2);
             this.withdrawalExtractor.ExtractWithdrawalsFromBlock(null, 0).ReturnsForAnyArgs(this.extractedWithdrawals);
-
+  
             this.withdrawalReceiver = Substitute.For<IWithdrawalReceiver>();
+
+            this.signals = Substitute.For<ISignals>();
 
             this.depositExtractor = new DepositExtractor(
                 this.loggerFactory,
@@ -79,7 +84,8 @@ namespace Stratis.FederatedPeg.Tests
                 this.depositExtractor,
                 this.withdrawalExtractor,
                 this.withdrawalReceiver,
-                this.federationGatewayClient);
+                this.federationGatewayClient,
+                this.signals);
         }
 
         [Retry(3)]
@@ -92,7 +98,7 @@ namespace Stratis.FederatedPeg.Tests
             var earlyBlock = new Block();
             var earlyChainHeaderBlock = new ChainedHeaderBlock(earlyBlock, new ChainedHeader(new BlockHeader(), uint256.Zero, confirmations));
 
-            this.blockObserver.OnNext(earlyChainHeaderBlock);
+            this.blockObserver.OnBlockReceived(earlyChainHeaderBlock);
 
             this.federationWalletSyncManager.Received(1).ProcessBlock(earlyBlock);
             this.withdrawalExtractor.ReceivedWithAnyArgs(1).ExtractWithdrawalsFromBlock(earlyBlock, 0);
@@ -110,7 +116,7 @@ namespace Stratis.FederatedPeg.Tests
         {
             (ChainedHeaderBlock chainedHeaderBlock, Block block) blockBuilder = this.ChainHeaderBlockBuilder();
 
-            this.blockObserver.OnNext(blockBuilder.chainedHeaderBlock);
+            this.blockObserver.OnBlockReceived(blockBuilder.chainedHeaderBlock);
 
             this.federationWalletSyncManager.Received(1).ProcessBlock(blockBuilder.block);
 
@@ -124,7 +130,7 @@ namespace Stratis.FederatedPeg.Tests
         {
             ChainedHeaderBlock chainedHeaderBlock = this.ChainHeaderBlockBuilder().chainedHeaderBlock;
 
-            this.blockObserver.OnNext(chainedHeaderBlock);
+            this.blockObserver.OnBlockReceived(chainedHeaderBlock);
 
             await Task.Delay(5000).ConfigureAwait(false);
 
@@ -136,7 +142,7 @@ namespace Stratis.FederatedPeg.Tests
         {
             ChainedHeaderBlock chainedHeaderBlock = this.ChainHeaderBlockBuilder().chainedHeaderBlock;
 
-            this.blockObserver.OnNext(chainedHeaderBlock);
+            this.blockObserver.OnBlockReceived(chainedHeaderBlock);
 
             this.withdrawalExtractor.ReceivedWithAnyArgs(1).ExtractWithdrawalsFromBlock(null, 0);
         }
@@ -146,7 +152,7 @@ namespace Stratis.FederatedPeg.Tests
         {
             ChainedHeaderBlock chainedHeaderBlock = this.ChainHeaderBlockBuilder().chainedHeaderBlock;
 
-            this.blockObserver.OnNext(chainedHeaderBlock);
+            this.blockObserver.OnBlockReceived(chainedHeaderBlock);
 
             this.withdrawalReceiver.ReceivedWithAnyArgs(1).ReceiveWithdrawals(Arg.Is(this.extractedWithdrawals));
         }

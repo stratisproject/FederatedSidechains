@@ -146,12 +146,6 @@ namespace Stratis.FederatedPeg.Features.FederationGateway
 
         public override Task InitializeAsync()
         {
-            // Subscribe to receiving blocks and transactions.
-            this.blockSubscriberDisposable = this.signals.SubscribeForBlocksConnected(new BlockObserver(this.walletSyncManager, this.depositExtractor, this.withdrawalExtractor,
-                this.withdrawalReceiver, this.federationGatewayClient));
-
-            this.transactionSubscriberDisposable = this.signals.SubscribeForTransactions(new TransactionObserver(this.walletSyncManager));
-
             this.crossChainTransferStore.Initialize();
 
             // maturedBlocksSyncManager should be initialized only after crossChainTransferStore.
@@ -328,6 +322,10 @@ namespace Stratis.FederatedPeg.Features.FederationGateway
                         services.AddSingleton<IFederationGatewayClient, FederationGatewayClient>();
                         services.AddSingleton<IMaturedBlocksSyncManager, MaturedBlocksSyncManager>();
                         services.AddSingleton<IWithdrawalHistoryProvider, WithdrawalHistoryProvider>();
+
+                        // Set up events.
+                        services.AddSingleton<TransactionObserver>();
+                        services.AddSingleton<BlockObserver>();
                     });
             });
             return fullNodeBuilder;

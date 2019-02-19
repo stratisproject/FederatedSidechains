@@ -16,7 +16,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.Notifications
     /// Observer that passes notifications indicating the arrival of new <see cref="Block"/>s
     /// onto the CrossChainTransactionMonitor.
     /// </summary>
-    public class BlockObserver : SignalObserver<ChainedHeaderBlock>
+    public class BlockObserver
     {
         // The monitor we pass the new blocks onto.
         private readonly IFederationWalletSyncManager walletSyncManager;
@@ -28,6 +28,8 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.Notifications
         private readonly IWithdrawalExtractor withdrawalExtractor;
 
         private readonly IWithdrawalReceiver withdrawalReceiver;
+
+        private readonly ISignals signals;
 
         private CancellationTokenSource cancellationSource;
 
@@ -45,7 +47,8 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.Notifications
                              IDepositExtractor depositExtractor,
                              IWithdrawalExtractor withdrawalExtractor,
                              IWithdrawalReceiver withdrawalReceiver,
-                             IFederationGatewayClient federationGatewayClient)
+                             IFederationGatewayClient federationGatewayClient,
+                             ISignals signals)
         {
             Guard.NotNull(walletSyncManager, nameof(walletSyncManager));
             Guard.NotNull(federationGatewayClient, nameof(federationGatewayClient));
@@ -58,16 +61,21 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.Notifications
             this.depositExtractor = depositExtractor;
             this.withdrawalExtractor = withdrawalExtractor;
             this.withdrawalReceiver = withdrawalReceiver;
+            this.signals = signals;
 
             this.cancellationSource = null;
             this.pushBlockTipTask = null;
+
+            this.signals.OnBlockConnected.Attach(this.OnBlockReceived);
+
+            // TODO: Dispose with Detach ??
         }
 
         /// <summary>
         /// When a block is received it is passed to the monitor.
         /// </summary>
         /// <param name="chainedHeaderBlock">The new block.</param>
-        protected override void OnNextCore(ChainedHeaderBlock chainedHeaderBlock)
+        public void OnBlockReceived(ChainedHeaderBlock chainedHeaderBlock)
         {
             this.walletSyncManager.ProcessBlock(chainedHeaderBlock.Block);
 
