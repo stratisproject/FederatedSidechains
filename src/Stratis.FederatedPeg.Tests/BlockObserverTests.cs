@@ -72,6 +72,7 @@ namespace Stratis.FederatedPeg.Tests
             this.withdrawalReceiver = Substitute.For<IWithdrawalReceiver>();
 
             this.signals = Substitute.For<ISignals>();
+            this.signals.OnBlockConnected.Returns(Substitute.For<EventNotifier<ChainedHeaderBlock>>());
 
             this.depositExtractor = new DepositExtractor(
                 this.loggerFactory,
