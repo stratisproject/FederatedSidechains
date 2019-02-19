@@ -36,7 +36,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway
             ISenderRetriever senderRetriever,
             IStateRepositoryRoot stateRoot,
             NodeSettings nodeSettings)
-            : base(blockBufferGenerator, coinView, consensusManager, dateTimeProvider, executorFactory, loggerFactory, mempool, mempoolLock, network, senderRetriever, stateRoot, nodeSettings)
+            : base(blockBufferGenerator, coinView, consensusManager, dateTimeProvider, executorFactory, loggerFactory, mempool, mempoolLock, network, senderRetriever, stateRoot)
         {
             var federationGatewaySettings = new FederationGatewaySettings(nodeSettings);
         }
