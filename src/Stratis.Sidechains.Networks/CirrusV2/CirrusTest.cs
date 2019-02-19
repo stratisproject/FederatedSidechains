@@ -5,10 +5,11 @@ using NBitcoin.DataEncoders;
 using NBitcoin.Protocol;
 using Stratis.Bitcoin.Features.PoA;
 using Stratis.Bitcoin.Features.SmartContracts.PoA;
+using Stratis.Bitcoin.Features.SmartContracts;
 
 namespace Stratis.Sidechains.Networks.CirrusV2
 {
-    public class CirrusTest : PoANetwork
+    public class CirrusTest : PoANetwork//, ISignedCodePubKeyHolder
     {
         /// <summary> The name of the root folder containing the different federated peg blockchains.</summary>
         private const string NetworkRootFolderName = "cirrus";
