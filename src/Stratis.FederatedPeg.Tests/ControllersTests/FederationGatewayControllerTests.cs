@@ -13,6 +13,7 @@ using Stratis.Bitcoin.Features.BlockStore;
 using Stratis.Bitcoin.Primitives;
 using Stratis.Bitcoin.Features.PoA;
 using Stratis.Bitcoin.Tests.Common;
+using Stratis.Bitcoin.Utilities;
 using Stratis.Bitcoin.Utilities.JsonErrors;
 using Stratis.FederatedPeg.Features.FederationGateway;
 using Stratis.FederatedPeg.Features.FederationGateway.Controllers;
@@ -48,6 +49,8 @@ namespace Stratis.FederatedPeg.Tests.ControllersTests
 
         private readonly IFederationWalletManager federationWalletManager;
 
+        private readonly IKeyValueRepository keyValueRepository;
+
         public FederationGatewayControllerTests()
         {
             this.network = FederatedPegNetwork.NetworksSelector.Regtest();
@@ -61,7 +64,8 @@ namespace Stratis.FederatedPeg.Tests.ControllersTests
             this.consensusManager = Substitute.For<IConsensusManager>();
             this.federationGatewaySettings = Substitute.For<IFederationGatewaySettings>();
             this.federationWalletManager = Substitute.For<IFederationWalletManager>();
-            this.federationManager = new FederationManager(NodeSettings.Default(this.network), this.network, this.loggerFactory);
+            this.keyValueRepository = Substitute.For<IKeyValueRepository>();
+            this.federationManager = new FederationManager(NodeSettings.Default(this.network), this.network, this.loggerFactory, this.keyValueRepository);
         }
 
         private FederationGatewayController CreateController()
@@ -245,7 +249,7 @@ namespace Stratis.FederatedPeg.Tests.ControllersTests
 
             FederationGatewayInfoModel model = ((JsonResult)result).Value as FederationGatewayInfoModel;
             model.IsMainChain.Should().BeFalse();
-            model.FederationMiningPubKeys.Should().Equal(((PoAConsensusOptions)FederatedPegNetwork.NetworksSelector.Regtest().Consensus.Options).FederationPublicKeys.Select(keys => keys.ToString()));
+            model.FederationMiningPubKeys.Should().Equal(((PoAConsensusOptions)FederatedPegNetwork.NetworksSelector.Regtest().Consensus.Options).GenesisFederationPublicKeys.Select(keys => keys.ToString()));
             model.MultiSigRedeemScript.Should().Be(redeemScript);
             string.Join(",", model.FederationNodeIpEndPoints).Should().Be(federationIps);
             model.IsActive.Should().BeTrue();

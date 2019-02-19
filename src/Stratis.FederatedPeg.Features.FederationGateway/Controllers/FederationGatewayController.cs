@@ -149,7 +149,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.Controllers
                     MultisigPublicKey = this.federationGatewaySettings.PublicKey,
                     FederationMultisigPubKeys = this.federationGatewaySettings.FederationPublicKeys.Select(k => k.ToString()),
                     MiningPublicKey =  isMainchain ? null : this.federationManager.FederationMemberKey?.PubKey.ToString(),
-                    FederationMiningPubKeys = isMainchain ? null : ((PoAConsensusOptions)this.network.Consensus.Options).FederationPublicKeys.Select(k => k.ToString()),
+                    FederationMiningPubKeys =  isMainchain ? null : this.federationManager.GetFederationMembers().Select(k => k.ToString()),
                     MultiSigAddress = this.federationGatewaySettings.MultiSigAddress,
                     MultiSigRedeemScript = this.federationGatewaySettings.MultiSigRedeemScript.ToString(),
                     MinCoinMaturity = this.federationGatewaySettings.MinCoinMaturity,

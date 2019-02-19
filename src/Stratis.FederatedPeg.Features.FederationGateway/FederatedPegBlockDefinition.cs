@@ -36,7 +36,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway
             ISenderRetriever senderRetriever,
             IStateRepositoryRoot stateRoot,
             NodeSettings nodeSettings)
-            : base(blockBufferGenerator, coinView, consensusManager, dateTimeProvider, executorFactory, loggerFactory, mempool, mempoolLock, network, senderRetriever, stateRoot)
+            : base(blockBufferGenerator, coinView, consensusManager, dateTimeProvider, executorFactory, loggerFactory, mempool, mempoolLock, network, senderRetriever, stateRoot, nodeSettings)
         {
             var federationGatewaySettings = new FederationGatewaySettings(nodeSettings);
             this.payToMultisigScript = federationGatewaySettings.MultiSigAddress.ScriptPubKey;

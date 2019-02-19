@@ -96,7 +96,7 @@ namespace Stratis.FederatedPeg.IntegrationTests
             double amount,
             string sender,
             string[] parameters = null,
-            ulong gasLimit = SmartContractFormatRule.GasLimitMaximum / 2, // half of maximum
+            ulong gasLimit = SmartContractFormatLogic.GasLimitMaximum / 2, // half of maximum
             ulong gasPrice = SmartContractMempoolValidator.MinGasPrice,
             double feeAmount = 0.01)
         {
