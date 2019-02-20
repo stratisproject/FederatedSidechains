@@ -6,6 +6,7 @@ using NBitcoin.DataEncoders;
 using NBitcoin.Protocol;
 using Stratis.Bitcoin.Features.PoA;
 using Stratis.Bitcoin.Features.SmartContracts.PoA;
+using Stratis.SmartContracts.Networks.Policies;
 
 namespace Stratis.Sidechains.Networks
 {
@@ -142,6 +143,8 @@ namespace Stratis.Sidechains.Networks
             this.Checkpoints = new Dictionary<int, CheckpointInfo>();
 
             this.DNSSeeds = new List<DNSSeedData>();
+
+            this.StandardScriptsRegistry = new SmartContractsStandardScriptsRegistry();
 
             string[] seedNodes = { "40.112.89.58", "137.117.243.54", "51.140.255.152", "40.89.158.103", "40.89.158.153", "13.66.214.36", "23.101.147.254" };
             this.SeedNodes = ConvertToNetworkAddresses(seedNodes, this.DefaultPort).ToList();

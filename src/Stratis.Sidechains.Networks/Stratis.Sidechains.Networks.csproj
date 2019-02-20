@@ -12,6 +12,7 @@
     <PackageReference Include="Stratis.Bitcoin.Features.SmartContracts" Version="0.0.7-beta" />
     <PackageReference Include="Stratis.Bitcoin.Networks" Version="3.0.0.4-beta" />
     <PackageReference Include="Stratis.SmartContracts.CLR.Validation" Version="0.0.4-beta" />
+    <PackageReference Include="Stratis.SmartContracts.Networks" Version="0.0.3-beta" />
     <PackageReference Include="Stratis.SmartContracts.RuntimeObserver" Version="0.0.2-beta" />
   </ItemGroup>
 
