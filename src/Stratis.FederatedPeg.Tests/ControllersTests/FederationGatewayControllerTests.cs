@@ -230,6 +230,8 @@ namespace Stratis.FederatedPeg.Tests.ControllersTests
 
             this.federationWalletManager.IsFederationActive().Returns(true);
 
+            this.federationManager.Initialize();
+
             FederationGatewaySettings settings = new FederationGatewaySettings(nodeSettings);
 
             var controller = new FederationGatewayController(
