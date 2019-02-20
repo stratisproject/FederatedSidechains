@@ -10,7 +10,7 @@ using Stratis.SmartContracts.Networks.Policies;
 
 namespace Stratis.Sidechains.Networks.CirrusV2
 {
-    public class CirrusTest : PoANetwork//, ISignedCodePubKeyHolder
+    public class CirrusTest : PoANetwork, ISignedCodePubKeyHolder
     {
         /// <summary> The name of the root folder containing the different federated peg blockchains.</summary>
         private const string NetworkRootFolderName = "cirrus";
@@ -18,8 +18,13 @@ namespace Stratis.Sidechains.Networks.CirrusV2
         /// <summary> The default name used for the federated peg configuration file. </summary>
         private const string NetworkDefaultConfigFilename = "cirrus.conf";
 
+        public PubKey SigningContractPubKey { get; }
+
         internal CirrusTest()
         {
+            // TODO: Replace with real secret key.
+            this.SigningContractPubKey = new Mnemonic("lava frown leave wedding virtual ghost sibling able mammal liar wide wisdom").DeriveExtKey().PrivateKey.PubKey;
+
             this.Name = nameof(CirrusTest);
             this.CoinTicker = "TCRS";
             this.Magic = 0x522357B;

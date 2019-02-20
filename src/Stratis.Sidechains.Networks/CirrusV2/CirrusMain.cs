@@ -4,12 +4,13 @@ using System.Linq;
 using NBitcoin;
 using NBitcoin.DataEncoders;
 using Stratis.Bitcoin.Features.PoA;
+using Stratis.Bitcoin.Features.SmartContracts;
 using Stratis.Bitcoin.Features.SmartContracts.PoA;
 using Stratis.SmartContracts.Networks.Policies;
 
 namespace Stratis.Sidechains.Networks.CirrusV2
 {
-    public class CirrusMain : PoANetwork
+    public class CirrusMain : PoANetwork, ISignedCodePubKeyHolder
     {
         /// <summary> The name of the root folder containing the different federated peg blockchains.</summary>
         private const string NetworkRootFolderName = "cirrus";
@@ -17,8 +18,13 @@ namespace Stratis.Sidechains.Networks.CirrusV2
         /// <summary> The default name used for the federated peg configuration file. </summary>
         private const string NetworkDefaultConfigFilename = "cirrus.conf";
 
+        public PubKey SigningContractPubKey { get; }
+
         internal CirrusMain()
         {
+            // TODO: Replace with real secret key.
+            this.SigningContractPubKey = new Mnemonic("lava frown leave wedding virtual ghost sibling able mammal liar wide wisdom").DeriveExtKey().PrivateKey.PubKey;
+
             this.Name = nameof(CirrusMain);
             this.CoinTicker = "CRS";
             this.Magic = 0x522357A0; //

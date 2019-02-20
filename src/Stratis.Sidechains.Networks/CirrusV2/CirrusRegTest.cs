@@ -5,12 +5,13 @@ using NBitcoin;
 using NBitcoin.DataEncoders;
 using NBitcoin.Protocol;
 using Stratis.Bitcoin.Features.PoA;
+using Stratis.Bitcoin.Features.SmartContracts;
 using Stratis.Bitcoin.Features.SmartContracts.PoA;
 using Stratis.SmartContracts.Networks.Policies;
 
 namespace Stratis.Sidechains.Networks.CirrusV2
 {
-    public class CirrusRegTest : PoANetwork
+    public class CirrusRegTest : PoANetwork, ISignedCodePubKeyHolder
     {
         public IList<Mnemonic> FederationMnemonics { get; }
 
@@ -23,8 +24,15 @@ namespace Stratis.Sidechains.Networks.CirrusV2
         // public IList<Mnemonic> FederationMnemonics { get; }
         public IList<Key> FederationKeys { get; private set; }
 
+        public Key SigningContractPrivKey { get; }
+
+        public PubKey SigningContractPubKey { get; }
+
         internal CirrusRegTest()
         {
+            this.SigningContractPrivKey = new Mnemonic("lava frown leave wedding virtual ghost sibling able mammal liar wide wisdom").DeriveExtKey().PrivateKey;
+            this.SigningContractPubKey = this.SigningContractPrivKey.PubKey;
+
             this.Name = nameof(CirrusRegTest);
             this.CoinTicker = "TFPG";
             this.Magic = 0x522357C;
