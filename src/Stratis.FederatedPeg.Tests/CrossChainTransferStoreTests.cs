@@ -305,6 +305,8 @@ namespace Stratis.FederatedPeg.Tests
 
         /// <summary>
         /// Tests whether the store merges signatures as expected.
+        ///
+        /// TODO: The reason this fails is because the Stratis network in the referenced NuGet doesn't have a standardscript set. This will pass in the newest version.
         /// </summary>
         [Fact]
         public void StoreMergesSignaturesAsExpected()
