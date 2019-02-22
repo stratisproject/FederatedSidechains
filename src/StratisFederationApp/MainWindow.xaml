@@ -1,0 +1,14 @@
+﻿<Window x:Class="StratisFederationApp.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:StratisFederationApp"
+        mc:Ignorable="d"
+        Title="MainWindow" Height="441.367" Width="793.525" WindowStyle="None" AllowsTransparency="True" Background="#00000000">
+    <Grid>
+        <Border BorderBrush="Black" BorderThickness="1" HorizontalAlignment="Left" Height="442" VerticalAlignment="Top" Width="792" CornerRadius="15" Background="#FF343434">
+            <Button x:Name="ButtonQuit" Content="X" HorizontalAlignment="Left" Height="22.661" Margin="758.338,9,0,0" VerticalAlignment="Top" Width="22.662" Click="ButtonQuit_Click"/>
+        </Border>
+    </Grid>
+</Window>
