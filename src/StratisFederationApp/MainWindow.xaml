@@ -5,12 +5,13 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:StratisFederationApp"
         mc:Ignorable="d"
-        Title="MainWindow" Height="728.417" Width="793.525" WindowStyle="None" AllowsTransparency="True" Background="#00000000">
+        Title="MainWindow" Height="734.334" Width="792.858" WindowStyle="None" AllowsTransparency="True" Background="#00000000">
     <Grid>
         <Border x:Name="ButtonGenKeys" BorderBrush="Black" BorderThickness="1" HorizontalAlignment="Left" Height="733.655" VerticalAlignment="Top" Width="792" CornerRadius="15" Background="#FF343434" Margin="0,0,0,-5.238" MouseDown="Border_MouseDown" ContextMenuClosing="ButtonGenKeys_ContextMenuClosing"/>
         <Button x:Name="ButtonQuit" Content="X" HorizontalAlignment="Left" Height="22.661" Margin="760.863,10,0,0" VerticalAlignment="Top" Width="22.662" Click="ButtonQuit_Click"/>
         <TextBox HorizontalAlignment="Left" Height="22.911" Margin="10,50.029,0,0" TextWrapping="Wrap" Text="MyPassPhrase " VerticalAlignment="Top" Width="262.231"/>
         <Button x:Name="ButtonmMinimise" Content="_" HorizontalAlignment="Left" Height="22.661" VerticalAlignment="Top" Width="22.662" Margin="732,10,0,0" Click="ButtonmMinimise_Click"/>
         <Button Content="Generate Keys" HorizontalAlignment="Left" Height="22.911" Margin="288.667,50.029,0,0" VerticalAlignment="Top" Width="128.667" Click="Button_Click_1"/>
+        <Image HorizontalAlignment="Left" Height="26.494" Margin="10,10,0,0" VerticalAlignment="Top" Width="27.333" Source="stratis128.png"/>
     </Grid>
 </Window>

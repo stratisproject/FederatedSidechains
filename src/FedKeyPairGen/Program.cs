@@ -30,6 +30,13 @@ namespace FederationSetup
 
         static void Main(string[] args)
         {
+            if (args.Length > 0)
+            {
+                SwitchCommand(args, args[0], string.Join(" ", args));
+                Console.ReadLine();
+                return;
+            }
+
             Console.SetIn(new StreamReader(Console.OpenStandardInput(), Console.InputEncoding, false, bufferSize: 1024));
 
             // Start with the banner and the help message.
@@ -57,39 +64,40 @@ namespace FederationSetup
 
                     Console.WriteLine();
 
-                    switch (command)
-                    {
-                        case SwitchExit:
-                        {
-                            return;
-                        }
-                        case SwitchMenu:
-                        {
-                            HandleSwitchMenuCommand(args);
-                            break;
-                        }
-                        case SwitchMineGenesisBlock:
-                        {
-                            HandleSwitchMineGenesisBlockCommand(userInput);
-                            break;
-                        }
-                        case SwitchGenerateFedPublicPrivateKeys:
-                        {
-                            HandleSwitchGenerateFedPublicPrivateKeysCommand(args);
-                            break;
-                        }
-                        case SwitchGenerateMultiSigAddresses:
-                        {
-                            HandleSwitchGenerateMultiSigAddressesCommand(args);
-                            break;
-                        }
-                    }
+                    SwitchCommand(args, command, userInput);
                 }
                 catch (Exception ex)
                 {
                     FederationSetup.OutputErrorLine($"An error occurred: {ex.Message}");
                     Console.WriteLine();
                     FederationSetup.OutputMenu();
+                }
+            }
+        }
+
+        private static void SwitchCommand(string[] args, string command, string userInput)
+        {
+            switch (command)
+            {
+                case SwitchMenu:
+                {
+                    HandleSwitchMenuCommand(args);
+                    break;
+                }
+                case SwitchMineGenesisBlock:
+                {
+                    HandleSwitchMineGenesisBlockCommand(userInput);
+                    break;
+                }
+                case SwitchGenerateFedPublicPrivateKeys:
+                {
+                    HandleSwitchGenerateFedPublicPrivateKeysCommand(args);
+                    break;
+                }
+                case SwitchGenerateMultiSigAddresses:
+                {
+                    HandleSwitchGenerateMultiSigAddressesCommand(args);
+                    break;
                 }
             }
         }
