@@ -524,11 +524,9 @@
     <Resource Include="stratis128.png" />
   </ItemGroup>
   <ItemGroup>
-    <Resource Include="stratis-logo.png" />
     <SplashScreen Include="splash3.png">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </SplashScreen>
-    <Content Include="stratis-logo.svg" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <Import Project="..\packages\Fody.3.0.0\build\Fody.targets" Condition="Exists('..\packages\Fody.3.0.0\build\Fody.targets')" />

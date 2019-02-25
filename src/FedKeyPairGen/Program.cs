@@ -33,7 +33,6 @@ namespace FederationSetup
             if (args.Length > 0)
             {
                 SwitchCommand(args, args[0], string.Join(" ", args));
-                Console.ReadLine();
                 return;
             }
 
@@ -132,19 +131,32 @@ namespace FederationSetup
 
         private static void HandleSwitchGenerateFedPublicPrivateKeysCommand(string[] args)
         {
-            if (args.Length != 1 && args.Length != 2)
+            if (args.Length != 1 && args.Length != 2 && args.Length !=3)
                 throw new ArgumentException("Please enter the exact number of argument required.");
 
             string passphrase = null;
-            if (args.Length == 2)
-            {
-                int index = args[1].IndexOf("-passphrase=");
-                if (index < 0)
-                    throw new ArgumentException("The -passphrase=\"<passphrase>\" argument is missing.");
-                passphrase = args[1].Replace("-passphrase=", string.Empty);
-            }
+            string dataDirPath = null;
 
-            GeneratePublicPrivateKeys(passphrase);
+            dataDirPath = Array.Find(args, element =>
+                element.StartsWith("-datadir=", StringComparison.Ordinal));
+
+            passphrase = Array.Find(args, element =>
+                element.StartsWith("-passphrase=", StringComparison.Ordinal));
+
+            if (String.IsNullOrEmpty(passphrase))
+                throw new ArgumentException("The -passphrase=\"<passphrase>\" argument is missing.");
+
+            passphrase = passphrase.Split('=')[1];
+
+            //ToDo wont allow for passphrase with equal sign
+            dataDirPath = String.IsNullOrEmpty(dataDirPath)
+                ? Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments)
+                : dataDirPath.Split('=')[1];
+
+            Console.WriteLine("passphrase " + passphrase);
+            Console.WriteLine("dataDir " + dataDirPath);
+            
+            GeneratePublicPrivateKeys(passphrase, dataDirPath);
             FederationSetup.OutputSuccess();
         }
 
@@ -170,14 +182,16 @@ namespace FederationSetup
             Console.WriteLine(new MultisigAddressCreator().CreateMultisigAddresses(mainChain, sideChain, federatedPublicKeys.Select(f => new PubKey(f)).ToArray(), quorum));
         }
 
-        private static void GeneratePublicPrivateKeys(string passphrase)
+        private static void GeneratePublicPrivateKeys(string passphrase, String keyPath)
         {
             // Generate keys for signing.
             var mnemonicForSigningKey = new Mnemonic(Wordlist.English, WordCount.Twelve);
             PubKey signingPubKey = mnemonicForSigningKey.DeriveExtKey(passphrase).PrivateKey.PubKey;
 
             // Generate keys for migning.
-            var tool = new KeyTool(new DataFolder(Path.GetDirectoryName(Assembly.GetEntryAssembly().Location)));
+            //var tool = new KeyTool(new DataFolder(Path.GetDirectoryName(Assembly.GetEntryAssembly().Location)));
+
+            var tool = new KeyTool(keyPath);
             Key key = tool.GeneratePrivateKey();
 
             string savePath = tool.GetPrivateKeySavePath();

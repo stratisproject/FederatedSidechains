@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
-using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
@@ -13,10 +13,7 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
-using NBitcoin;
 using NBitcoin.DataEncoders;
-using Stratis.Bitcoin.Configuration;
-using Stratis.Bitcoin.Features.PoA;
 //using Stratis.Bitcoin.Features.SmartContracts.PoA;
 using Stratis.Bitcoin.Networks;
 //using Stratis.Sidechains.Networks;
@@ -54,47 +51,38 @@ namespace StratisFederationApp
             this.WindowState = WindowState.Minimized;
         }
 
-        private void Button_Click(object sender, RoutedEventArgs e)
+        private void Button_Click_1(object sender, RoutedEventArgs e)
         {
+            var proc = new Process
+            {
+                StartInfo = new ProcessStartInfo("cmd.exe", "/c dotnet netcoreapp2.1/FederationSetup.dll p -passphrase=\"test\"")
+                //StartInfo = new ProcessStartInfo("dotnet", "netcoreapp2.1/FederationSetup.dll")
 
+                {
+                    UseShellExecute = false,
+                    RedirectStandardOutput = true,
+                    CreateNoWindow = true
+                }
+            };
+
+        proc.Start();
+
+        string sdtOut = null;
+
+        //proc.WaitForExit(3500);
+        sdtOut = proc.StandardOutput.ReadToEnd();
+
+        proc.WaitForExit(3500);
+
+            MessageBox.Show(sdtOut,
+                "Confirmation",
+                MessageBoxButton.YesNo,
+                MessageBoxImage.Question);
         }
 
         private void ButtonGenKeys_ContextMenuClosing(object sender, ContextMenuEventArgs e)
         {
-            var mnemonicForSigningKey = new Mnemonic(Wordlist.English, WordCount.Twelve);
-            PubKey signingPubKey = mnemonicForSigningKey.DeriveExtKey("test").PrivateKey.PubKey;
-
-            // Generate keys for migning.
-            var tool = new KeyTool(new DataFolder(System.IO.Path.GetDirectoryName(Assembly.GetEntryAssembly().Location)));
-            NBitcoin.Key key = tool.GeneratePrivateKey();
-
-            string savePath = tool.GetPrivateKeySavePath();
-            tool.SavePrivateKey(key);
-            PubKey miningPubKey = key.PubKey;
-
-            MessageBox.Show("Do you want to close this window?",
-                "Confirmation",
-                MessageBoxButton.YesNo,
-                MessageBoxImage.Question);
-        }
-
-        private void Button_Click_1(object sender, RoutedEventArgs e)
-        {
-            var mnemonicForSigningKey = new Mnemonic(Wordlist.English, WordCount.Twelve);
-            PubKey signingPubKey = mnemonicForSigningKey.DeriveExtKey("test").PrivateKey.PubKey;
-
-            // Generate keys for migning.
-            var tool = new KeyTool(new DataFolder(System.IO.Path.GetDirectoryName(Assembly.GetEntryAssembly().Location)));
-            NBitcoin.Key key = tool.GeneratePrivateKey();
-
-            string savePath = tool.GetPrivateKeySavePath();
-            tool.SavePrivateKey(key);
-            PubKey miningPubKey = key.PubKey;
-
-            MessageBox.Show($"1. Your signing pubkey: {Encoders.Hex.EncodeData(signingPubKey.ToBytes(false))}",
-                "Confirmation",
-                MessageBoxButton.YesNo,
-                MessageBoxImage.Question);
+            throw new NotImplementedException();
         }
     }
 }
