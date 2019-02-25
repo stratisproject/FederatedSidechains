@@ -525,6 +525,9 @@
   </ItemGroup>
   <ItemGroup>
     <Resource Include="stratis-logo.png" />
+    <SplashScreen Include="splash3.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </SplashScreen>
     <Content Include="stratis-logo.svg" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
