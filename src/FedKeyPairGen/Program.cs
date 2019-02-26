@@ -2,6 +2,7 @@
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Text.RegularExpressions;
 using NBitcoin;
 using NBitcoin.DataEncoders;
 using Stratis.Bitcoin.Configuration;
@@ -25,6 +26,8 @@ namespace FederationSetup
         private const string SwitchGenerateMultiSigAddresses = "m";
         private const string SwitchMenu = "menu";
         private const string SwitchExit = "exit";
+        private readonly Regex passphraseRegex = new Regex("-passphrase=([A-Za-z0-9-]+)", RegexOptions.Compiled);
+        //private readonly Re
 
         private static TextFileConfiguration ConfigReader;
 

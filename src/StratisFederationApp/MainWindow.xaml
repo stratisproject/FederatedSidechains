@@ -9,9 +9,20 @@
     <Grid>
         <Border x:Name="ButtonGenKeys" BorderBrush="Black" BorderThickness="1" HorizontalAlignment="Left" Height="733.655" VerticalAlignment="Top" Width="792" CornerRadius="15" Background="#FF343434" Margin="0,0,0,-5.238" MouseDown="Border_MouseDown" ContextMenuClosing="ButtonGenKeys_ContextMenuClosing"/>
         <Button x:Name="ButtonQuit" Content="X" HorizontalAlignment="Left" Height="22.661" Margin="760.863,10,0,0" VerticalAlignment="Top" Width="22.662" Click="ButtonQuit_Click"/>
-        <TextBox HorizontalAlignment="Left" Height="22.911" Margin="10,50.029,0,0" TextWrapping="Wrap" Text="MyPassPhrase " VerticalAlignment="Top" Width="262.231"/>
+        <TextBox HorizontalAlignment="Left" Height="22.911" Margin="42.333,71,0,0" TextWrapping="Wrap" Text="MyPassPhrase " VerticalAlignment="Top" Width="320.667"/>
         <Button x:Name="ButtonmMinimise" Content="_" HorizontalAlignment="Left" Height="22.661" VerticalAlignment="Top" Width="22.662" Margin="732,10,0,0" Click="ButtonmMinimise_Click"/>
-        <Button Content="Generate Keys" HorizontalAlignment="Left" Height="22.911" Margin="288.667,50.029,0,0" VerticalAlignment="Top" Width="128.667" Click="Button_Click_1"/>
+        <Button Content="Generate Keys" HorizontalAlignment="Left" Height="22.91" Margin="368,71,0,0" VerticalAlignment="Top" Width="128.667" Click="Button_Click_1"/>
         <Image HorizontalAlignment="Left" Height="26.494" Margin="10,10,0,0" VerticalAlignment="Top" Width="27.333" Source="stratis128.png"/>
+        <ComboBox x:Name="MainDrop" HorizontalAlignment="Left" Height="26.494" Margin="42.333,10,0,0" VerticalAlignment="Top" Width="320.667" SelectedIndex="0">
+            <ComboBoxItem x:Name="FedMaster10K" HorizontalAlignment="Left" Height="26.494" Margin="0,0,-2,0" Width="320.667" Content="Federated Masternode (10K Collateral Reuirement)"/>
+            <ComboBoxItem x:Name="FedMaster50K" Content="Federated Masternode (50K Collateral Reuirement)" HorizontalAlignment="Left" Width="318.667"/>
+        </ComboBox>
+        <Label Content="Pass phrase * " Margin="40.25,48.75,534.358,659.084" Foreground="White"/>
+        <Expander Header="Advanced" HorizontalAlignment="Left" Height="84.667" Margin="40.25,258,0,0" VerticalAlignment="Top" Width="548.334" Foreground="#FF3480EE">
+            <Grid Background="#FFE5E5E5">
+                <TextBox Margin="10,10,274.334,26.667" TextWrapping="Wrap" Text="C:\Users\Kroll\Documents"/>
+                <Button Content="..." HorizontalAlignment="Left" Height="25" Margin="291.334,10,0,0" VerticalAlignment="Top" Width="128.667"/>
+            </Grid>
+        </Expander>
     </Grid>
 </Window>
