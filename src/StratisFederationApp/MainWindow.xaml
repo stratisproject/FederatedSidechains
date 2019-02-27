@@ -13,9 +13,9 @@
         <Button x:Name="ButtonmMinimise" Content="_" HorizontalAlignment="Left" Height="22.661" VerticalAlignment="Top" Width="22.662" Margin="470.534,9.65,0,0" Click="ButtonmMinimise_Click" RenderTransformOrigin="0.471,0.412"/>
         <Button Content="Generate Keys" HorizontalAlignment="Left" Height="22.91" Margin="368,71,0,0" VerticalAlignment="Top" Width="128.667" Click="Button_Click_1"/>
         <Image HorizontalAlignment="Left" Height="26.494" Margin="10,10,0,0" VerticalAlignment="Top" Width="27.333" Source="stratis128.png"/>
-        <ComboBox x:Name="MainDrop" HorizontalAlignment="Left" Height="26.494" Margin="42.333,10,0,0" VerticalAlignment="Top" Width="320.667" SelectedIndex="0">
+        <ComboBox x:Name="MainDrop" HorizontalAlignment="Left" Height="26.494" Margin="42.333,10,0,0" VerticalAlignment="Top" Width="320.667" SelectedIndex="0" SelectionChanged="MainDrop_SelectionChanged">
             <ComboBoxItem x:Name="FedMaster10K" HorizontalAlignment="Left" Height="26.494" Margin="0,0,-2,0" Width="320.667" Content="Federated Masternode (10K Collateral Reuirement)"/>
-            <ComboBoxItem x:Name="FedMaster50K" Content="Federated Masternode (50K Collateral Reuirement)" HorizontalAlignment="Left" Width="318.667"/>
+            <ComboBoxItem x:Name="FedMaster50K" Content="Multi-Sig Masternode (50K Collateral Reuirement)" HorizontalAlignment="Left" Width="318.667"/>
         </ComboBox>
         <Label Content="Pass phrase * " Margin="40.25,48.75,534.358,659.084" Foreground="White"/>
         <Expander Header="Advanced" HorizontalAlignment="Left" Height="84.667" Margin="40.25,119.333,0,0" VerticalAlignment="Top" Width="456.417" Foreground="#FF3480EE">
@@ -24,6 +24,6 @@
                 <Button x:Name="ButtonDirectorySelect" Content="..." HorizontalAlignment="Left" Height="25" Margin="325.75,10,0,0" VerticalAlignment="Top" Width="128.667" Click="ButtonDirectorySelect_Click"/>
             </Grid>
         </Expander>
-        <TextBox x:Name="TextBoxMainOutput" Margin="42.333,236,48.662,44" TextWrapping="Wrap"/>
+        <TextBox x:Name="TextBoxMainOutput" Margin="42.333,236,48.662,44" TextWrapping="Wrap" HorizontalScrollBarVisibility="Auto" ScrollViewer.CanContentScroll="True" VerticalScrollBarVisibility="Disabled"/>
     </Grid>
 </Window>

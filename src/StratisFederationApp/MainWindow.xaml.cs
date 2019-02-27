@@ -14,6 +14,7 @@ namespace StratisFederationApp
     {
         private string passPhrase = "DefaultPassphrase";
         private string dataDir = null;
+        private int selectedHandle = 10;
 
         public MainWindow()
         {
@@ -46,9 +47,13 @@ namespace StratisFederationApp
 
         private void Button_Click_1(object sender, RoutedEventArgs e)
         {
+            string sdtOut = null;
+            string dropDownText = MainDrop.Text;
+            string isMultiSig = dropDownText.StartsWith("Fed") ? "false" : "true";
+
             var proc = new Process
             {
-                StartInfo = new ProcessStartInfo("cmd.exe", $"/c dotnet netcoreapp2.1/FederationSetup.dll p -passphrase={passPhrase} -datadir={dataDir}")
+                StartInfo = new ProcessStartInfo("cmd.exe", $"/c dotnet netcoreapp2.1/FederationSetup.dll p -passphrase={passPhrase} -datadir={dataDir} -ismultisig={isMultiSig}")
                 {
                     UseShellExecute = false,
                     RedirectStandardOutput = true,
@@ -58,13 +63,10 @@ namespace StratisFederationApp
 
             proc.Start();
 
-            string sdtOut = null;
-
             sdtOut = proc.StandardOutput.ReadToEnd();
 
             proc.WaitForExit(3500);
 
-            TextBoxMainOutput.Text = "";
             TextBoxMainOutput.Text = sdtOut;
         }
 
@@ -84,6 +86,11 @@ namespace StratisFederationApp
             dialog.ShowDialog();
             dataDir = dialog.SelectedPath;
             TextBoxDir.Text = dataDir;
+        }
+
+        private void MainDrop_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+
         }
     }
 }

@@ -134,11 +134,12 @@ namespace FederationSetup
 
         private static void HandleSwitchGenerateFedPublicPrivateKeysCommand(string[] args)
         {
-            if (args.Length != 1 && args.Length != 2 && args.Length !=3)
+            if (args.Length != 1 && args.Length != 2 && args.Length != 3 && args.Length != 4)
                 throw new ArgumentException("Please enter the exact number of argument required.");
 
             string passphrase = null;
             string dataDirPath = null;
+            string isMultisig = null;
 
             dataDirPath = Array.Find(args, element =>
                 element.StartsWith("-datadir=", StringComparison.Ordinal));
@@ -146,20 +147,31 @@ namespace FederationSetup
             passphrase = Array.Find(args, element =>
                 element.StartsWith("-passphrase=", StringComparison.Ordinal));
 
+            isMultisig = Array.Find(args, element =>
+                element.StartsWith("-ismultisig=", StringComparison.Ordinal));
+
             if (String.IsNullOrEmpty(passphrase))
                 throw new ArgumentException("The -passphrase=\"<passphrase>\" argument is missing.");
 
             passphrase = passphrase.Split('=')[1];
 
-            //ToDo wont allow for passphrase with equal sign
+            //ToDo wont allow for datadir with equal sign
             dataDirPath = String.IsNullOrEmpty(dataDirPath)
                 ? Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments)
                 : dataDirPath.Split('=')[1];
 
-            Console.WriteLine("passphrase " + passphrase);
-            Console.WriteLine("dataDir " + dataDirPath);
+            if (String.IsNullOrEmpty(isMultisig) || isMultisig.Split('=')[1].StartsWith("tru"))
+            {
+                GeneratePublicPrivateKeys(passphrase, dataDirPath);
+            }
+            else
+            {
+                GeneratePublicPrivateKeys(passphrase, dataDirPath, isMultiSigOutput: false);
+            }
+
+            //Console.WriteLine("passphrase " + passphrase);
+            //Console.WriteLine("dataDir " + dataDirPath);
             
-            GeneratePublicPrivateKeys(passphrase, dataDirPath);
             FederationSetup.OutputSuccess();
         }
 
@@ -185,7 +197,7 @@ namespace FederationSetup
             Console.WriteLine(new MultisigAddressCreator().CreateMultisigAddresses(mainChain, sideChain, federatedPublicKeys.Select(f => new PubKey(f)).ToArray(), quorum));
         }
 
-        private static void GeneratePublicPrivateKeys(string passphrase, String keyPath)
+        private static void GeneratePublicPrivateKeys(string passphrase, String keyPath, bool isMultiSigOutput = true)
         {
             // Generate keys for signing.
             var mnemonicForSigningKey = new Mnemonic(Wordlist.English, WordCount.Twelve);
@@ -200,16 +212,22 @@ namespace FederationSetup
             tool.SavePrivateKey(key);
             PubKey miningPubKey = key.PubKey;
 
+            Console.WriteLine($"Your Masternode Public Key: {Encoders.Hex.EncodeData(miningPubKey.ToBytes(false))}");
             Console.WriteLine($"-----------------------------------------------------------------------------");
-            Console.WriteLine($"-- Please give the following 2 public keys to the federation administrator --");
-            Console.WriteLine($"-----------------------------------------------------------------------------");
-            Console.WriteLine($"1. Your signing pubkey: {Encoders.Hex.EncodeData(signingPubKey.ToBytes(false))}");
-            Console.WriteLine($"2. Your mining pubkey: {Encoders.Hex.EncodeData(miningPubKey.ToBytes(false))}");
-            Console.WriteLine(Environment.NewLine);
-            Console.WriteLine($"------------------------------------------------------------------------------------------");
-            Console.WriteLine($"-- Please keep the following 12 words for yourself and note them down in a secure place --");
-            Console.WriteLine($"------------------------------------------------------------------------------------------");
-            Console.WriteLine($"Your signing mnemonic: {string.Join(" ", mnemonicForSigningKey.Words)}");
+            if (isMultiSigOutput)
+            {
+                Console.WriteLine(
+                    $"Your Masternode Signing Key: {Encoders.Hex.EncodeData(signingPubKey.ToBytes(false))}");
+                Console.WriteLine(Environment.NewLine);
+                Console.WriteLine(
+                    $"------------------------------------------------------------------------------------------");
+                Console.WriteLine(
+                    $"-- Please keep the following 12 words for yourself and note them down in a secure place --");
+                Console.WriteLine(
+                    $"------------------------------------------------------------------------------------------");
+                Console.WriteLine($"Your signing mnemonic: {string.Join(" ", mnemonicForSigningKey.Words)}");
+            }
+
             if(passphrase != null) { Console.WriteLine($"Your passphrase: {passphrase}");}
             Console.WriteLine(Environment.NewLine);
             Console.WriteLine($"------------------------------------------------------------------------------------------------------------");
