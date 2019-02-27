@@ -421,6 +421,7 @@
     <Reference Include="System.Windows">
       <EmbedInteropTypes>False</EmbedInteropTypes>
     </Reference>
+    <Reference Include="System.Windows.Forms" />
     <Reference Include="System.Xml">
       <EmbedInteropTypes>False</EmbedInteropTypes>
     </Reference>

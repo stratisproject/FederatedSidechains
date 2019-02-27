@@ -27,7 +27,7 @@ namespace FederationSetup
         private const string SwitchMenu = "menu";
         private const string SwitchExit = "exit";
         private readonly Regex passphraseRegex = new Regex("-passphrase=([A-Za-z0-9-]+)", RegexOptions.Compiled);
-        //private readonly Re
+        private readonly Regex datadirRegex = new Regex("-datadir=([A-Za-z]+)", RegexOptions.Compiled);
 
         private static TextFileConfiguration ConfigReader;
 
@@ -192,9 +192,8 @@ namespace FederationSetup
             PubKey signingPubKey = mnemonicForSigningKey.DeriveExtKey(passphrase).PrivateKey.PubKey;
 
             // Generate keys for migning.
-            //var tool = new KeyTool(new DataFolder(Path.GetDirectoryName(Assembly.GetEntryAssembly().Location)));
-
             var tool = new KeyTool(keyPath);
+
             Key key = tool.GeneratePrivateKey();
 
             string savePath = tool.GetPrivateKeySavePath();

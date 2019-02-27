@@ -3,6 +3,7 @@ using System.Diagnostics;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using System.Windows.Forms;
 
 namespace StratisFederationApp
 {
@@ -11,9 +12,15 @@ namespace StratisFederationApp
     /// </summary>
     public partial class MainWindow : Window
     {
+        private string passPhrase = "DefaultPassphrase";
+        private string dataDir = null;
+
         public MainWindow()
         {
             InitializeComponent();
+            dataDir = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
+            TextBoxPassphrase.Text = passPhrase;
+            TextBoxDir.Text = dataDir;
         }
 
         private void ButtonQuit_Click(object sender, RoutedEventArgs e)
@@ -41,9 +48,7 @@ namespace StratisFederationApp
         {
             var proc = new Process
             {
-                StartInfo = new ProcessStartInfo("cmd.exe", "/c dotnet netcoreapp2.1/FederationSetup.dll p -passphrase=\"test\"")
-                //StartInfo = new ProcessStartInfo("dotnet", "netcoreapp2.1/FederationSetup.dll")
-
+                StartInfo = new ProcessStartInfo("cmd.exe", $"/c dotnet netcoreapp2.1/FederationSetup.dll p -passphrase={passPhrase} -datadir={dataDir}")
                 {
                     UseShellExecute = false,
                     RedirectStandardOutput = true,
@@ -51,24 +56,34 @@ namespace StratisFederationApp
                 }
             };
 
-        proc.Start();
+            proc.Start();
 
-        string sdtOut = null;
+            string sdtOut = null;
 
-        //proc.WaitForExit(3500);
-        sdtOut = proc.StandardOutput.ReadToEnd();
+            sdtOut = proc.StandardOutput.ReadToEnd();
 
-        proc.WaitForExit(3500);
+            proc.WaitForExit(3500);
 
-            MessageBox.Show(sdtOut,
-                "Confirmation",
-                MessageBoxButton.YesNo,
-                MessageBoxImage.Question);
+            TextBoxMainOutput.Text = "";
+            TextBoxMainOutput.Text = sdtOut;
         }
 
         private void ButtonGenKeys_ContextMenuClosing(object sender, ContextMenuEventArgs e)
         {
             throw new NotImplementedException();
+        }
+
+        private void TextBoxPassphrase_TextChanged(object sender, TextChangedEventArgs e)
+        {
+            passPhrase = TextBoxPassphrase.Text;
+        }
+
+        private void ButtonDirectorySelect_Click(object sender, RoutedEventArgs e)
+        {
+            var dialog = new FolderBrowserDialog();
+            dialog.ShowDialog();
+            dataDir = dialog.SelectedPath;
+            TextBoxDir.Text = dataDir;
         }
     }
 }
