@@ -228,7 +228,11 @@ namespace FederationSetup
                 Console.WriteLine($"Your signing mnemonic: {string.Join(" ", mnemonicForSigningKey.Words)}");
             }
 
-            if(passphrase != null) { Console.WriteLine($"Your passphrase: {passphrase}");}
+            if (passphrase != null)
+            {
+                Console.WriteLine(Environment.NewLine);
+                Console.WriteLine($"Your passphrase: {passphrase}");
+            }
             Console.WriteLine(Environment.NewLine);
             Console.WriteLine($"------------------------------------------------------------------------------------------------------------");
             Console.WriteLine($"-- Please save the following file in a secure place, you'll need it when the federation has been created. --");

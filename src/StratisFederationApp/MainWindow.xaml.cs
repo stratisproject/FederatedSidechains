@@ -4,6 +4,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Forms;
+using System.Windows.Media;
 
 namespace StratisFederationApp
 {
@@ -12,15 +13,16 @@ namespace StratisFederationApp
     /// </summary>
     public partial class MainWindow : Window
     {
-        private string passPhrase = "DefaultPassphrase";
+        private string passPhrase = null;
         private string dataDir = null;
-        private int selectedHandle = 10;
+        private const string DefaulfPassText = "Enter Passphrase Here";
 
         public MainWindow()
         {
             InitializeComponent();
             dataDir = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
-            TextBoxPassphrase.Text = passPhrase;
+            TextBoxPassphrase.Text = DefaulfPassText;
+            TextBoxPassphrase.Foreground = Brushes.Gray;
             TextBoxDir.Text = dataDir;
         }
 
@@ -35,10 +37,6 @@ namespace StratisFederationApp
                 this.DragMove();
         }
 
-        private void ButtonQuit_Copy_Click(object sender, RoutedEventArgs e)
-        {
-
-        }
 
         private void ButtonmMinimise_Click(object sender, RoutedEventArgs e)
         {
@@ -47,6 +45,15 @@ namespace StratisFederationApp
 
         private void Button_Click_1(object sender, RoutedEventArgs e)
         {
+            if (passPhrase == null)
+            {
+                TextBoxPassphrase.Foreground = Brushes.Gray;
+                TextBoxPassphrase.Text = DefaulfPassText;
+                TextBoxMainOutput.Text = null;
+                System.Windows.Forms.MessageBox.Show("Please enter pass phrase", "Warning",  MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
             string sdtOut = null;
             string dropDownText = MainDrop.Text;
             string isMultiSig = dropDownText.StartsWith("Fed") ? "false" : "true";
@@ -77,7 +84,10 @@ namespace StratisFederationApp
 
         private void TextBoxPassphrase_TextChanged(object sender, TextChangedEventArgs e)
         {
-            passPhrase = TextBoxPassphrase.Text;
+            if (!String.IsNullOrEmpty(TextBoxPassphrase.Text) && TextBoxPassphrase.Text != DefaulfPassText)
+                passPhrase = TextBoxPassphrase.Text;
+            else
+                passPhrase = null;
         }
 
         private void ButtonDirectorySelect_Click(object sender, RoutedEventArgs e)
@@ -88,9 +98,14 @@ namespace StratisFederationApp
             TextBoxDir.Text = dataDir;
         }
 
-        private void MainDrop_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        private void TextBoxPassphrase_PreviewMouseDown(object sender, MouseButtonEventArgs e)
         {
-
+            if (TextBoxPassphrase.Text == DefaulfPassText)
+            {
+                TextBoxPassphrase.Text = null;
+                TextBoxPassphrase.Foreground = Brushes.Black;
+                passPhrase = null;
+            }
         }
     }
 }
