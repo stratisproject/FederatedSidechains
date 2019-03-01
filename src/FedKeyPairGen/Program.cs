@@ -26,8 +26,6 @@ namespace FederationSetup
         private const string SwitchGenerateMultiSigAddresses = "m";
         private const string SwitchMenu = "menu";
         private const string SwitchExit = "exit";
-        private readonly Regex passphraseRegex = new Regex("-passphrase=([A-Za-z0-9-]+)", RegexOptions.Compiled);
-        private readonly Regex datadirRegex = new Regex("-datadir=([A-Za-z]+)", RegexOptions.Compiled);
 
         private static TextFileConfiguration ConfigReader;
 
@@ -61,7 +59,6 @@ namespace FederationSetup
                     else
                     {
                         args = null;
-                        command = null;
                     }
 
                     Console.WriteLine();
@@ -81,6 +78,11 @@ namespace FederationSetup
         {
             switch (command)
             {
+                case SwitchExit:
+                {
+                   Environment.Exit(0);
+                   break;
+                }
                 case SwitchMenu:
                 {
                     HandleSwitchMenuCommand(args);
@@ -153,14 +155,14 @@ namespace FederationSetup
             if (String.IsNullOrEmpty(passphrase))
                 throw new ArgumentException("The -passphrase=\"<passphrase>\" argument is missing.");
 
-            passphrase = passphrase.Split('=')[1];
+            passphrase = passphrase.Replace("-passphrase=", string.Empty);
 
             //ToDo wont allow for datadir with equal sign
             dataDirPath = String.IsNullOrEmpty(dataDirPath)
                 ? Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments)
-                : dataDirPath.Split('=')[1];
+                : dataDirPath.Replace("-datadir=", String.Empty);
 
-            if (String.IsNullOrEmpty(isMultisig) || isMultisig.Split('=')[1].StartsWith("tru"))
+            if (String.IsNullOrEmpty(isMultisig) || isMultisig.Replace("-ismultisig=", String.Empty) == "true")
             {
                 GeneratePublicPrivateKeys(passphrase, dataDirPath);
             }
@@ -169,9 +171,6 @@ namespace FederationSetup
                 GeneratePublicPrivateKeys(passphrase, dataDirPath, isMultiSigOutput: false);
             }
 
-            //Console.WriteLine("passphrase " + passphrase);
-            //Console.WriteLine("dataDir " + dataDirPath);
-            
             FederationSetup.OutputSuccess();
         }
 
@@ -214,6 +213,7 @@ namespace FederationSetup
 
             Console.WriteLine($"Your Masternode Public Key: {Encoders.Hex.EncodeData(miningPubKey.ToBytes(false))}");
             Console.WriteLine($"-----------------------------------------------------------------------------");
+
             if (isMultiSigOutput)
             {
                 Console.WriteLine(
@@ -233,6 +233,7 @@ namespace FederationSetup
                 Console.WriteLine(Environment.NewLine);
                 Console.WriteLine($"Your passphrase: {passphrase}");
             }
+
             Console.WriteLine(Environment.NewLine);
             Console.WriteLine($"------------------------------------------------------------------------------------------------------------");
             Console.WriteLine($"-- Please save the following file in a secure place, you'll need it when the federation has been created. --");
