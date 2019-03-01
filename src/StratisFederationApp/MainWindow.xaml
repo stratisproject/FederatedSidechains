@@ -26,7 +26,7 @@
             <Grid Background="#FF2B2B2B" Height="61" Margin="0,0,-10.667,0">
                 <TextBox x:Name="TextBoxDir" Margin="10,26.667,144.334,10" TextWrapping="Wrap" IsReadOnly="True"/>
                 <Button x:Name="ButtonDirectorySelect" Content="..." HorizontalAlignment="Left" Height="24.333" Margin="325.75,26.667,0,0" VerticalAlignment="Top" Width="128.667" Click="ButtonDirectorySelect_Click"/>
-                <Label Content="Public key directory" Margin="10,0,327.417,34.333" Foreground="#FF1387C9"/>
+                <Label Content="Private Key directory" Margin="10,0,327.417,34.333" Foreground="#FF1387C9"/>
             </Grid>
         </Expander>
         <TextBox x:Name="TextBoxMainOutput" Margin="42.333,236,48.662,44" TextWrapping="Wrap" HorizontalScrollBarVisibility="Auto" ScrollViewer.CanContentScroll="True" VerticalScrollBarVisibility="Disabled"/>
