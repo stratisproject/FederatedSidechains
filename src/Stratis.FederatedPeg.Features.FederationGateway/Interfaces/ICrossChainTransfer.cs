@@ -51,6 +51,7 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.Interfaces
         int? BlockHeight { get; }
 
         CrossChainTransferStatus Status { get; }
+        CrossChainTransferStatus? DbStatus { get; }
 
         /// <summary>
         /// Depending on the status some fields can't be null.
@@ -82,7 +83,14 @@ namespace Stratis.FederatedPeg.Features.FederationGateway.Interfaces
         /// <summary>
         /// Gets the number of sigatures in the first input of the transaction.
         /// </summary>
+        /// <param name="network">The network associated with the transfer's partial transaction.</param>
         /// <returns>Number of signatures.</returns>
         int GetSignatureCount(Network network);
+
+        /// <summary>
+        /// Used by the store to note down the status as recorded in the database.
+        /// This allows the store to update its internal deposit-by-status lookup.
+        /// </summary>
+        void RecordDbStatus();
     }
 }
