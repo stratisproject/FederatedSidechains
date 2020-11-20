@@ -18,8 +18,7 @@
         <Button Content="Generate Keys" HorizontalAlignment="Left" Height="22.91" Margin="368,71,0,0" VerticalAlignment="Top" Width="128.667" Click="Button_Click_1"/>
         <Image HorizontalAlignment="Left" Height="26.494" Margin="10,10,0,0" VerticalAlignment="Top" Width="27.333" Source="stratis128.png"/>
         <ComboBox x:Name="MainDrop" HorizontalAlignment="Left" Height="26.494" Margin="42.333,10,0,0" VerticalAlignment="Top" Width="320.667" SelectedIndex="0">
-            <ComboBoxItem x:Name="FedMaster10K" HorizontalAlignment="Left" Height="26.494" Margin="0,0,-2,0" Width="320.667" Content="Federated Masternode (10K Collateral Requirement)"/>
-            <ComboBoxItem x:Name="FedMaster50K" Content="Multi-Sig Masternode (50K Collateral Requirement)" HorizontalAlignment="Left" Width="318.667"/>
+            <ComboBoxItem x:Name="FedMaster100K" HorizontalAlignment="Left" Height="26.494" Margin="0,0,-2,0" Width="320.667" Content="Federated Masternode (100K Collateral Requirement)"/>
         </ComboBox>
         <Label Content="Pass phrase " Margin="40.25,48.75,419.608,659.084" Foreground="#FF1387C9"/>
         <Expander Header="Advanced" HorizontalAlignment="Left" Height="84.667" Margin="40.25,119.333,0,0" VerticalAlignment="Top" Width="456.417" Foreground="#FF1387C9">
