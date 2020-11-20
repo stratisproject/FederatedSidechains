@@ -1,45 +1,15 @@
 ﻿using System.Text;
 using NBitcoin;
-using NBitcoin.DataEncoders;
-using Stratis.Bitcoin.Networks;
-using Stratis.Sidechains.Networks;
-using Xunit;
-using Xunit.Abstractions;
 
 namespace FederationSetup
 {
     public class MultisigAddressCreator
     {
-        private readonly ITestOutputHelper output;
-
-        public MultisigAddressCreator(ITestOutputHelper output = null)
-        {
-            if (output == null) return;
-            this.output = output;
-        }
-
-        [Fact(Skip = "This is not a test, it is meant to be run upon creating a network")]
-        public void Run_CreateMultisigAddresses()
-        {
-            Network mainchainNetwork = Networks.Stratis.Testnet();
-            Network sidechainNetwork = FederatedPegNetwork.NetworksSelector.Testnet();
-
-            // Create a mnemonic and get the corresponding pubKey.
-            var pubKeys = new PubKey[1];
-            var mnemonic = new Mnemonic(Wordlist.English, WordCount.Twelve);
-            pubKeys[0] = mnemonic.DeriveExtKey().PrivateKey.PubKey;
-
-            this.output.WriteLine($"Mnemonic - Please note the following 12 words down in a secure place: {string.Join(" ", mnemonic.Words)}");
-            this.output.WriteLine($"PubKey   - Please share the following public key with the person responsible for the sidechain generation: {Encoders.Hex.EncodeData((pubKeys[0]).ToBytes(false))}");
-
-            this.output.WriteLine(this.CreateMultisigAddresses(mainchainNetwork, sidechainNetwork, pubKeys));
-        }
-
-        public string CreateMultisigAddresses(Network mainchainNetwork, Network sidechainNetwork, PubKey[] pubKeys, int quorum = 3)
+        public string CreateMultisigAddresses(Network mainchainNetwork, Network sidechainNetwork)
         {
             var output = new StringBuilder();
 
-            Script payToMultiSig = PayToMultiSigTemplate.Instance.GenerateScriptPubKey(quorum, pubKeys);
+            Script payToMultiSig = PayToFederationTemplate.Instance.GenerateScriptPubKey(sidechainNetwork.Federations.GetOnlyFederation().Id);
             output.AppendLine("Redeem script: " + payToMultiSig.ToString());
 
             BitcoinAddress sidechainMultisigAddress = payToMultiSig.Hash.GetAddress(sidechainNetwork);

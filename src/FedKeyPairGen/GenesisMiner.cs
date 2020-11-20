@@ -4,30 +4,12 @@ using System.Text;
 using NBitcoin;
 using NBitcoin.DataEncoders;
 using Stratis.Bitcoin.Features.SmartContracts.PoA;
-using Xunit;
-using Xunit.Abstractions;
+using Stratis.Sidechains.Networks;
 
 namespace FederationSetup
 {
     public class GenesisMiner
     {
-        private readonly ITestOutputHelper output;
-
-        public GenesisMiner(ITestOutputHelper output = null)
-        {
-            if (output == null) return;
-            this.output = output;
-        }
-
-        //[Fact]
-        [Fact(Skip = "This is not a test, it is meant to be run upon creating a network")]
-        public void Run_MineGenesis()
-        {
-            var consensusFactory = new SmartContractPoAConsensusFactory();
-            string coinbaseText = "https://www.coindesk.com/apple-co-founder-backs-dorsey-bitcoin-become-webs-currency/";
-            this.output.WriteLine(this.MineGenesisBlocks(consensusFactory, coinbaseText));
-        }
-
         public string MineGenesisBlocks(SmartContractPoAConsensusFactory consensusFactory, string coinbaseText)
         {
             var output = new StringBuilder();
@@ -37,9 +19,9 @@ namespace FederationSetup
 
             var targets = new Dictionary<uint256, string>
             {
-                { new uint256("00000fffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"), "-- MainNet network --" },
-                { new uint256("0000ffff00000000000000000000000000000000000000000000000000000000"), "-- TestNet network --" },
-                { new uint256("7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"), "-- RegTest network --" }
+                { new Target(CirrusNetwork.NetworksSelector.Mainnet().GenesisBits).ToUInt256(), "-- MainNet network --" },
+                { new Target(CirrusNetwork.NetworksSelector.Testnet().GenesisBits).ToUInt256(), "-- TestNet network --" },
+                { new Target(CirrusNetwork.NetworksSelector.Regtest().GenesisBits).ToUInt256(), "-- RegTest network --" },
             };
 
             foreach (KeyValuePair<uint256, string> target in targets)
@@ -58,7 +40,7 @@ namespace FederationSetup
 
         private string NetworkOutput(Block genesisBlock, string network, string coinbaseText)
         {
-            var header = (SmartContractPoABlockHeader) genesisBlock.Header;
+            var header = (SmartContractPoABlockHeader)genesisBlock.Header;
 
             var output = new StringBuilder();
             output.AppendLine(network);
@@ -90,11 +72,9 @@ namespace FederationSetup
                 throw new ArgumentException($"Parameter '{nameof(genesisReward)}' cannot be null. Example use: 'Money.Coins(50m)'.");
 
             DateTimeOffset time = DateTimeOffset.Now;
-            uint unixTime = Utils.DateTimeToUnixTime(time);
 
             Transaction txNew = consensusFactory.CreateTransaction();
             txNew.Version = (uint)version;
-            txNew.Time = unixTime;
             txNew.AddInput(new TxIn()
             {
                 ScriptSig = new Script(

@@ -9,7 +9,7 @@
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <TargetFramework>netcoreapp2.1</TargetFramework>
+    <TargetFramework>netcoreapp3.1</TargetFramework>
     <StartupObject>FederationSetup.Program</StartupObject>
     <RuntimeIdentifiers>win10-x64;</RuntimeIdentifiers>
     <DebugType>Full</DebugType>
@@ -17,15 +17,16 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="NStratis" Version="4.0.0.73" />
-    <PackageReference Include="Stratis.Bitcoin.Features.PoA" Version="3.0.0.4-beta" />
-    <PackageReference Include="Stratis.Bitcoin.Networks" Version="3.0.0.4-beta" />
+    <PackageReference Include="NStratis" Version="4.0.0.78" />
+    <PackageReference Include="Stratis.Core.Networks" Version="1.0.2" />
+    <PackageReference Include="Stratis.Features.PoA" Version="1.0.2" />
+    <PackageReference Include="Stratis.Features.SmartContracts" Version="1.0.2" />
+    <PackageReference Include="Stratis.Sidechains.Networks" Version="1.0.2.1" />
     <PackageReference Include="xunit" Version="2.4.1" />
-    <PackageReference Include="xunit.runner.visualstudio" Version="2.4.1" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <ProjectReference Include="..\Stratis.Sidechains.Networks\Stratis.Sidechains.Networks.csproj" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="2.4.3">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
   </ItemGroup>
 
 </Project>

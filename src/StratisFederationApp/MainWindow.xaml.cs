@@ -2,8 +2,8 @@
 using System.Diagnostics;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Input;
 using System.Windows.Forms;
+using System.Windows.Input;
 using System.Windows.Media;
 
 namespace StratisFederationApp
@@ -50,7 +50,7 @@ namespace StratisFederationApp
                 TextBoxPassphrase.Foreground = Brushes.Gray;
                 TextBoxPassphrase.Text = DefaulfPassText;
                 TextBoxMainOutput.Text = null;
-                System.Windows.Forms.MessageBox.Show("Please enter pass phrase", "Warning",  MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                System.Windows.Forms.MessageBox.Show("Please enter pass phrase", "Warning", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }
 
@@ -60,7 +60,7 @@ namespace StratisFederationApp
 
             var proc = new Process
             {
-                StartInfo = new ProcessStartInfo("cmd.exe", $"/c dotnet netcoreapp2.1/FederationSetup.dll p -passphrase={passPhrase} -datadir={dataDir} -ismultisig={isMultiSig}")
+                StartInfo = new ProcessStartInfo("cmd.exe", $"/c dotnet FederationSetup/FederationSetup.dll p -passphrase={passPhrase} -datadir={dataDir} -ismultisig={isMultiSig}")
                 {
                     UseShellExecute = false,
                     RedirectStandardOutput = true,
